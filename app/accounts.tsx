@@ -6,17 +6,36 @@ import React, { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+interface AccountWithBalance {
+  account: Account
+  balance: number
+  transactionCount: number
+}
+
 export default function AccountsScreen() {
   const router = useRouter()
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [accountsWithBalances, setAccountsWithBalances] = useState<AccountWithBalance[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadAccounts = async () => {
+    const loadAccountsWithBalances = async () => {
       try {
         const userAccounts = await accountRepository.findAll()
-        setAccounts(userAccounts)
+        
+        // Get balances for all accounts
+        const accountsWithBalanceData = await Promise.all(
+          userAccounts.map(async (account) => {
+            const balanceData = await accountRepository.getAccountBalance(account.id)
+            return {
+              account,
+              balance: balanceData.balance,
+              transactionCount: balanceData.transactionCount
+            }
+          })
+        )
+        
+        setAccountsWithBalances(accountsWithBalanceData)
       } catch (error) {
         showErrorAlert(error, 'Failed to Load Accounts')
       } finally {
@@ -24,7 +43,7 @@ export default function AccountsScreen() {
       }
     }
 
-    loadAccounts()
+    loadAccountsWithBalances()
   }, [])
 
   const handleCreateJournal = () => {
@@ -39,9 +58,10 @@ export default function AccountsScreen() {
     router.push('/account-creation' as any)
   }
 
-  const handleAccountPress = (account: Account) => {
+  const handleAccountPress = (accountWithBalance: AccountWithBalance) => {
+    const { account, balance, transactionCount } = accountWithBalance
     const formattedDate = new Date(account.createdAt).toLocaleDateString()
-    const message = `Type: ${account.accountType}\nCurrency: ${account.currencyCode}\nCreated: ${formattedDate}`
+    const message = `Type: ${account.accountType}\nCurrency: ${account.currencyCode}\nCurrent Balance: ${balance.toFixed(2)}\nTransactions: ${transactionCount}\nCreated: ${formattedDate}`
     alert(`${account.name}\n\n${message}`)
   }
 
@@ -62,18 +82,45 @@ export default function AccountsScreen() {
     }
   }
 
-  const renderAccount = ({ item }: { item: Account }) => (
+  const getBalanceColor = (balance: number, accountType: AccountType, transactionCount: number) => {
+    // Special handling for zero balance accounts
+    if (Math.abs(balance) < 0.01 && transactionCount === 0) {
+      return '#666' // Gray for truly empty accounts
+    }
+    if (Math.abs(balance) < 0.01 && transactionCount > 0) {
+      return '#10B981' // Green for reconciled zero balance
+    }
+    
+    // For assets and expenses, positive is normal (green), negative is warning (red)
+    // For liabilities, equity, and income, negative is normal (green), positive is warning (red)
+    const isNegativeBalance = balance < 0
+    const shouldBeNegative = [AccountType.LIABILITY, AccountType.EQUITY, AccountType.INCOME].includes(accountType)
+    
+    if (isNegativeBalance === shouldBeNegative) {
+      return '#10B981' // Green - normal state
+    } else {
+      return '#EF4444' // Red - unusual state
+    }
+  }
+
+  const renderAccount = ({ item }: { item: AccountWithBalance }) => (
     <TouchableOpacity 
       style={styles.accountCard}
       onPress={() => handleAccountPress(item)}
     >
       <View style={styles.accountHeader}>
-        <Text style={styles.accountName}>{item.name}</Text>
-        <View style={[styles.accountTypeBadge, { backgroundColor: getAccountTypeColor(item.accountType) }]}>
-          <Text style={styles.accountTypeText}>{item.accountType}</Text>
+        <Text style={styles.accountName}>{item.account.name}</Text>
+        <View style={[styles.accountTypeBadge, { backgroundColor: getAccountTypeColor(item.account.accountType) }]}>
+          <Text style={styles.accountTypeText}>{item.account.accountType}</Text>
         </View>
       </View>
-      <Text style={styles.accountCurrency}>{item.currencyCode}</Text>
+      <View style={styles.accountDetails}>
+        <Text style={styles.accountCurrency}>{item.account.currencyCode}</Text>
+        <Text style={[styles.accountBalance, { color: getBalanceColor(item.balance, item.account.accountType, item.transactionCount) }]}>
+          {item.balance.toFixed(2)}
+        </Text>
+        <Text style={styles.transactionCount}>{item.transactionCount} transactions</Text>
+      </View>
     </TouchableOpacity>
   )
 
@@ -113,7 +160,7 @@ export default function AccountsScreen() {
         </View>
       </View>
 
-      {accounts.length === 0 ? (
+      {accountsWithBalances.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
             No accounts yet. Create your first account to get started!
@@ -121,9 +168,9 @@ export default function AccountsScreen() {
         </View>
       ) : (
         <FlatList
-          data={accounts}
+          data={accountsWithBalances}
           renderItem={renderAccount}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.account.id}
           contentContainerStyle={styles.listContainer}
         />
       )}
@@ -209,8 +256,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  accountDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   accountCurrency: {
     fontSize: 14,
+    color: '#666',
+  },
+  accountBalance: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  transactionCount: {
+    fontSize: 12,
     color: '#666',
   },
   emptyState: {

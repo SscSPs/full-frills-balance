@@ -128,25 +128,38 @@ export class JournalRepository {
    * Eliminates N+1 query problem by fetching data efficiently
    */
   async findAllWithTransactionTotals(): Promise<JournalWithTransactionTotals[]> {
-    // Fetch all journals first
+    // Fetch all journals with their transactions in a single query where possible
     const journals = await this.journals
       .query(Q.where('deleted_at', Q.eq(null)))
       .extend(Q.sortBy('journal_date', 'desc'))
       .fetch()
 
-    // For each journal, fetch transactions in parallel batches
-    const journalPromises = journals.map(async (journal) => {
-      const transactions = await this.transactions
-        .query(
-          Q.and(
-            Q.where('journal_id', journal.id),
-            Q.where('deleted_at', Q.eq(null))
-          )
+    // Fetch all transactions for these journals in batch
+    const journalIds = journals.map(j => j.id)
+    const allTransactions = await this.transactions
+      .query(
+        Q.and(
+          Q.where('journal_id', Q.oneOf(journalIds)),
+          Q.where('deleted_at', Q.eq(null))
         )
-        .fetch()
+      )
+      .fetch()
 
+    // Group transactions by journal_id for efficient processing
+    const transactionsByJournal = allTransactions.reduce((acc, tx) => {
+      if (!acc[tx.journalId]) {
+        acc[tx.journalId] = []
+      }
+      acc[tx.journalId].push(tx)
+      return acc
+    }, {} as Record<string, typeof allTransactions>)
+
+    // Build results with transaction totals
+    return journals.map(journal => {
+      const journalTransactions = transactionsByJournal[journal.id] || []
+      
       // Calculate total amount (sum of debit transactions only)
-      const totalAmount = transactions
+      const totalAmount = journalTransactions
         .filter(tx => tx.transactionType === TransactionType.DEBIT)
         .reduce((sum, tx) => sum + (tx.amount || 0), 0)
 
@@ -158,11 +171,9 @@ export class JournalRepository {
         status: journal.status,
         createdAt: journal.createdAt,
         totalAmount,
-        transactionCount: transactions.length,
+        transactionCount: journalTransactions.length,
       }
     })
-
-    return Promise.all(journalPromises)
   }
 
   /**
@@ -229,10 +240,10 @@ export class JournalRepository {
         j.status = JournalStatus.REVERSED
       })
 
-      // Create reversal journal
+      // Create reversal journal with same date as original for period accuracy
       const reversalJournal = await this.journals.create((j) => {
         Object.assign(j, {
-          journalDate: Date.now(),
+          journalDate: originalJournal.journalDate, // Use original date for period accuracy
           description: reason || `Reversal of journal ${originalJournalId}`,
           currencyCode: originalJournal.currencyCode,
           status: JournalStatus.POSTED,

@@ -56,8 +56,8 @@ export default function JournalListScreen() {
   }
 
   const handleJournalPress = (journal: JournalWithTransactionTotals) => {
-    const formattedDate = new Date(journal.journalDate).toLocaleDateString();
-    const message = `Description: ${journal.description || 'No description'}\nCurrency: ${journal.currencyCode}\nDate: ${formattedDate}\nStatus: ${journal.status}\nTransactions: ${journal.transactionCount}`;
+    const formattedDate = formatShortDate(journal.journalDate);
+    const message = `Date: ${formattedDate}\nDescription: ${journal.description || 'No description'}\nCurrency: ${journal.currencyCode}\nStatus: ${journal.status}\nTransactions: ${journal.transactionCount}\nTotal Amount: ${journal.totalAmount.toFixed(2)}`;
     
     alert(`Journal Entry\n\n${message}`);
   }
@@ -88,7 +88,7 @@ export default function JournalListScreen() {
             {journal.totalAmount.toFixed(2)} {journal.currencyCode}
           </ThemedText>
           <ThemedText style={styles.transactionCount}>
-            {journal.transactionCount} transactions
+            {journal.transactionCount} transaction{journal.transactionCount !== 1 ? 's' : ''}
           </ThemedText>
         </View>
         

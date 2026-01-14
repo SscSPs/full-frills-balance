@@ -45,7 +45,7 @@ export class AccountRepository {
    * Rules:
    * - Only includes transactions from POSTED journals
    * - Excludes transactions from REVERSED journals  
-   * - Date filtering applies to journalDate only
+   * - Date filtering applies to journalDate only (accounting principle)
    * - Default asOfDate means "up to latest posted journal"
    * 
    * @param accountId Account ID to calculate balance for
@@ -61,23 +61,18 @@ export class AccountRepository {
     // 2. Build query for transactions from posted, non-reversed journals
     const cutoffDate = asOfDate || Date.now()
     
-    // 3. Get transactions for this account from valid journals
-    // For now, we'll use a simpler approach and can optimize later
-    const allTransactions = await this.transactions
+    // 3. Get transactions for this account from valid journals with DB-level filtering
+    const transactions = await this.transactions
       .query(
-        Q.where('account_id', accountId)
+        Q.and(
+          Q.where('account_id', accountId),
+          Q.where('deleted_at', Q.eq(null)),
+          Q.on('journals', 'journal_date', Q.lte(cutoffDate)),
+          Q.on('journals', 'status', Q.eq('POSTED')),
+          Q.on('journals', 'deleted_at', Q.eq(null))
+        )
       )
       .fetch()
-
-    // Filter transactions in application layer (can be optimized to DB level later)
-    const transactions = allTransactions.filter((tx: any) => {
-      // Only include transactions from non-deleted records
-      if (tx.deletedAt) return false
-      
-      // For now, we'll include all transactions since journal filtering is complex
-      // TODO: Optimize this to DB level with proper joins
-      return true
-    })
 
     // 4. Calculate balance using normalized direction map
     const direction = this.getBalanceDirection(account.accountType)

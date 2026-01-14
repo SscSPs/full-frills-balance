@@ -3,8 +3,8 @@ import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { TransactionType } from '@/src/data/models/Transaction';
-import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
+import { TransactionWithAccountInfo } from '@/src/types/readModels';
 import { showErrorAlert } from '@/src/utils/alerts';
 import { formatDate } from '@/src/utils/dateUtils';
 import { useRouter } from 'expo-router';
@@ -16,22 +16,6 @@ interface TransactionDetailsProps {
   journalId: string;
 }
 
-interface TransactionWithAccount {
-  accountName?: string;
-  accountType?: string;
-  // Include all Transaction properties except the relations
-  id: string;
-  accountId: string;
-  amount: number;
-  transactionType: TransactionType;
-  currencyCode: string;
-  transactionDate: number;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
-}
-
 export default function TransactionDetailsScreen({ journalId }: TransactionDetailsProps) {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -41,7 +25,7 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
   const borderColor = useThemeColor({ light: '#e9ecef', dark: '#333' }, 'background');
   const cardBackground = useThemeColor({ light: '#fff', dark: '#1a1a1a' }, 'background');
   
-  const [transactions, setTransactions] = useState<TransactionWithAccount[]>([]);
+  const [transactions, setTransactions] = useState<TransactionWithAccountInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,22 +33,9 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
     const loadTransactions = async () => {
       try {
         setIsLoading(true);
-        const journalTransactions = await transactionRepository.findByJournal(journalId);
-        
-        // Enrich transactions with account information
-        const transactionsWithAccounts = await Promise.all(
-          journalTransactions.map(async (tx) => {
-            const account = await accountRepository.find(tx.accountId);
-            return {
-              ...tx,
-              id: tx.id, // Explicitly include the id property
-              accountName: account?.name,
-              accountType: account?.accountType,
-            };
-          })
-        );
-        
-        setTransactions(transactionsWithAccounts);
+        // Use new repository-owned read model
+        const journalTransactions = await transactionRepository.findByJournalWithAccountInfo(journalId);
+        setTransactions(journalTransactions);
       } catch (error) {
         console.error('Error loading transactions:', error);
         showErrorAlert(error, 'Failed to Load Transactions');
@@ -77,17 +48,20 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
     loadTransactions();
   }, [journalId]);
 
-  const renderTransaction = ({ item: transaction }: { item: TransactionWithAccount }) => {
+  const renderTransaction = ({ item: transaction }: { item: TransactionWithAccountInfo }) => {
     const formattedDate = formatDate(transaction.transactionDate, { includeTime: true });
     const formattedAmount = Math.abs(transaction.amount).toFixed(2);
+    const formattedRunningBalance = transaction.runningBalance !== undefined 
+      ? transaction.runningBalance.toFixed(2) 
+      : null;
     const transactionTypeColor = transaction.transactionType === TransactionType.DEBIT ? '#DC3545' : '#10B981';
     
     return (
       <View style={[styles.transactionCard, { backgroundColor: cardBackground, borderColor }]}>
         <View style={styles.transactionHeader}>
           <View style={styles.transactionInfo}>
-            <ThemedText style={styles.accountName}>{transaction.accountName || 'Unknown Account'}</ThemedText>
-            <ThemedText style={styles.accountType}>{transaction.accountType || ''}</ThemedText>
+            <ThemedText style={styles.accountName}>{transaction.accountName}</ThemedText>
+            <ThemedText style={styles.accountType}>{transaction.accountType}</ThemedText>
           </View>
           <View style={styles.transactionTypeBadge}>
             <ThemedText style={[styles.transactionTypeText, { color: transactionTypeColor }]}>
@@ -98,7 +72,14 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
         
         <View style={styles.transactionDetails}>
           <ThemedText style={styles.transactionDate}>{formattedDate}</ThemedText>
-          <ThemedText style={styles.transactionAmount}>{formattedAmount}</ThemedText>
+          <View style={styles.amountContainer}>
+            <ThemedText style={styles.transactionAmount}>{formattedAmount}</ThemedText>
+            {formattedRunningBalance && (
+              <ThemedText style={styles.runningBalance}>
+                Balance: {formattedRunningBalance}
+              </ThemedText>
+            )}
+          </View>
           {transaction.notes && (
             <ThemedText style={styles.transactionNotes}>{transaction.notes}</ThemedText>
           )}
@@ -140,6 +121,9 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
           <ThemedText style={styles.backButtonText}>←</ThemedText>
         </TouchableOpacity>
         <ThemedText style={styles.title}>Transaction Details</ThemedText>
+        <TouchableOpacity onPress={() => router.push('/journal-list' as any)} style={styles.contextButton}>
+          <ThemedText style={styles.contextButtonText}>All Journals</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
       
       <FlatList
@@ -176,6 +160,17 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 18,
+    fontWeight: '600',
+  },
+  contextButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+  },
+  contextButtonText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: '600',
   },
   title: {
@@ -227,6 +222,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  amountContainer: {
+    alignItems: 'flex-end',
+  },
   transactionDate: {
     fontSize: 14,
     opacity: 0.8,
@@ -234,6 +232,11 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  runningBalance: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 2,
   },
   transactionNotes: {
     fontSize: 14,

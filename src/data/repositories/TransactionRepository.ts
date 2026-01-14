@@ -1,6 +1,8 @@
 import { Q } from '@nozbe/watermelondb'
+import { TransactionWithAccountInfo } from '../../types/readModels'
 import { database } from '../database/Database'
 import Transaction, { TransactionType } from '../models/Transaction'
+import { accountRepository } from './AccountRepository'
 
 export class TransactionRepository {
   private get transactions() {
@@ -40,7 +42,57 @@ export class TransactionRepository {
   }
 
   /**
+   * Gets transactions for a journal with account information
+   * Repository-owned read model for UI consumption
+   * 
+   * @param journalId Journal ID to fetch transactions for
+   * @returns Array of transactions with account information
+   */
+  async findByJournalWithAccountInfo(journalId: string): Promise<TransactionWithAccountInfo[]> {
+    // Get transactions for the journal
+    const transactions = await this.transactions
+      .query(
+        Q.and(
+          Q.where('journal_id', journalId),
+          Q.where('deleted_at', Q.eq(null))
+        )
+      )
+      .extend(Q.sortBy('created_at', 'asc')) // Use creation order within journal
+      .fetch()
+
+    // Get unique account IDs to fetch account information
+    const accountIds = [...new Set(transactions.map(tx => tx.accountId))]
+    const accounts = await Promise.all(
+      accountIds.map(id => accountRepository.find(id))
+    )
+
+    // Create account lookup map
+    const accountMap = new Map(
+      accounts.filter(Boolean).map(acc => [acc!.id, acc!])
+    )
+
+    // Build read model with account information and running balance
+    return transactions.map(tx => {
+      const account = accountMap.get(tx.accountId)
+      return {
+        id: tx.id,
+        amount: tx.amount,
+        transactionType: tx.transactionType,
+        currencyCode: tx.currencyCode,
+        transactionDate: tx.transactionDate, // Keep for display, but journalDate determines ordering
+        notes: tx.notes,
+        accountName: account?.name || 'Unknown Account',
+        accountType: account?.accountType || ('ASSET' as any), // Fallback for safety
+        runningBalance: tx.runningBalance, // Include running balance if available
+        createdAt: tx.createdAt,
+        updatedAt: tx.updatedAt,
+      }
+    })
+  }
+
+  /**
    * Rebuilds running balances for an account
+   * Uses journalDate for ordering to maintain accounting correctness
    * @param accountId The account ID to rebuild balances for
    * @param upToDate Timestamp to rebuild up to (defaults to now)
    */
@@ -48,17 +100,19 @@ export class TransactionRepository {
     accountId: string,
     upToDate: number = Date.now()
   ): Promise<void> {
-    // Get all transactions for the account, ordered by date
+    // Get all transactions for the account, ordered by journal date (accounting principle)
     const transactions = await this.transactions
       .query(
         Q.and(
           Q.where('account_id', accountId),
-          Q.where('transaction_date', Q.lte(upToDate)),
-          Q.where('deleted_at', Q.eq(null))
+          Q.on('journals', 'journal_date', Q.lte(upToDate)),
+          Q.where('deleted_at', Q.eq(null)),
+          Q.on('journals', 'status', Q.eq('POSTED')),
+          Q.on('journals', 'deleted_at', Q.eq(null))
         )
       )
-      .extend(Q.sortBy('transaction_date', 'asc'))
-      .extend(Q.sortBy('created_at', 'asc'))
+      .extend(Q.sortBy('journal_date', 'asc')) // Order by journal date, not transaction date
+      .extend(Q.sortBy('created_at', 'asc')) // Secondary sort for consistency
       .fetch()
 
     let runningBalance = 0
@@ -66,11 +120,11 @@ export class TransactionRepository {
     // Update each transaction with its running balance
     await database.write(async () => {
       for (const tx of transactions) {
-        // Calculate the effect of this transaction
+        // Calculate effect of this transaction
         const amount = tx.transactionType === TransactionType.DEBIT ? -tx.amount : tx.amount
         runningBalance += amount
 
-        // Only update if the balance has changed
+        // Only update if balance has changed
         if (tx.runningBalance !== runningBalance) {
           await tx.update((txToUpdate) => {
             txToUpdate.runningBalance = runningBalance
