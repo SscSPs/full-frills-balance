@@ -1,71 +1,79 @@
-import { AccountType } from '@/src/data/models/Account';
 import { createContext, ReactNode, useContext, useState } from 'react';
 
-interface UserData {
+interface UserPreferences {
   userName: string;
-  accounts: Array<{
-    name: string;
-    type: AccountType;
-    currency: string;
-  }>;
+  currencyCode: string;
+  theme: 'light' | 'dark' | 'system';
+  language: string;
 }
 
 interface UserContextType {
-  userData: UserData | null;
-  setUserData: (data: UserData) => void;
+  userPreferences: UserPreferences | null;
+  setUserPreferences: (data: UserPreferences) => void;
   updateUserName: (name: string) => void;
-  addAccount: (account: { name: string; type: AccountType; currency: string }) => void;
-  removeAccount: (index: number) => void;
+  updateCurrencyCode: (code: string) => void;
+  updateTheme: (theme: 'light' | 'dark' | 'system') => void;
   isOnboardingCompleted: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [userData, setUserDataState] = useState<UserData | null>(null);
+  const [userPreferences, setUserPreferencesState] = useState<UserPreferences | null>(null);
 
-  const setUserData = (data: UserData) => {
-    setUserDataState(data);
+  const setUserPreferences = (data: UserPreferences) => {
+    setUserPreferencesState(data);
   };
 
   const updateUserName = (name: string) => {
-    if (userData) {
-      setUserDataState({ ...userData, userName: name });
+    if (userPreferences) {
+      setUserPreferencesState({ ...userPreferences, userName: name });
     } else {
-      setUserDataState({ userName: name, accounts: [] });
-    }
-  };
-
-  const addAccount = (account: { name: string; type: AccountType; currency: string }) => {
-    if (userData) {
-      setUserDataState({
-        ...userData,
-        accounts: [...userData.accounts, account]
-      });
-    } else {
-      setUserDataState({ userName: '', accounts: [account] });
-    }
-  };
-
-  const removeAccount = (index: number) => {
-    if (userData) {
-      setUserDataState({
-        ...userData,
-        accounts: userData.accounts.filter((_, i) => i !== index)
+      setUserPreferencesState({ 
+        userName: name, 
+        currencyCode: 'USD',
+        theme: 'system',
+        language: 'en'
       });
     }
   };
 
-  const isOnboardingCompleted = userData !== null && userData.userName.trim() !== '';
+  const updateCurrencyCode = (code: string) => {
+    if (userPreferences) {
+      setUserPreferencesState({ ...userPreferences, currencyCode: code });
+    } else {
+      setUserPreferencesState({ 
+        userName: '', 
+        currencyCode: code,
+        theme: 'system',
+        language: 'en'
+      });
+    }
+  };
+
+  const updateTheme = (theme: 'light' | 'dark' | 'system') => {
+    if (userPreferences) {
+      setUserPreferencesState({ ...userPreferences, theme });
+    } else {
+      setUserPreferencesState({ 
+        userName: '', 
+        currencyCode: 'USD',
+        theme,
+        language: 'en'
+      });
+    }
+  };
+
+  const isOnboardingCompleted = userPreferences !== null && userPreferences.userName.trim() !== '';
 
   return (
     <UserContext.Provider
       value={{
-        userData,
-        setUserData,
+        userPreferences,
+        setUserPreferences,
         updateUserName,
-        addAccount,
-        removeAccount,
+        updateCurrencyCode,
+        updateTheme,
         isOnboardingCompleted,
       }}
     >

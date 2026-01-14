@@ -14,7 +14,7 @@ export default function OnboardingScreen() {
   const handleContinue = () => {
     if (name.trim()) {
       updateUserName(name.trim());
-      router.push('/account-creation');
+      router.push('/account-creation' as any);
     }
   };
 

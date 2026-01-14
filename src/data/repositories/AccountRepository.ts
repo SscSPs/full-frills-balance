@@ -1,4 +1,5 @@
 import { Q } from '@nozbe/watermelondb'
+import { AccountCreateInput, AccountUpdateInput } from '../../types/Account'
 import { database } from '../database/Database'
 import Account, { AccountType } from '../models/Account'
 
@@ -10,10 +11,7 @@ export class AccountRepository {
   /**
    * Creates a new account
    */
-  async create(accountData: Omit<
-    Partial<Account>,
-    'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
-  >): Promise<Account> {
+  async create(accountData: AccountCreateInput): Promise<Account> {
     return database.write(async () => {
       return this.accounts.create((account) => {
         Object.assign(account, accountData)
@@ -85,7 +83,7 @@ export class AccountRepository {
    */
   async update(
     account: Account,
-    updates: Partial<Account>
+    updates: AccountUpdateInput
   ): Promise<Account> {
     return account.update((acc) => {
       Object.assign(acc, updates)

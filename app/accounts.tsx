@@ -1,329 +1,206 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AccountType } from '@/src/data/models/Account';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useUser } from '../contexts/UserContext';
-
-interface AccountData {
-  name: string;
-  type: AccountType;
-  currency: string;
-}
+import Account, { AccountType } from '@/src/data/models/Account'
+import { accountRepository } from '@/src/data/repositories/AccountRepository'
+import { showErrorAlert } from '@/src/utils/alerts'
+import { useRouter } from 'expo-router'
+import React, { useEffect, useState } from 'react'
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function AccountsScreen() {
-  const { userData } = useUser();
-  const [refreshing, setRefreshing] = useState(false);
-  const colorScheme = useColorScheme();
+  const router = useRouter()
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const accountList = userData?.accounts || [];
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    // In a real app, you'd fetch fresh data from your database
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
-
-  const getAccountTypeIcon = (type: AccountType) => {
-    switch (type) {
-      case AccountType.ASSET:
-        return 'banknote';
-      case AccountType.LIABILITY:
-        return 'creditcard';
-      case AccountType.EQUITY:
-        return 'chart.line.uptrend.xyaxis';
-      case AccountType.INCOME:
-        return 'arrow.down.circle';
-      case AccountType.EXPENSE:
-        return 'arrow.up.circle';
-      default:
-        return 'questionmark.circle';
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const userAccounts = await accountRepository.findAll()
+        setAccounts(userAccounts)
+      } catch (error) {
+        showErrorAlert(error, 'Failed to Load Accounts')
+      } finally {
+        setIsLoading(false)
+      }
     }
-  };
+
+    loadAccounts()
+  }, [])
+
+  const handleCreateAccount = () => {
+    router.push('/account-creation' as any)
+  }
+
+  const handleAccountPress = (account: Account) => {
+    // For now, just show basic account info
+    // TODO: Navigate to account details screen
+    const formattedDate = new Date(account.createdAt).toLocaleDateString()
+    const message = `Type: ${account.accountType}\nCurrency: ${account.currencyCode}\nCreated: ${formattedDate}`
+    
+    // Use a simple alert for now - could replace with a modal
+    alert(`${account.name}\n\n${message}`)
+  }
 
   const getAccountTypeColor = (type: AccountType) => {
     switch (type) {
       case AccountType.ASSET:
-        return '#34C759';
+        return '#007AFF'
       case AccountType.LIABILITY:
-        return '#FF3B30';
+        return '#FF6B6B'
       case AccountType.EQUITY:
-        return '#007AFF';
+        return '#10B981'
       case AccountType.INCOME:
-        return '#34C759';
+        return '#059669'
       case AccountType.EXPENSE:
-        return '#FF3B30';
+        return '#DC3545'
       default:
-        return '#8E8E93';
+        return '#666'
     }
-  };
+  }
+
+  const renderAccount = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+      style={styles.accountCard}
+      onPress={() => handleAccountPress(item)}
+    >
+      <View style={styles.accountHeader}>
+        <Text style={styles.accountName}>{item.name}</Text>
+        <View style={[styles.accountTypeBadge, { backgroundColor: getAccountTypeColor(item.accountType) }]}>
+          <Text style={styles.accountTypeText}>{item.accountType}</Text>
+        </View>
+      </View>
+      <Text style={styles.accountCurrency}>{item.currencyCode}</Text>
+    </TouchableOpacity>
+  )
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading accounts...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.welcomeText}>
-            Welcome{userData?.userName ? `, ${userData.userName}` : ''}!
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Here are your accounts
-          </ThemedText>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Accounts</Text>
+        <TouchableOpacity 
+          style={styles.createButton}
+          onPress={handleCreateAccount}
+        >
+          <Text style={styles.createButtonText}>+ Create Account</Text>
+        </TouchableOpacity>
+      </View>
+
+      {accounts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No accounts yet. Create your first account to get started!
+          </Text>
         </View>
-
-        {accountList.length === 0 ? (
-          <View style={styles.emptyState}>
-            <IconSymbol name="folder" size={64} color="#8E8E93" />
-            <ThemedText style={styles.emptyStateTitle}>No Accounts Yet</ThemedText>
-            <ThemedText style={styles.emptyStateDescription}>
-              You haven't created any accounts. Let's get started!
-            </ThemedText>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => router.push('/account-creation')}
-            >
-              <ThemedText style={styles.createButtonText}>Create Your First Account</ThemedText>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.accountsContainer}>
-            <View style={styles.accountsHeader}>
-              <ThemedText style={styles.accountsTitle}>Your Accounts</ThemedText>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push('/account-creation')}
-              >
-                <IconSymbol name="plus" size={20} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-
-            {accountList.map((account, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.accountCard,
-                  { backgroundColor: colorScheme === 'dark' ? '#333' : '#fff' }
-                ]}
-              >
-                <View style={styles.accountLeft}>
-                  <View style={[
-                    styles.accountIcon,
-                    { backgroundColor: getAccountTypeColor(account.type) + '20' }
-                  ]}>
-                    <IconSymbol
-                      name={getAccountTypeIcon(account.type)}
-                      size={24}
-                      color={getAccountTypeColor(account.type)}
-                    />
-                  </View>
-                  <View style={styles.accountInfo}>
-                    <ThemedText style={styles.accountName}>{account.name}</ThemedText>
-                    <ThemedText style={styles.accountType}>
-                      {account.type.replace('_', ' ')}
-                    </ThemedText>
-                  </View>
-                </View>
-                <View style={styles.accountRight}>
-                  <ThemedText style={styles.currency}>{account.currency}</ThemedText>
-                  <IconSymbol name="chevron.right" size={16} color="#8E8E93" />
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              style={styles.addAccountCard}
-              onPress={() => router.push('/account-creation')}
-            >
-              <IconSymbol name="plus.circle" size={24} color="#007AFF" />
-              <ThemedText style={styles.addAccountText}>Add Another Account</ThemedText>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={styles.quickActions}>
-          <ThemedText style={styles.sectionTitle}>Quick Actions</ThemedText>
-          <View style={styles.actionGrid}>
-            <TouchableOpacity style={styles.actionCard}>
-              <IconSymbol name="arrow.up.circle" size={32} color="#FF3B30" />
-              <ThemedText style={styles.actionText}>Add Expense</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
-              <IconSymbol name="arrow.down.circle" size={32} color="#34C759" />
-              <ThemedText style={styles.actionText}>Add Income</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
-              <IconSymbol name="arrow.left.arrow.right" size={32} color="#007AFF" />
-              <ThemedText style={styles.actionText}>Transfer</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCard}>
-              <IconSymbol name="chart.bar" size={32} color="#8E8E93" />
-              <ThemedText style={styles.actionText}>Reports</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </ThemedView>
-  );
+      ) : (
+        <FlatList
+          data={accounts}
+          renderItem={renderAccount}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
+    </SafeAreaView>
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  welcomeText: {
-    marginBottom: 8,
-  },
-  subtitle: {
-    opacity: 0.7,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 40,
+    padding: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateDescription: {
-    textAlign: 'center',
-    opacity: 0.7,
-    marginBottom: 24,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
   },
   createButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   createButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  accountsContainer: {
-    padding: 20,
-  },
-  accountsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  accountsTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  addButton: {
-    padding: 8,
+  listContainer: {
+    paddingHorizontal: 24,
   },
   accountCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
+    backgroundColor: '#fff',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  accountLeft: {
+  accountHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    flex: 1,
-  },
-  accountIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  accountInfo: {
-    flex: 1,
+    marginBottom: 8,
   },
   accountName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
+    color: '#1a1a1a',
+    flex: 1,
   },
-  accountType: {
+  accountTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  accountTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  accountCurrency: {
     fontSize: 14,
-    opacity: 0.7,
+    color: '#666',
   },
-  accountRight: {
-    alignItems: 'flex-end',
-  },
-  currency: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 4,
-  },
-  addAccountCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  emptyState: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
-  },
-  addAccountText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  quickActions: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  actionCard: {
-    width: '48%',
-    backgroundColor: '#f8f9fa',
-    padding: 20,
-    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 24,
   },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 8,
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
   },
-});
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+  },
+})

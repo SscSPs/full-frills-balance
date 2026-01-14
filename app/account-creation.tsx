@@ -1,273 +1,231 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AccountType } from '@/src/data/models/Account';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import { useUser } from '../contexts/UserContext';
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
+import { useColorScheme } from '@/hooks/use-color-scheme'
+import { AccountType } from '@/src/data/models/Account'
+import { accountRepository } from '@/src/data/repositories/AccountRepository'
+import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
+import { ValidationError } from '@/src/utils/errors'
+import { sanitizeInput, validateAccountName } from '@/src/utils/validation'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { useUser } from '../contexts/UserContext'
 
 export default function AccountCreationScreen() {
-  const { userData, addAccount: addUserAccount } = useUser();
-  const [accounts, setAccounts] = useState<Array<{ name: string; type: AccountType; currency: string }>>([]);
-  const [accountName, setAccountName] = useState('');
-  const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET);
-  const [currency, setCurrency] = useState('USD');
-  const colorScheme = useColorScheme();
+  const router = useRouter()
+  const { userPreferences } = useUser()
+  const colorScheme = useColorScheme()
+  const [accountName, setAccountName] = useState('')
+  const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET)
+  const [isCreating, setIsCreating] = useState(false)
 
-  const accountTypes = Object.values(AccountType);
-
-  const addAccountToList = () => {
-    if (accountName.trim()) {
-      const newAccount = {
-        name: accountName.trim(),
-        type: accountType,
-        currency: currency
-      };
-      setAccounts([...accounts, newAccount]);
-      setAccountName('');
+  const handleCreateAccount = async () => {
+    // Validate and sanitize input
+    const nameValidation = validateAccountName(accountName)
+    if (!nameValidation.isValid) {
+      showErrorAlert(new ValidationError(nameValidation.error!))
+      return
     }
-  };
 
-  const removeAccount = (index: number) => {
-    setAccounts(accounts.filter((_, i) => i !== index));
-  };
+    const sanitizedName = sanitizeInput(accountName)
+    setIsCreating(true)
+    
+    try {
+      await accountRepository.create({
+        name: sanitizedName,
+        accountType: accountType,
+        currencyCode: userPreferences?.currencyCode || 'USD',
+        description: `Created via onboarding`,
+      })
 
-  const handleContinue = () => {
-    if (accounts.length === 0) {
-      Alert.alert('No Accounts', 'Please add at least one account to continue.');
-      return;
+      showSuccessAlert(
+        'Account Created',
+        `"${sanitizedName}" has been created successfully!`
+      )
+      
+      // Reset form
+      setAccountName('')
+      setAccountType(AccountType.ASSET)
+      
+      // Navigate to accounts after a short delay
+      setTimeout(() => {
+        router.push('/accounts' as any)
+      }, 1000)
+      
+    } catch (error) {
+      showErrorAlert(error, 'Failed to Create Account')
+    } finally {
+      setIsCreating(false)
     }
-    
-    // Add all accounts to the user context
-    accounts.forEach(account => {
-      addUserAccount(account);
-    });
-    
-    router.push('/accounts');
-  };
+  }
+
+  const accountTypes = [
+    { key: AccountType.ASSET, label: 'Asset' },
+    { key: AccountType.LIABILITY, label: 'Liability' },
+    { key: AccountType.EQUITY, label: 'Equity' },
+    { key: AccountType.INCOME, label: 'Income' },
+    { key: AccountType.EXPENSE, label: 'Expense' },
+  ]
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          <ThemedText type="title" style={styles.title}>
-            Create Your Accounts
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Welcome{userData?.userName ? `, ${userData.userName}` : ''}! Let's set up your accounts.
-          </ThemedText>
-
-          <View style={styles.formSection}>
-            <ThemedText style={styles.label}>Account Name</ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                { 
-                  borderColor: colorScheme === 'dark' ? '#444' : '#ddd',
-                  color: colorScheme === 'dark' ? '#fff' : '#000'
-                }
-              ]}
-              placeholder="e.g., Checking Account"
-              placeholderTextColor={colorScheme === 'dark' ? '#888' : '#999'}
-              value={accountName}
-              onChangeText={setAccountName}
-            />
-
-            <ThemedText style={styles.label}>Account Type</ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeSelector}>
-              {accountTypes.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.typeButton,
-                    { 
-                      backgroundColor: accountType === type ? '#007AFF' : (colorScheme === 'dark' ? '#333' : '#f0f0f0')
-                    }
-                  ]}
-                  onPress={() => setAccountType(type)}
-                >
-                  <ThemedText style={[
-                    styles.typeButtonText,
-                    { color: accountType === type ? '#fff' : (colorScheme === 'dark' ? '#fff' : '#000') }
-                  ]}>
-                    {type.replace('_', ' ')}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <ThemedText style={styles.label}>Currency</ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                { 
-                  borderColor: colorScheme === 'dark' ? '#444' : '#ddd',
-                  color: colorScheme === 'dark' ? '#fff' : '#000'
-                }
-              ]}
-              placeholder="USD"
-              placeholderTextColor={colorScheme === 'dark' ? '#888' : '#999'}
-              value={currency}
-              onChangeText={setCurrency}
-              maxLength={3}
-            />
-
-            <TouchableOpacity
-              style={[styles.button, styles.addButton]}
-              onPress={addAccountToList}
-              disabled={!accountName.trim()}
-            >
-              <ThemedText style={styles.buttonText}>Add Account</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {accounts.length > 0 && (
-            <View style={styles.accountsSection}>
-              <ThemedText style={styles.sectionTitle}>Accounts to Create</ThemedText>
-              {accounts.map((account, index) => (
-                <View key={index} style={[
-                  styles.accountItem,
-                  { backgroundColor: colorScheme === 'dark' ? '#333' : '#f9f9f9' }
-                ]}>
-                  <View style={styles.accountInfo}>
-                    <ThemedText style={styles.accountName}>{account.name}</ThemedText>
-                    <ThemedText style={styles.accountDetails}>
-                      {account.type.replace('_', ' ')} • {account.currency}
-                    </ThemedText>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeAccount(index)}
-                  >
-                    <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <TouchableOpacity
+      <ScrollView style={styles.content}>
+        <ThemedText type="title" style={styles.title}>
+          Create Your First Account
+        </ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Start tracking your finances
+        </ThemedText>
+        
+        <View style={styles.inputContainer}>
+          <ThemedText style={styles.label}>Account Name</ThemedText>
+          <TextInput
             style={[
-              styles.button,
-              styles.continueButton,
-              { backgroundColor: accounts.length > 0 ? '#007AFF' : '#ccc' }
+              styles.input,
+              { 
+                borderColor: colorScheme === 'dark' ? '#444' : '#ddd',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff'
+              }
             ]}
-            onPress={handleContinue}
-            disabled={accounts.length === 0}
-          >
-            <ThemedText style={styles.buttonText}>Continue to Dashboard</ThemedText>
-          </TouchableOpacity>
+            value={accountName}
+            onChangeText={setAccountName}
+            placeholder="e.g., Checking Account"
+            placeholderTextColor={colorScheme === 'dark' ? '#888' : '#999'}
+            autoFocus
+            maxLength={100}
+            returnKeyType="next"
+          />
         </View>
+
+        <View style={styles.inputContainer}>
+          <ThemedText style={styles.label}>Account Type</ThemedText>
+          <View style={styles.accountTypeContainer}>
+            {accountTypes.map((type) => (
+              <TouchableOpacity
+                key={type.key}
+                style={[
+                  styles.accountTypeButton,
+                  accountType === type.key && styles.accountTypeButtonSelected,
+                  { 
+                    borderColor: colorScheme === 'dark' ? '#444' : '#ddd',
+                    backgroundColor: accountType === type.key 
+                      ? '#007AFF' 
+                      : colorScheme === 'dark' ? '#2a2a2a' : '#fff'
+                  }
+                ]}
+                onPress={() => setAccountType(type.key as AccountType)}
+              >
+                <ThemedText style={[
+                  styles.accountTypeText,
+                  accountType === type.key && styles.accountTypeTextSelected
+                ]}>
+                  {type.label}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={[
+            styles.button, 
+            (!accountName.trim() || isCreating) && styles.buttonDisabled
+          ]}
+          onPress={handleCreateAccount}
+          disabled={!accountName.trim() || isCreating}
+        >
+          <ThemedText style={styles.buttonText}>
+            {isCreating ? 'Creating...' : 'Create Account'}
+          </ThemedText>
+        </TouchableOpacity>
       </ScrollView>
     </ThemedView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   content: {
-    padding: 20,
-    maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
+    flex: 1,
+    padding: 24,
   },
   title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 32,
-    opacity: 0.7,
   },
-  formSection: {
-    marginBottom: 32,
+  inputContainer: {
+    marginBottom: 24,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#333',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
-    marginBottom: 20,
+    backgroundColor: '#fff',
   },
-  typeSelector: {
-    marginBottom: 20,
+  accountTypeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
   },
-  typeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  typeButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  button: {
-    padding: 16,
+  accountTypeButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    minWidth: 100,
     alignItems: 'center',
   },
-  addButton: {
-    backgroundColor: '#34C759',
-    marginBottom: 20,
+  accountTypeButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
-  continueButton: {
-    marginTop: 20,
+  accountTypeText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  accountTypeTextSelected: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  accountsSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  accountItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  accountDetails: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  removeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: '#FF3B30',
-  },
-  removeButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+})

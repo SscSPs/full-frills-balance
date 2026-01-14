@@ -6,12 +6,18 @@ export default function IndexScreen() {
   const { isOnboardingCompleted } = useUser();
 
   useEffect(() => {
-    if (isOnboardingCompleted) {
-      router.replace('/accounts');
-    } else {
-      router.replace('/onboarding');
-    }
+    // Use setTimeout to ensure navigation happens after layout is mounted
+    const timer = setTimeout(() => {
+      if (isOnboardingCompleted) {
+        router.replace('/accounts' as any);
+      } else {
+        router.replace('/onboarding' as any);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [isOnboardingCompleted]);
 
+  // Return a loading indicator while determining route
   return null;
 }
