@@ -1,0 +1,28 @@
+import { Model } from '@nozbe/watermelondb'
+import { date, field, relation } from '@nozbe/watermelondb/decorators'
+
+export enum TransactionType {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
+export default class Transaction extends Model {
+  static table = 'transactions'
+
+  @field('journal_id') journalId!: string
+  @field('account_id') accountId!: string
+  @field('amount') amount!: number
+  @field('transaction_type') transactionType!: TransactionType
+  @field('currency_code') currencyCode!: string
+  @field('transaction_date') transactionDate!: number
+  @field('notes') notes?: string
+  @field('running_balance') runningBalance?: number // Rebuildable cache only
+
+  @date('created_at') createdAt!: Date
+  @date('updated_at') updatedAt!: Date
+  @date('deleted_at') deletedAt?: Date
+
+  // Relations
+  @relation('journals', 'journal_id') journal!: any
+  @relation('accounts', 'account_id') account!: any
+}
