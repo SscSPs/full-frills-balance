@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AccountType } from '@/src/data/models/Account';
+import Account, { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -90,7 +90,7 @@ export default function JournalEntryScreen() {
     ))
   }
 
-  const selectAccount = (lineId: string, account: any) => {
+  const selectAccount = (lineId: string, account: Account) => {
     updateLine(lineId, {
       accountId: account.id,
       accountName: account.name,
@@ -108,7 +108,7 @@ export default function JournalEntryScreen() {
     setSelectedLineId(null)
   }
 
-  const handleAccountSelect = (account: any) => {
+  const handleAccountSelect = (account: Account) => {
     if (selectedLineId) {
       selectAccount(selectedLineId, account)
     }
@@ -410,7 +410,7 @@ export default function JournalEntryScreen() {
           <FlatList
             data={accounts}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }: {item: any}) => (
+            renderItem={({ item }: {item: Account}) => (
               <TouchableOpacity
                 style={[
                   styles.accountItem,

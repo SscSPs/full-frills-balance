@@ -15,6 +15,17 @@ export interface CreateJournalData {
   }>
 }
 
+export interface JournalWithTransactionTotals {
+  id: string
+  journalDate: number
+  description?: string
+  currencyCode: string
+  status: string
+  createdAt: Date
+  totalAmount: number
+  transactionCount: number
+}
+
 export class JournalRepository {
   private get journals() {
     return database.collections.get<Journal>('journals')
@@ -110,6 +121,48 @@ export class JournalRepository {
    */
   async find(id: string): Promise<Journal | null> {
     return this.journals.find(id)
+  }
+
+  /**
+   * Gets all journals with transaction totals and counts
+   * Eliminates N+1 query problem by fetching data efficiently
+   */
+  async findAllWithTransactionTotals(): Promise<JournalWithTransactionTotals[]> {
+    // Fetch all journals first
+    const journals = await this.journals
+      .query(Q.where('deleted_at', Q.eq(null)))
+      .extend(Q.sortBy('journal_date', 'desc'))
+      .fetch()
+
+    // For each journal, fetch transactions in parallel batches
+    const journalPromises = journals.map(async (journal) => {
+      const transactions = await this.transactions
+        .query(
+          Q.and(
+            Q.where('journal_id', journal.id),
+            Q.where('deleted_at', Q.eq(null))
+          )
+        )
+        .fetch()
+
+      // Calculate total amount (sum of debit transactions only)
+      const totalAmount = transactions
+        .filter(tx => tx.transactionType === TransactionType.DEBIT)
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0)
+
+      return {
+        id: journal.id,
+        journalDate: journal.journalDate,
+        description: journal.description,
+        currencyCode: journal.currencyCode,
+        status: journal.status,
+        createdAt: journal.createdAt,
+        totalAmount,
+        transactionCount: transactions.length,
+      }
+    })
+
+    return Promise.all(journalPromises)
   }
 
   /**

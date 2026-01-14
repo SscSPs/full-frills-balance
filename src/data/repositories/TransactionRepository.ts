@@ -104,6 +104,26 @@ export class TransactionRepository {
   }
 
   /**
+   * Gets all transactions for a specific journal
+   * Read-only drill-down from journals
+   * 
+   * @param journalId Journal ID to fetch transactions for
+   * @returns Array of transactions for the journal
+   */
+  async findByJournal(journalId: string): Promise<Transaction[]> {
+    return this.transactions
+      .query(
+        Q.and(
+          Q.where('journal_id', journalId),
+          Q.where('deleted_at', Q.eq(null))
+        )
+      )
+      .extend(Q.sortBy('transaction_date', 'asc'))
+      .extend(Q.sortBy('created_at', 'asc'))
+      .fetch()
+  }
+
+  /**
    * Updates a transaction
    */
   async update(

@@ -40,12 +40,8 @@ export default function AccountsScreen() {
   }
 
   const handleAccountPress = (account: Account) => {
-    // For now, just show basic account info
-    // TODO: Navigate to account details screen
     const formattedDate = new Date(account.createdAt).toLocaleDateString()
     const message = `Type: ${account.accountType}\nCurrency: ${account.currencyCode}\nCreated: ${formattedDate}`
-    
-    // Use a simple alert for now - could replace with a modal
     alert(`${account.name}\n\n${message}`)
   }
 
@@ -66,7 +62,7 @@ export default function AccountsScreen() {
     }
   }
 
-  const renderAccount = ({ item }: { item: any }) => (
+  const renderAccount = ({ item }: { item: Account }) => (
     <TouchableOpacity 
       style={styles.accountCard}
       onPress={() => handleAccountPress(item)}

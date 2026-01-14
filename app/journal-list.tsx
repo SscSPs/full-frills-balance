@@ -2,11 +2,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { database } from '@/src/data/database/Database';
-import { TransactionType } from '@/src/data/models/Transaction';
-import { journalRepository } from '@/src/data/repositories/JournalRepository';
+import { journalRepository, JournalWithTransactionTotals } from '@/src/data/repositories/JournalRepository';
 import { showErrorAlert } from '@/src/utils/alerts';
-import { Q } from '@nozbe/watermelondb';
+import { formatShortDate } from '@/src/utils/dateUtils';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -32,31 +30,15 @@ export default function JournalListScreen() {
   const borderColor = useThemeColor({ light: '#e9ecef', dark: '#333' }, 'background');
   const cardBackground = useThemeColor({ light: '#fff', dark: '#1a1a1a' }, 'background');
   
-  const [journals, setJournals] = useState<JournalWithAmount[]>([]);
+  const [journals, setJournals] = useState<JournalWithTransactionTotals[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadJournals = async () => {
+    const loadJournalsWithTotals = async () => {
       try {
-        console.log('Loading journals...');
-        const userJournals = await journalRepository.findAll();
-        console.log('Found journals:', userJournals.length, userJournals);
-        
-        // Convert to JournalWithAmount format with default values
-        const journalsWithAmounts = userJournals.map((journal: any) => ({
-          id: journal.id,
-          journalDate: journal.journalDate,
-          description: journal.description,
-          currencyCode: journal.currencyCode,
-          status: journal.status,
-          createdAt: journal.createdAt,
-          totalAmount: '0.00',
-          transactionCount: 0,
-        }));
-        
-        console.log('Setting journals:', journalsWithAmounts.length);
-        setJournals(journalsWithAmounts);
+        const journalsWithTotals = await journalRepository.findAllWithTransactionTotals();
+        setJournals(journalsWithTotals);
       } catch (error) {
         console.error('Error loading journals:', error);
         showErrorAlert(error, 'Failed to Load Journals');
@@ -66,84 +48,26 @@ export default function JournalListScreen() {
       }
     };
 
-    loadJournals();
+    loadJournalsWithTotals();
   }, []);
-
-  // Load transactions for each journal to calculate amounts
-  useEffect(() => {
-    const loadTransactionsForJournals = async () => {
-      if (journals.length === 0) return;
-
-      console.log('Loading transactions for journals...');
-      
-      const journalWithAmountsPromises = journals.map(async (journal) => {
-        try {
-          console.log(`Loading transactions for journal ${journal.id}...`);
-          
-          // Try different approaches to fetch transactions
-          let transactions: any[] | null = null;
-          
-          try {
-            // Method 1: Query transactions by journalId
-            transactions = await database.collections.get('transactions')
-              .query(Q.where('journal_id', journal.id))
-              .fetch();
-            console.log(`Method 1 - Query by journalId: ${transactions?.length || 0} transactions`);
-          } catch (error) {
-            console.log('Method 1 failed:', error);
-          }
-          
-          const validTransactions = transactions || [];
-          console.log(`Final transaction count for journal ${journal.id}: ${validTransactions.length}`);
-          
-          // Calculate total amount (sum of debit transactions only to avoid double counting)
-          const totalAmount = validTransactions.reduce((sum: number, tx: any) => {
-            // Only sum debit transactions to get the actual amount moved
-            if (tx.transactionType === TransactionType.DEBIT) {
-              const amount = parseFloat(tx.amount) || 0;
-              return sum + amount;
-            }
-            return sum;
-          }, 0);
-          
-          console.log(`Calculated amount for journal ${journal.id}: ${totalAmount}`);
-          
-          return {
-            ...journal,
-            totalAmount: totalAmount.toFixed(2),
-            transactionCount: validTransactions.length,
-          };
-        } catch (error) {
-          console.error(`Error loading transactions for journal ${journal.id}:`, error);
-          return {
-            ...journal,
-            totalAmount: '0.00',
-            transactionCount: 0,
-          };
-        }
-      });
-
-      const journalWithAmounts = await Promise.all(journalWithAmountsPromises);
-      console.log('Final journals with amounts:', journalWithAmounts);
-      setJournals(journalWithAmounts);
-    };
-
-    loadTransactionsForJournals();
-  }, [journals.length > 0 ? journals.map(j => j.id).join(',') : null]);
 
   const handleCreateJournal = () => {
     router.push('/journal-entry' as any)
   }
 
-  const handleJournalPress = (journal: JournalWithAmount) => {
+  const handleJournalPress = (journal: JournalWithTransactionTotals) => {
     const formattedDate = new Date(journal.journalDate).toLocaleDateString();
-    const message = `Description: ${journal.description || 'No description'}\nCurrency: ${journal.currencyCode}\nDate: ${formattedDate}\nStatus: ${journal.status}\nTransactions: ${journal.transactionCount || 0}`;
+    const message = `Description: ${journal.description || 'No description'}\nCurrency: ${journal.currencyCode}\nDate: ${formattedDate}\nStatus: ${journal.status}\nTransactions: ${journal.transactionCount}`;
     
     alert(`Journal Entry\n\n${message}`);
   }
 
-  const renderJournal = ({ item: journal }: { item: JournalWithAmount }) => {
-    const formattedDate = new Date(journal.journalDate).toLocaleDateString();
+  const handleViewTransactions = (journal: JournalWithTransactionTotals) => {
+    router.push(`/transaction-details?journalId=${journal.id}` as any);
+  }
+
+  const renderJournal = ({ item: journal }: { item: JournalWithTransactionTotals }) => {
+    const formattedDate = formatShortDate(journal.journalDate);
     
     return (
       <TouchableOpacity 
@@ -161,17 +85,24 @@ export default function JournalListScreen() {
         
         <View style={styles.journalFooter}>
           <ThemedText style={styles.journalAmount}>
-            {journal.totalAmount} {journal.currencyCode}
+            {journal.totalAmount.toFixed(2)} {journal.currencyCode}
           </ThemedText>
           <ThemedText style={styles.transactionCount}>
-            {journal.transactionCount || 0} transactions
+            {journal.transactionCount} transactions
           </ThemedText>
+        </View>
+        
+        <View style={styles.journalActions}>
+          <TouchableOpacity 
+            style={[styles.viewTransactionsButton, { backgroundColor: cardBackground }]}
+            onPress={() => handleViewTransactions(journal)}
+          >
+            <ThemedText style={styles.viewTransactionsButtonText}>View Transactions</ThemedText>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
-  }
-
-  console.log('Rendering JournalListScreen, journals:', journals.length, 'isLoading:', isLoading);
+  };
 
   if (isLoading) {
     return (
@@ -299,6 +230,22 @@ const styles = StyleSheet.create({
   transactionCount: {
     fontSize: 12,
     opacity: 0.6,
+  },
+  journalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  viewTransactionsButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  viewTransactionsButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

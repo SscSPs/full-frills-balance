@@ -8,14 +8,22 @@ import { useUser } from '../contexts/UserContext';
 
 export default function OnboardingScreen() {
   const [name, setName] = useState('');
+  const [isCompleting, setIsCompleting] = useState(false);
   const colorScheme = useColorScheme();
   const { updateUserName, completeOnboarding } = useUser();
 
   const handleContinue = async () => {
-    if (name.trim()) {
+    if (!name.trim()) return;
+    
+    setIsCompleting(true);
+    try {
       updateUserName(name.trim());
       await completeOnboarding();
       router.push('/account-creation' as any);
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -47,12 +55,16 @@ export default function OnboardingScreen() {
         <TouchableOpacity
           style={[
             styles.button,
-            { backgroundColor: name.trim() ? '#007AFF' : '#ccc' }
+            { 
+              backgroundColor: name.trim() && !isCompleting ? '#007AFF' : '#ccc' 
+            }
           ]}
           onPress={handleContinue}
-          disabled={!name.trim()}
+          disabled={!name.trim() || isCompleting}
         >
-          <ThemedText style={styles.buttonText}>Continue</ThemedText>
+          <ThemedText style={styles.buttonText}>
+            {isCompleting ? 'Setting up...' : 'Continue'}
+          </ThemedText>
         </TouchableOpacity>
       </View>
     </ThemedView>
