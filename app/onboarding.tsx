@@ -9,11 +9,12 @@ import { useUser } from '../contexts/UserContext';
 export default function OnboardingScreen() {
   const [name, setName] = useState('');
   const colorScheme = useColorScheme();
-  const { updateUserName } = useUser();
+  const { updateUserName, completeOnboarding } = useUser();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (name.trim()) {
       updateUserName(name.trim());
+      await completeOnboarding();
       router.push('/account-creation' as any);
     }
   };

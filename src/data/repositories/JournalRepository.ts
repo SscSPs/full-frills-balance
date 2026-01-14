@@ -24,6 +24,15 @@ export class JournalRepository {
     return database.collections.get<Transaction>('transactions')
   }
 
+  private journalFields(journal: any) {
+    return {
+      journalDate: journal.journalDate,
+      description: journal.description,
+      currencyCode: journal.currencyCode,
+      status: journal.status,
+    }
+  }
+
   /**
    * Creates a journal with its transactions
    * Enforces double-entry accounting: total debits must equal total credits
@@ -70,6 +79,27 @@ export class JournalRepository {
           })
         })
       }
+
+      return journal
+    })
+  }
+
+  /**
+   * Creates a journal without transactions (for testing)
+   */
+  async createJournalWithoutTransactions(
+    journalData: CreateJournalData
+  ): Promise<Journal> {
+    const { transactions: transactionData, ...journalFields } = journalData
+    
+    return database.write(async () => {
+      // Create the journal
+      const journal = await this.journals.create((j) => {
+        Object.assign(j, {
+          ...journalFields,
+          status: JournalStatus.POSTED,
+        })
+      })
 
       return journal
     })

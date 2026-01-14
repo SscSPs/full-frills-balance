@@ -19,6 +19,8 @@ export default function RootLayout() {
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="account-creation" options={{ headerShown: false }} />
           <Stack.Screen name="accounts" options={{ headerShown: false }} />
+          <Stack.Screen name="journal-list" options={{ headerShown: false }} />
+          <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>

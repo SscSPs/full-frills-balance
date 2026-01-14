@@ -1,23 +1,12 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 import { useUser } from '../contexts/UserContext';
 
 export default function IndexScreen() {
   const { isOnboardingCompleted } = useUser();
 
-  useEffect(() => {
-    // Use setTimeout to ensure navigation happens after layout is mounted
-    const timer = setTimeout(() => {
-      if (isOnboardingCompleted) {
-        router.replace('/accounts' as any);
-      } else {
-        router.replace('/onboarding' as any);
-      }
-    }, 0);
+  if (isOnboardingCompleted) {
+    return <Redirect href="/accounts" />;
+  }
 
-    return () => clearTimeout(timer);
-  }, [isOnboardingCompleted]);
-
-  // Return a loading indicator while determining route
-  return null;
+  return <Redirect href="/onboarding" />;
 }

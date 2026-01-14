@@ -27,6 +27,14 @@ export default function AccountsScreen() {
     loadAccounts()
   }, [])
 
+  const handleCreateJournal = () => {
+    router.push('/journal-entry' as any)
+  }
+
+  const handleViewJournals = () => {
+    router.push('/journal-list' as any)
+  }
+
   const handleCreateAccount = () => {
     router.push('/account-creation' as any)
   }
@@ -87,12 +95,26 @@ export default function AccountsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Your Accounts</Text>
-        <TouchableOpacity 
-          style={styles.createButton}
-          onPress={handleCreateAccount}
-        >
-          <Text style={styles.createButtonText}>+ Create Account</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={[styles.headerButton, styles.journalListButton]}
+            onPress={handleViewJournals}
+          >
+            <Text style={styles.headerButtonText}>📋 Journals</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.headerButton, styles.journalButton]}
+            onPress={handleCreateJournal}
+          >
+            <Text style={styles.headerButtonText}>+ Journal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.headerButton, styles.createButton]}
+            onPress={handleCreateAccount}
+          >
+            <Text style={styles.headerButtonText}>+ Account</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {accounts.length === 0 ? (
@@ -127,21 +149,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  journalButton: {
+    backgroundColor: '#10B981',
+  },
+  journalListButton: {
+    backgroundColor: '#8B5CF6',
+  },
+  createButton: {
+    backgroundColor: '#007AFF',
+  },
+  headerButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1a1a1a',
-  },
-  createButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   listContainer: {
     paddingHorizontal: 24,

@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { preferences } from '../src/utils/preferences';
 
 interface UserPreferences {
   userName: string;
@@ -14,12 +15,34 @@ interface UserContextType {
   updateCurrencyCode: (code: string) => void;
   updateTheme: (theme: 'light' | 'dark' | 'system') => void;
   isOnboardingCompleted: boolean;
+  completeOnboarding: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [userPreferences, setUserPreferencesState] = useState<UserPreferences | null>(null);
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false);
+
+  useEffect(() => {
+    // Load preferences on mount
+    const loadInitialData = async () => {
+      const prefs = await preferences.loadPreferences();
+      setIsOnboardingCompleted(prefs.onboardingCompleted);
+      
+      // Set default preferences if onboarding is completed
+      if (prefs.onboardingCompleted) {
+        setUserPreferencesState({
+          userName: '', // This should come from user profile in DB
+          currencyCode: prefs.defaultCurrencyCode || 'USD',
+          theme: prefs.theme || 'system',
+          language: 'en',
+        });
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   const setUserPreferences = (data: UserPreferences) => {
     setUserPreferencesState(data);
@@ -38,7 +61,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateCurrencyCode = (code: string) => {
+  const updateCurrencyCode = async (code: string) => {
     if (userPreferences) {
       setUserPreferencesState({ ...userPreferences, currencyCode: code });
     } else {
@@ -49,9 +72,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         language: 'en'
       });
     }
+    // Persist default currency preference
+    await preferences.setDefaultCurrencyCode(code);
   };
 
-  const updateTheme = (theme: 'light' | 'dark' | 'system') => {
+  const updateTheme = async (theme: 'light' | 'dark' | 'system') => {
     if (userPreferences) {
       setUserPreferencesState({ ...userPreferences, theme });
     } else {
@@ -62,9 +87,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         language: 'en'
       });
     }
+    // Persist theme preference
+    await preferences.setTheme(theme);
   };
 
-  const isOnboardingCompleted = userPreferences !== null && userPreferences.userName.trim() !== '';
+  const completeOnboarding = async () => {
+    await preferences.setOnboardingCompleted(true);
+    setIsOnboardingCompleted(true);
+  };
 
   return (
     <UserContext.Provider
@@ -75,6 +105,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         updateCurrencyCode,
         updateTheme,
         isOnboardingCompleted,
+        completeOnboarding,
       }}
     >
       {children}
