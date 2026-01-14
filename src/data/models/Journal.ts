@@ -1,7 +1,8 @@
 import { Model } from '@nozbe/watermelondb'
-import { children, date, field } from '@nozbe/watermelondb/decorators'
+import { date, field, relation } from '@nozbe/watermelondb/decorators'
 
 export enum JournalStatus {
+  DRAFT = 'DRAFT',
   POSTED = 'POSTED',
   REVERSED = 'REVERSED',
 }
@@ -21,5 +22,7 @@ export default class Journal extends Model {
   @date('deleted_at') deletedAt?: Date
 
   // Relations
-  @children('transactions') transactions!: any
+  @relation('transactions', 'journal_id') transactions!: any
+  @relation('journals', 'original_journal_id') originalJournal!: any
+  @relation('journals', 'reversing_journal_id') reversingJournal!: any
 }

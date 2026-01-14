@@ -3,7 +3,13 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
+      // Decorators first (legacy required by WatermelonDB)
       ['@babel/plugin-proposal-decorators', { legacy: true }],
+
+      // Class properties after decorators
+      ['@babel/plugin-proposal-class-properties', { loose: true }],
+
+      // MUST be last
       'react-native-reanimated/plugin',
     ],
   };

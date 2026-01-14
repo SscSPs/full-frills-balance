@@ -1,0 +1,203 @@
+import { useRouter } from 'expo-router'
+import React, { useEffect, useState } from 'react'
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { AccountType } from '../data/models/Account'
+import { accountRepository } from '../data/repositories/AccountRepository'
+
+export default function AccountsScreen() {
+  const router = useRouter()
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const userAccounts = await accountRepository.findAll()
+        setAccounts(userAccounts)
+      } catch (error) {
+        console.error('Failed to load accounts:', error)
+        Alert.alert('Error', 'Failed to load accounts')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadAccounts()
+  }, [])
+
+  const handleCreateAccount = () => {
+    router.push('/account-creation')
+  }
+
+  const handleAccountPress = (account: any) => {
+    // For now, just show an alert
+    Alert.alert(
+      account.name,
+      `Type: ${account.accountType}\nCurrency: ${account.currencyCode}\nCreated: ${new Date(account.createdAt).toLocaleDateString()}`
+    )
+  }
+
+  const getAccountTypeColor = (type: AccountType) => {
+    switch (type) {
+      case AccountType.ASSET:
+        return '#007AFF'
+      case AccountType.LIABILITY:
+        return '#FF6B6B'
+      case AccountType.EQUITY:
+        return '#10B981'
+      case AccountType.INCOME:
+        return '#059669'
+      case AccountType.EXPENSE:
+        return '#DC3545'
+      default:
+        return '#666'
+    }
+  }
+
+  const renderAccount = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+      style={styles.accountCard}
+      onPress={() => handleAccountPress(item)}
+    >
+      <View style={styles.accountHeader}>
+        <Text style={styles.accountName}>{item.name}</Text>
+        <View style={[styles.accountTypeBadge, { backgroundColor: getAccountTypeColor(item.accountType) }]}>
+          <Text style={styles.accountTypeText}>{item.accountType}</Text>
+        </View>
+      </View>
+      <Text style={styles.accountCurrency}>{item.currencyCode}</Text>
+    </TouchableOpacity>
+  )
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading accounts...</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Accounts</Text>
+        <TouchableOpacity 
+          style={styles.createButton}
+          onPress={handleCreateAccount}
+        >
+          <Text style={styles.createButtonText}>+ Create Account</Text>
+        </TouchableOpacity>
+      </View>
+
+      {accounts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No accounts yet. Create your first account to get started!
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={accounts}
+          renderItem={renderAccount}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  createButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  listContainer: {
+    paddingHorizontal: 24,
+  },
+  accountCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  accountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  accountName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  accountTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  accountTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  accountCurrency: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+  },
+})
