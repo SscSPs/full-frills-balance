@@ -7,17 +7,14 @@ import { transactionRepository } from '@/src/data/repositories/TransactionReposi
 import { TransactionWithAccountInfo } from '@/src/types/readModels';
 import { showErrorAlert } from '@/src/utils/alerts';
 import { formatDate } from '@/src/utils/dateUtils';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface TransactionDetailsProps {
-  journalId: string;
-}
-
-export default function TransactionDetailsScreen({ journalId }: TransactionDetailsProps) {
+export default function TransactionDetailsScreen() {
   const router = useRouter();
+  const { journalId } = useLocalSearchParams<{ journalId: string }>();
   const colorScheme = useColorScheme();
   
   // Theme colors
@@ -31,10 +28,20 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
 
   useEffect(() => {
     const loadTransactions = async () => {
+      if (!journalId) {
+        console.error('No journalId provided in URL parameters');
+        setError('No journal ID provided');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Loading transactions for journalId:', journalId);
+      
       try {
         setIsLoading(true);
         // Use new repository-owned read model
         const journalTransactions = await transactionRepository.findByJournalWithAccountInfo(journalId);
+        console.log('Found transactions:', journalTransactions.length);
         setTransactions(journalTransactions);
       } catch (error) {
         console.error('Error loading transactions:', error);
@@ -50,8 +57,8 @@ export default function TransactionDetailsScreen({ journalId }: TransactionDetai
 
   const renderTransaction = ({ item: transaction }: { item: TransactionWithAccountInfo }) => {
     const formattedDate = formatDate(transaction.transactionDate, { includeTime: true });
-    const formattedAmount = Math.abs(transaction.amount).toFixed(2);
-    const formattedRunningBalance = transaction.runningBalance !== undefined 
+    const formattedAmount = transaction.amount ? Math.abs(transaction.amount).toFixed(2) : '0.00';
+    const formattedRunningBalance = transaction.runningBalance !== undefined && transaction.runningBalance !== null
       ? transaction.runningBalance.toFixed(2) 
       : null;
     const transactionTypeColor = transaction.transactionType === TransactionType.DEBIT ? '#DC3545' : '#10B981';
