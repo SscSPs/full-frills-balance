@@ -1,92 +1,92 @@
+import { AppCard, AppText } from '@/components/core';
+import { Spacing } from '@/constants/design-tokens';
+import { useThemeColors } from '@/constants/theme-helpers';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/legacy/hello-wave';
-import ParallaxScrollView from '@/components/legacy/parallax-scroll-view';
-import { ThemedText } from '@/components/legacy/themed-text';
-import { ThemedView } from '@/components/legacy/themed-view';
 import { Link } from 'expo-router';
+import { Platform, StyleSheet, View } from 'react-native';
 
 export default function HomeScreen() {
+  const colorScheme = useColorScheme()
+  const themeMode = colorScheme === 'dark' ? 'dark' : 'light'
+  const theme = useThemeColors(themeMode)
+
+  
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
+    <View style={styles.container}>
+      <View style={[styles.header, { 
+        backgroundColor: theme.primaryLight
+      }]}>
         <Image
           source={require('@/assets/images/partial-react-logo.png')}
           style={styles.reactLogo}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
+      </View>
+      
+      <AppCard elevation="none" padding="lg" style={styles.titleContainer} themeMode={themeMode}>
+        <AppText variant="title" themeMode={themeMode}>Welcome!</AppText>
+        <AppText variant="body" color="primary" themeMode={themeMode}>👋</AppText>
+      </AppCard>
+      
+      <AppCard elevation="sm" padding="lg" style={styles.stepContainer} themeMode={themeMode}>
+        <AppText variant="heading" themeMode={themeMode}>Step 1: Try it</AppText>
+        <AppText variant="body" themeMode={themeMode}>
+          Edit <AppText variant="body" weight="semibold" themeMode={themeMode}>app/(tabs)/index.tsx</AppText> to see changes.
           Press{' '}
-          <ThemedText type="defaultSemiBold">
+          <AppText variant="body" weight="semibold" themeMode={themeMode}>
             {Platform.select({
               ios: 'cmd + d',
               android: 'cmd + m',
               web: 'F12',
             })}
-          </ThemedText>{' '}
+          </AppText>{' '}
           to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
+        </AppText>
+      </AppCard>
+      
+      <AppCard elevation="sm" padding="lg" style={styles.stepContainer} themeMode={themeMode}>
         <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
+          <AppText variant="heading" color="primary" themeMode={themeMode}>Step 2: Explore</AppText>
         </Link>
-
-        <ThemedText>
+        <AppText variant="body" themeMode={themeMode}>
           {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
+        </AppText>
+      </AppCard>
+      
+      <AppCard elevation="sm" padding="lg" style={styles.stepContainer} themeMode={themeMode}>
+        <AppText variant="heading" themeMode={themeMode}>Step 3: Get a fresh start</AppText>
+        <AppText variant="body" themeMode={themeMode}>
           {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+          <AppText variant="body" weight="semibold" themeMode={themeMode}>npm run reset-project</AppText> to get a fresh{' '}
+          <AppText variant="body" weight="semibold" themeMode={themeMode}>app</AppText> directory. This will move the current{' '}
+          <AppText variant="body" weight="semibold" themeMode={themeMode}>app</AppText> to{' '}
+          <AppText variant="body" weight="semibold" themeMode={themeMode}>app-example</AppText>.
+        </AppText>
+      </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    height: 200,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
   },
   stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+    marginHorizontal: Spacing.lg,
   },
   reactLogo: {
     height: 178,

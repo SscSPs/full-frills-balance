@@ -1,9 +1,7 @@
-import { ThemedText } from '@/components/legacy/themed-text';
-import { ThemedView } from '@/components/legacy/themed-view';
-import { AppConfig } from '@/constants';
+import { AppButton, AppCard, AppText } from '@/components/core';
+import { AppConfig, Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import Account, { AccountType } from '@/src/data/models/Account';
+import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -29,13 +27,10 @@ export default function JournalEntryScreen() {
   const router = useRouter()
   const { themePreference } = useUser()
   const colorScheme = useColorScheme()
-  
-  // Theme colors
-  const backgroundColor = useThemeColor({}, 'background')
-  const textColor = useThemeColor({}, 'text')
-  const borderColor = useThemeColor({ light: '#e9ecef', dark: '#333' }, 'background')
-  const cardBackground = useThemeColor({ light: '#f8f9fa', dark: '#1a1a1a' }, 'background')
-  const inputBackground = useThemeColor({ light: '#fff', dark: '#2a2a2a' }, 'background')
+  const themeMode: ThemeMode = themePreference === 'system' 
+    ? (colorScheme === 'dark' ? 'dark' : 'light') 
+    : themePreference
+  const theme = useThemeColors(themeMode)
   
   const [description, setDescription] = useState('')
   const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0])
@@ -50,113 +45,104 @@ export default function JournalEntryScreen() {
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        const userAccounts = await accountRepository.findAll()
-        setAccounts(userAccounts)
-      } catch (error) {
-        showErrorAlert(error, 'Failed to Load Accounts')
-      } finally {
-        setIsLoadingAccounts(false)
-      }
-    }
-
     loadAccounts()
   }, [])
 
+  const loadAccounts = async () => {
+    try {
+      const allAccounts = await accountRepository.findAll()
+      setAccounts(allAccounts)
+    } catch (error) {
+      console.error('Failed to load accounts:', error)
+      showErrorAlert('Failed to load accounts')
+    } finally {
+      setIsLoadingAccounts(false)
+    }
+  }
+
   const addLine = () => {
-    const newLine: JournalEntryLine = {
-      id: Date.now().toString(),
+    const newId = (Math.max(...lines.map(l => parseInt(l.id))) + 1).toString()
+    setLines([...lines, {
+      id: newId,
       accountId: '',
       accountName: '',
       accountType: AccountType.ASSET,
       amount: '',
       transactionType: TransactionType.DEBIT,
-      notes: '',
-    }
-    setLines([...lines, newLine])
+      notes: ''
+    }])
   }
 
   const removeLine = (id: string) => {
     if (lines.length > 2) {
       setLines(lines.filter(line => line.id !== id))
-    } else {
-      Alert.alert('Cannot Remove', 'A journal must have at least 2 lines')
     }
   }
 
-  const updateLine = (id: string, updates: Partial<JournalEntryLine>) => {
+  const updateLine = (id: string, field: keyof JournalEntryLine, value: any) => {
     setLines(lines.map(line => 
-      line.id === id ? { ...line, ...updates } : line
+      line.id === id ? { ...line, [field]: value } : line
     ))
   }
 
-  const selectAccount = (lineId: string, account: Account) => {
-    updateLine(lineId, {
-      accountId: account.id,
-      accountName: account.name,
-      accountType: account.accountType,
-    })
-  }
-
-  const openAccountPicker = (lineId: string) => {
-    setSelectedLineId(lineId)
-    setShowAccountPicker(true)
-  }
-
-  const closeAccountPicker = () => {
+  const selectAccount = (accountId: string) => {
+    if (!selectedLineId) return
+    
+    const account = accounts.find(acc => acc.id === accountId)
+    if (account) {
+      // Update all fields at once to avoid state conflicts
+      const updatedLine = {
+        accountId: accountId,
+        accountName: account.name,
+        accountType: account.accountType
+      }
+      
+      setLines(lines.map(line => 
+        line.id === selectedLineId ? { ...line, ...updatedLine } : line
+      ))
+    }
     setShowAccountPicker(false)
     setSelectedLineId(null)
   }
 
-  const handleAccountSelect = (account: Account) => {
-    if (selectedLineId) {
-      selectAccount(selectedLineId, account)
-    }
-    closeAccountPicker()
-  }
-
-  const validateJournal = (): { isValid: boolean; error?: string } => {
-    // Check if all lines have accounts and amounts
-    for (const line of lines) {
-      if (!line.accountId) {
-        return { isValid: false, error: 'All lines must have an account selected' }
-      }
-      
-      if (!line.amount.trim()) {
-        return { isValid: false, error: 'All lines must have an amount' }
-      }
-      
-      const amount = sanitizeAmount(line.amount)
-      if (amount === null || amount <= 0) {
-        return { isValid: false, error: 'All amounts must be positive numbers' }
-      }
-    }
-
-    // Calculate totals
-    const totalDebits = lines
+  const getTotalDebits = () => {
+    return lines
       .filter(line => line.transactionType === TransactionType.DEBIT)
       .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
-    
-    const totalCredits = lines
-      .filter(line => line.transactionType === TransactionType.CREDIT)
-      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
-
-    // Check if balanced
-    if (Math.abs(totalDebits - totalCredits) > 0.01) {
-      return { 
-        isValid: false, 
-        error: `Journal must balance: Debits (${totalDebits.toFixed(2)}) ≠ Credits (${totalCredits.toFixed(2)})` 
-      }
-    }
-
-    return { isValid: true }
   }
 
-  const handleCreateJournal = async () => {
+  const getTotalCredits = () => {
+    return lines
+      .filter(line => line.transactionType === TransactionType.CREDIT)
+      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
+  }
+
+  const isBalanced = Math.abs(getTotalDebits() - getTotalCredits()) < 0.01
+
+  const validateJournal = () => {
+    if (!description.trim()) {
+      return { valid: false, error: 'Description is required' }
+    }
+
+    if (lines.some(line => !line.accountId)) {
+      return { valid: false, error: 'All lines must have an account selected' }
+    }
+
+    if (lines.some(line => !line.amount || sanitizeAmount(line.amount) === 0)) {
+      return { valid: false, error: 'All lines must have a valid amount' }
+    }
+
+    if (!isBalanced) {
+      return { valid: false, error: 'Journal must be balanced (debits must equal credits)' }
+    }
+
+    return { valid: true, error: null }
+  }
+
+  const createJournal = async () => {
     const validation = validateJournal()
-    if (!validation.isValid) {
-      Alert.alert('Validation Error', validation.error)
+    if (!validation.valid) {
+      Alert.alert('Validation Error', validation.error || 'Validation failed')
       return
     }
 
@@ -176,264 +162,271 @@ export default function JournalEntryScreen() {
       }
 
       await journalRepository.createJournalWithTransactions(journalData)
-
-      showSuccessAlert(
-        'Journal Created',
-        'Journal entry has been created successfully!'
-      )
-      
-      // Navigate back immediately
-      router.back()
-      
+      showSuccessAlert('Journal entry created successfully')
+      router.push('/journal-list' as any)
     } catch (error) {
-      showErrorAlert(error, 'Failed to Create Journal')
+      console.error('Failed to create journal:', error)
+      showErrorAlert('Failed to create journal entry')
     } finally {
       setIsCreating(false)
     }
   }
 
-  const getTotalDebits = () => {
-    return lines
-      .filter(line => line.transactionType === TransactionType.DEBIT)
-      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
-  }
-
-  const getTotalCredits = () => {
-    return lines
-      .filter(line => line.transactionType === TransactionType.CREDIT)
-      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
-  }
-
-  const isBalanced = Math.abs(getTotalDebits() - getTotalCredits()) < 0.01
-
   if (isLoadingAccounts) {
     return (
-      <ThemedView style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ThemedText>Loading accounts...</ThemedText>
+          <AppText variant="body" themeMode={themeMode}>Loading accounts...</AppText>
         </View>
-      </ThemedView>
+      </View>
     )
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ThemedText style={styles.backButtonText}>←</ThemedText>
+          <AppText variant="body" themeMode={themeMode} style={styles.backButtonText}>←</AppText>
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Create Journal Entry</ThemedText>
+        <AppText variant="heading" themeMode={themeMode} style={styles.headerTitle}>Create Journal Entry</AppText>
         <TouchableOpacity onPress={() => router.push('/journal-list' as any)} style={styles.listButton}>
-          <ThemedText style={styles.listButtonText}>List</ThemedText>
+          <AppText variant="body" themeMode={themeMode} style={styles.listButtonText}>List</AppText>
         </TouchableOpacity>
       </View>
       
-      <ScrollView style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          Create Journal Entry
-        </ThemedText>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
+          <AppText variant="title" themeMode={themeMode}>Create Journal Entry</AppText>
+        </AppCard>
         
-        <View style={styles.inputContainer}>
-          <ThemedText style={styles.label}>Date</ThemedText>
+        <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+          <AppText variant="body" themeMode={themeMode} style={styles.label}>Date</AppText>
           <TextInput
-            style={[
-              styles.input,
-              { 
-                borderColor,
-                color: textColor,
-                backgroundColor: inputBackground,
-              }
-            ]}
+            style={[styles.input, { 
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              color: theme.text 
+            }]}
             value={journalDate}
             onChangeText={setJournalDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textSecondary}
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <ThemedText style={styles.label}>Description</ThemedText>
+          
+          <AppText variant="body" themeMode={themeMode} style={styles.label}>Description</AppText>
           <TextInput
-            style={[
-              styles.input,
-              { 
-                borderColor,
-                color: textColor,
-                backgroundColor: inputBackground,
-              }
-            ]}
+            style={[styles.input, styles.textArea, { 
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              color: theme.text 
+            }]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Optional description"
-            placeholderTextColor="#999"
+            placeholder="Enter description"
+            placeholderTextColor={theme.textSecondary}
+            multiline
           />
-        </View>
+        </AppCard>
 
-        <ThemedText style={styles.sectionTitle}>Journal Lines</ThemedText>
-        
-        {lines.map((line, index) => (
-          <View key={line.id} style={[styles.lineContainer, { backgroundColor: cardBackground }]}>
-            <View style={styles.lineHeader}>
-              <ThemedText style={styles.lineNumber}>Line {index + 1}</ThemedText>
-              {lines.length > 2 && (
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removeLine(line.id)}
-                >
-                  <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.lineInputs}>
+        <AppCard elevation="sm" padding="lg" style={styles.linesCard} themeMode={themeMode}>
+          <View style={styles.linesHeader}>
+            <AppText variant="heading" themeMode={themeMode}>Journal Lines</AppText>
+            <TouchableOpacity onPress={addLine} style={styles.addButton}>
+              <AppText variant="body" color="primary" themeMode={themeMode}>+ Add Line</AppText>
+            </TouchableOpacity>
+          </View>
+          
+          {lines.map((line, index) => (
+            <View key={line.id} style={[styles.lineContainer, { 
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border 
+            }]}>
+              <View style={styles.lineHeader}>
+                <AppText variant="subheading" themeMode={themeMode}>Line {index + 1}</AppText>
+                {lines.length > 2 && (
+                  <TouchableOpacity onPress={() => removeLine(line.id)} style={styles.removeButton}>
+                    <AppText variant="body" color="error" themeMode={themeMode}>Remove</AppText>
+                  </TouchableOpacity>
+                )}
+              </View>
+              
               <TouchableOpacity
-                style={[
-                  styles.accountSelector,
-                  { 
-                    borderColor,
-                    backgroundColor: inputBackground,
-                  }
-                ]}
-                onPress={() => openAccountPicker(line.id)}
+                style={[styles.accountSelector, { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border 
+                }]}
+                onPress={() => {
+                  setSelectedLineId(line.id)
+                  setShowAccountPicker(true)
+                }}
               >
-                <ThemedText style={line.accountName ? styles.accountText : styles.placeholderText}>
+                <AppText variant="body" themeMode={themeMode}>
                   {line.accountName || 'Select Account'}
-                </ThemedText>
+                </AppText>
+                <AppText variant="body" color="secondary" themeMode={themeMode}>▼</AppText>
               </TouchableOpacity>
-
+              
+              <View style={styles.lineRow}>
+                <View style={styles.halfWidth}>
+                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Type</AppText>
+                  <View style={styles.typeButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeButton,
+                        line.transactionType === TransactionType.DEBIT && styles.typeButtonActive,
+                        line.transactionType === TransactionType.DEBIT && { backgroundColor: theme.primary },
+                        { borderColor: theme.border }
+                      ]}
+                      onPress={() => updateLine(line.id, 'transactionType', TransactionType.DEBIT)}
+                    >
+                      <AppText 
+                        variant="body" 
+                        themeMode={themeMode}
+                        style={[
+                          line.transactionType === TransactionType.DEBIT && { color: theme.background }
+                        ]}
+                      >
+                        DEBIT
+                      </AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.typeButton,
+                        line.transactionType === TransactionType.CREDIT && styles.typeButtonActive,
+                        line.transactionType === TransactionType.CREDIT && { backgroundColor: theme.primary },
+                        { borderColor: theme.border }
+                      ]}
+                      onPress={() => updateLine(line.id, 'transactionType', TransactionType.CREDIT)}
+                    >
+                      <AppText 
+                        variant="body" 
+                        themeMode={themeMode}
+                        style={[
+                          line.transactionType === TransactionType.CREDIT && { color: theme.background }
+                        ]}
+                      >
+                        CREDIT
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                <View style={styles.halfWidth}>
+                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Amount</AppText>
+                  <TextInput
+                    style={[styles.input, { 
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                      color: theme.text 
+                    }]}
+                    value={line.amount}
+                    onChangeText={(value) => updateLine(line.id, 'amount', value)}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+              
+              <AppText variant="body" themeMode={themeMode} style={styles.label}>Notes</AppText>
               <TextInput
-                style={[
-                  styles.amountInput,
-                  { 
-                    borderColor,
-                    color: textColor,
-                    backgroundColor: inputBackground,
-                  }
-                ]}
-                value={line.amount}
-                onChangeText={(value) => updateLine(line.id, { amount: value })}
-                placeholder="0.00"
-                placeholderTextColor="#999"
-                keyboardType="decimal-pad"
+                style={[styles.input, { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  color: theme.text 
+                }]}
+                value={line.notes}
+                onChangeText={(value) => updateLine(line.id, 'notes', value)}
+                placeholder="Optional notes"
+                placeholderTextColor={theme.textSecondary}
               />
-
-              <TouchableOpacity
-                style={[
-                  styles.typeButton,
-                  line.transactionType === TransactionType.DEBIT ? styles.debitButton : styles.creditButton,
-                  { 
-                    borderColor,
-                  }
-                ]}
-                onPress={() => updateLine(line.id, {
-                  transactionType: line.transactionType === TransactionType.DEBIT 
-                    ? TransactionType.CREDIT 
-                    : TransactionType.DEBIT
-                })}
-              >
-                <ThemedText style={[
-                  styles.typeButtonText,
-                  line.transactionType === TransactionType.DEBIT ? styles.debitText : styles.creditText
-                ]}>
-                  {line.transactionType}
-                </ThemedText>
-              </TouchableOpacity>
             </View>
+          ))}
+        </AppCard>
 
-            <TextInput
-              style={[
-                styles.notesInput,
-                { 
-                  borderColor,
-                  color: textColor,
-                  backgroundColor: inputBackground,
-                }
-              ]}
-              value={line.notes}
-              onChangeText={(value) => updateLine(line.id, { notes: value })}
-              placeholder="Notes (optional)"
-              placeholderTextColor="#999"
-            />
+        <AppCard elevation="sm" padding="lg" style={styles.summaryCard} themeMode={themeMode}>
+          <View style={styles.summaryRow}>
+            <AppText variant="body" themeMode={themeMode}>Total Debits:</AppText>
+            <AppText variant="body" themeMode={themeMode}>${getTotalDebits().toFixed(2)}</AppText>
           </View>
-        ))}
+          <View style={styles.summaryRow}>
+            <AppText variant="body" themeMode={themeMode}>Total Credits:</AppText>
+            <AppText variant="body" themeMode={themeMode}>${getTotalCredits().toFixed(2)}</AppText>
+          </View>
+          <View style={styles.summaryRow}>
+            <AppText variant="heading" themeMode={themeMode}>Balance:</AppText>
+            <AppText 
+              variant="heading" 
+              color={isBalanced ? "success" : "error"}
+              themeMode={themeMode}
+            >
+              ${Math.abs(getTotalDebits() - getTotalCredits()).toFixed(2)}
+            </AppText>
+          </View>
+          <AppText 
+            variant="body" 
+            color={isBalanced ? "success" : "error"}
+            themeMode={themeMode}
+            style={styles.balanceText}
+          >
+            {isBalanced ? '✓ Journal is balanced' : '✗ Journal must be balanced'}
+          </AppText>
+        </AppCard>
 
-        <TouchableOpacity style={styles.addLineButton} onPress={addLine}>
-          <ThemedText style={styles.addLineButtonText}>+ Add Line</ThemedText>
-        </TouchableOpacity>
-
-        <View style={[styles.totalsContainer, { backgroundColor: cardBackground }]}>
-          <View style={styles.totalRow}>
-            <ThemedText style={styles.totalLabel}>Total Debits:</ThemedText>
-            <ThemedText style={styles.totalAmount}>{getTotalDebits().toFixed(2)}</ThemedText>
-          </View>
-          <View style={styles.totalRow}>
-            <ThemedText style={styles.totalLabel}>Total Credits:</ThemedText>
-            <ThemedText style={styles.totalAmount}>{getTotalCredits().toFixed(2)}</ThemedText>
-          </View>
-          <View style={[styles.balanceRow, { backgroundColor: isBalanced ? '#10B981' : '#EF4444' }]}>
-            <ThemedText style={styles.balanceText}>
-              {isBalanced ? '✓ Balanced' : '✗ Not Balanced'}
-            </ThemedText>
-          </View>
-        </View>
-
-        <TouchableOpacity 
-          style={[
-            styles.button, 
-            (!isBalanced || isCreating) && styles.buttonDisabled
-          ]}
-          onPress={handleCreateJournal}
-          disabled={!isBalanced || isCreating}
-        >
-          <ThemedText style={styles.buttonText}>
+        <View style={styles.actions}>
+          <AppButton
+            variant="primary"
+            onPress={createJournal}
+            disabled={!isBalanced || isCreating}
+            themeMode={themeMode}
+            style={styles.createButton}
+          >
             {isCreating ? 'Creating...' : 'Create Journal'}
-          </ThemedText>
-        </TouchableOpacity>
+          </AppButton>
+        </View>
       </ScrollView>
 
       {/* Account Picker Modal */}
       <Modal
         visible={showAccountPicker}
+        transparent
         animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeAccountPicker}
+        onRequestClose={() => setShowAccountPicker(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <ThemedText style={styles.modalTitle}>Select Account</ThemedText>
-            <TouchableOpacity onPress={closeAccountPicker} style={styles.closeButton}>
-              <ThemedText style={styles.closeButtonText}>✕</ThemedText>
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={accounts}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }: {item: Account}) => (
-              <TouchableOpacity
-                style={[
-                  styles.accountItem,
-                  { 
-                    borderColor,
-                    backgroundColor: inputBackground,
-                  }
-                ]}
-                onPress={() => handleAccountSelect(item)}
-              >
-                <View style={styles.accountItemContent}>
-                  <ThemedText style={styles.accountItemName}>{item.name}</ThemedText>
-                  <View style={styles.accountItemDetails}>
-                    <ThemedText style={styles.accountItemType}>{item.accountType}</ThemedText>
-                    <ThemedText style={styles.accountItemCurrency}>{item.currencyCode}</ThemedText>
-                  </View>
-                </View>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+            <View style={styles.modalHeader}>
+              <AppText variant="heading" themeMode={themeMode}>Select Account</AppText>
+              <TouchableOpacity onPress={() => setShowAccountPicker(false)}>
+                <AppText variant="body" color="secondary" themeMode={themeMode}>✕</AppText>
               </TouchableOpacity>
-            )}
-            style={styles.accountsList}
-          />
-        </SafeAreaView>
+            </View>
+            
+            <FlatList
+              data={accounts}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.accountItem, { 
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border 
+                  }]}
+                  onPress={() => selectAccount(item.id)}
+                >
+                  <View>
+                    <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
+                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                      {item.accountType} • {item.currencyCode}
+                    </AppText>
+                  </View>
+                </TouchableOpacity>
+              )}
+              style={styles.accountsList}
+            />
+          </View>
+        </View>
       </Modal>
-    </ThemedView>
+    </SafeAreaView>
   )
 }
 
@@ -441,276 +434,165 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  listButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#007AFF',
-    borderRadius: 16,
-  },
-  listButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 24,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
-  inputContainer: {
-    marginBottom: 20,
+  backButton: {
+    padding: Spacing.sm,
+  },
+  backButtonText: {
+    fontSize: 20,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  listButton: {
+    padding: Spacing.sm,
+  },
+  listButtonText: {
+    fontSize: 16,
+  },
+  content: {
+    flex: 1,
+  },
+  titleCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  inputCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  linesCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  summaryCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
+    fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: Shape.radius.md,
+    padding: Spacing.md,
     fontSize: 16,
+    marginBottom: Spacing.md,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 24,
-    marginBottom: 16,
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  linesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  addButton: {
+    padding: Spacing.sm,
   },
   lineContainer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: Shape.radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
   },
   lineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  lineNumber: {
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: Spacing.md,
   },
   removeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: '#EF4444',
-    borderRadius: 4,
-  },
-  removeButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  lineInputs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    padding: Spacing.sm,
   },
   accountSelector: {
-    flex: 2,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    justifyContent: 'center',
+    borderRadius: Shape.radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  accountText: {
-    fontSize: 14,
+  lineRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  placeholderText: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  amountInput: {
+  halfWidth: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    textAlign: 'right',
+  },
+  typeButtons: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
   typeButton: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: Shape.radius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
   },
-  debitButton: {
-    backgroundColor: '#3B82F6',
+  typeButtonActive: {
+    // Handled by inline styles for theme colors
   },
-  creditButton: {
-    backgroundColor: '#10B981',
-  },
-  typeButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  debitText: {
-    color: '#fff',
-  },
-  creditText: {
-    color: '#fff',
-  },
-  notesInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-  },
-  addLineButton: {
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  addLineButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalsContainer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
-  },
-  totalRow: {
+  summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  totalAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
-    borderRadius: 4,
-    marginTop: 8,
+    marginBottom: Spacing.sm,
   },
   balanceText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
+  actions: {
+    padding: Spacing.lg,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  createButton: {
+    marginBottom: Spacing.xl,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Modal styles
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: Shape.radius.xl,
+    borderTopRightRadius: Shape.radius.xl,
+    maxHeight: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   accountsList: {
     flex: 1,
   },
   accountItem: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 8,
-    marginHorizontal: 16,
-  },
-  accountItemContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  accountItemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-  },
-  accountItemDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  accountItemType: {
-    fontSize: 12,
-    fontWeight: '500',
-    opacity: 0.7,
-  },
-  accountItemCurrency: {
-    fontSize: 12,
-    fontWeight: '500',
-    opacity: 0.7,
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
   },
 })
