@@ -36,6 +36,19 @@ export default function OnboardingScreen() {
     }
   };
 
+  const handleSkip = async () => {
+    setIsCompleting(true);
+    try {
+      // Skip onboarding and go directly to accounts
+      completeOnboarding();
+      router.push('/accounts' as any);
+    } catch (error) {
+      console.error('Failed to skip onboarding:', error);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
@@ -64,16 +77,29 @@ export default function OnboardingScreen() {
           />
         </AppCard>
         
-        <AppButton
-          variant="primary"
-          size="lg"
-          onPress={handleContinue}
-          disabled={!name.trim() || isCompleting}
-          themeMode={themeMode}
-          style={styles.continueButton}
-        >
-          {isCompleting ? 'Setting up...' : 'Continue'}
-        </AppButton>
+        <View style={styles.buttonContainer}>
+          <AppButton
+            variant="primary"
+            size="lg"
+            onPress={handleContinue}
+            disabled={!name.trim() || isCompleting}
+            themeMode={themeMode}
+            style={styles.continueButton}
+          >
+            {isCompleting ? 'Setting up...' : 'Continue'}
+          </AppButton>
+          
+          <AppButton
+            variant="outline"
+            size="lg"
+            onPress={handleSkip}
+            disabled={isCompleting}
+            themeMode={themeMode}
+            style={styles.skipButton}
+          >
+            Skip for now
+          </AppButton>
+        </View>
       </View>
     </View>
   );
@@ -107,7 +133,13 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     fontSize: 16,
   },
+  buttonContainer: {
+    gap: Spacing.md,
+  },
   continueButton: {
-    marginTop: Spacing.xl,
+    marginBottom: Spacing.md,
+  },
+  skipButton: {
+    // Skip button uses outline variant, no additional styling needed
   },
 });

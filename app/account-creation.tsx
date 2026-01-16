@@ -6,6 +6,7 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { ValidationError } from '@/src/utils/errors'
 import { sanitizeInput, validateAccountName } from '@/src/utils/validation'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
@@ -27,6 +28,16 @@ export default function AccountCreationScreen() {
   const [accountName, setAccountName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET)
   const [isCreating, setIsCreating] = useState(false)
+
+  const handleCancel = () => {
+    // Go back to previous screen
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      // If no previous screen, go to accounts
+      router.push('/accounts' as any)
+    }
+  }
 
   const handleCreateAccount = async () => {
     // Validate and sanitize input
@@ -76,6 +87,24 @@ export default function AccountCreationScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header with back button */}
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <TouchableOpacity 
+          onPress={handleCancel}
+          style={styles.backButton}
+        >
+          <Ionicons 
+            name="chevron-back" 
+            size={24} 
+            color={theme.text} 
+          />
+        </TouchableOpacity>
+        <AppText variant="subheading" themeMode={themeMode}>
+          Create Account
+        </AppText>
+        <View style={styles.placeholder} />
+      </View>
+
       <ScrollView style={styles.content}>
         <AppText variant="heading" themeMode={themeMode} style={styles.title}>
           Create Your First Account
@@ -161,6 +190,21 @@ export default function AccountCreationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: Spacing.sm,
+    borderRadius: Shape.radius.sm,
+  },
+  placeholder: {
+    width: 32, // Same width as back button for centering
   },
   content: {
     flex: 1,

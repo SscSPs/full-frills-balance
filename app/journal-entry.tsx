@@ -32,6 +32,17 @@ export default function JournalEntryScreen() {
     : themePreference
   const theme = useThemeColors(themeMode)
   
+  // Guided mode state
+  const [isGuidedMode, setIsGuidedMode] = useState(true)
+  
+  // Simple mode state
+  const [transactionType, setTransactionType] = useState<'expense' | 'income' | 'transfer'>('expense')
+  const [fromAccount, setFromAccount] = useState('')
+  const [toAccount, setToAccount] = useState('')
+  const [amount, setAmount] = useState('')
+  const [category, setCategory] = useState('')
+  
+  // Advanced mode state (existing)
   const [description, setDescription] = useState('')
   const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0])
   const [lines, setLines] = useState<JournalEntryLine[]>([
@@ -139,6 +150,116 @@ export default function JournalEntryScreen() {
     return { valid: true, error: null }
   }
 
+  const createGuidedJournal = async () => {
+    // Validate guided mode inputs
+    if (!fromAccount || !amount || sanitizeAmount(amount) === 0 || amount === '') {
+      Alert.alert('Validation Error', 'Please enter a valid amount greater than 0')
+      return
+    }
+
+    // Additional validation to prevent alphabetic characters
+    if (!/^\d*\.?\d*$/.test(amount.trim())) {
+      Alert.alert('Validation Error', 'Amount can only contain numbers and a decimal point')
+      return
+    }
+
+    if (transactionType === 'transfer' && !toAccount) {
+      Alert.alert('Validation Error', 'Please select a destination account for transfer')
+      return
+    }
+
+    setIsCreating(true)
+    
+    try {
+      const sanitizedAmount = sanitizeAmount(amount)!
+      let journalData: CreateJournalData
+
+      if (transactionType === 'expense') {
+        // Expense: From account (asset) debit, To account (expense) credit
+        const expenseAccount = accounts.find(acc => acc.accountType === AccountType.EXPENSE)
+        if (!expenseAccount) {
+          throw new Error('No expense account found. Please create an expense account first.')
+        }
+
+        journalData = {
+          journalDate: Date.now(),
+          description: category || 'Expense',
+          currencyCode: AppConfig.defaultCurrency,
+          transactions: [
+            {
+              accountId: fromAccount,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.DEBIT,
+              notes: category
+            },
+            {
+              accountId: expenseAccount.id,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.CREDIT,
+              notes: category
+            }
+          ]
+        }
+      } else if (transactionType === 'income') {
+        // Income: From account (income) credit, To account (asset) debit
+        const incomeAccount = accounts.find(acc => acc.accountType === AccountType.INCOME)
+        if (!incomeAccount) {
+          throw new Error('No income account found. Please create an income account first.')
+        }
+
+        journalData = {
+          journalDate: Date.now(),
+          description: category || 'Income',
+          currencyCode: AppConfig.defaultCurrency,
+          transactions: [
+            {
+              accountId: incomeAccount.id,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.CREDIT,
+              notes: category
+            },
+            {
+              accountId: toAccount || fromAccount,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.DEBIT,
+              notes: category
+            }
+          ]
+        }
+      } else {
+        // Transfer: From account credit, To account debit
+        journalData = {
+          journalDate: Date.now(),
+          description: 'Transfer',
+          currencyCode: AppConfig.defaultCurrency,
+          transactions: [
+            {
+              accountId: fromAccount,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.CREDIT,
+              notes: 'Transfer'
+            },
+            {
+              accountId: toAccount,
+              amount: sanitizedAmount,
+              transactionType: TransactionType.DEBIT,
+              notes: 'Transfer'
+            }
+          ]
+        }
+      }
+
+      await journalRepository.createJournalWithTransactions(journalData)
+      showSuccessAlert('Success', 'Transaction created successfully')
+      router.push('/journal-list' as any)
+    } catch (error) {
+      console.error('Failed to create guided journal:', error)
+      showErrorAlert('Failed to create transaction')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   const createJournal = async () => {
     const validation = validateJournal()
     if (!validation.valid) {
@@ -162,7 +283,7 @@ export default function JournalEntryScreen() {
       }
 
       await journalRepository.createJournalWithTransactions(journalData)
-      showSuccessAlert('Journal entry created successfully')
+      showSuccessAlert('Success', 'Journal entry created successfully')
       router.push('/journal-list' as any)
     } catch (error) {
       console.error('Failed to create journal:', error)
@@ -188,40 +309,271 @@ export default function JournalEntryScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <AppText variant="body" themeMode={themeMode} style={styles.backButtonText}>←</AppText>
         </TouchableOpacity>
-        <AppText variant="heading" themeMode={themeMode} style={styles.headerTitle}>Create Journal Entry</AppText>
+        <AppText variant="heading" themeMode={themeMode} style={styles.headerTitle}>
+          {isGuidedMode ? 'Add Transaction' : 'Create Journal Entry'}
+        </AppText>
         <TouchableOpacity onPress={() => router.push('/journal-list' as any)} style={styles.listButton}>
           <AppText variant="body" themeMode={themeMode} style={styles.listButtonText}>List</AppText>
         </TouchableOpacity>
       </View>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
-          <AppText variant="title" themeMode={themeMode}>Create Journal Entry</AppText>
+        {/* Mode Toggle */}
+        <AppCard elevation="sm" padding="lg" style={styles.modeToggleCard} themeMode={themeMode}>
+          <View style={styles.modeToggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                isGuidedMode && styles.modeButtonActive,
+                { backgroundColor: isGuidedMode ? theme.primary : theme.surface }
+              ]}
+              onPress={() => setIsGuidedMode(true)}
+            >
+              <AppText 
+                variant="body" 
+                themeMode={themeMode}
+                style={{ color: isGuidedMode ? '#fff' : theme.text }}
+              >
+                Simple
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                !isGuidedMode && styles.modeButtonActive,
+                { backgroundColor: !isGuidedMode ? theme.primary : theme.surface }
+              ]}
+              onPress={() => setIsGuidedMode(false)}
+            >
+              <AppText 
+                variant="body" 
+                themeMode={themeMode}
+                style={{ color: !isGuidedMode ? '#fff' : theme.text }}
+              >
+                Advanced
+              </AppText>
+            </TouchableOpacity>
+          </View>
         </AppCard>
-        
-        <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
-          <AppText variant="body" themeMode={themeMode} style={styles.label}>Date</AppText>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-              color: theme.text 
-            }]}
-            value={journalDate}
-            onChangeText={setJournalDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={theme.textSecondary}
-          />
-          
-          <AppText variant="body" themeMode={themeMode} style={styles.label}>Description</AppText>
-          <TextInput
-            style={[styles.input, styles.textArea, { 
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-              color: theme.text 
-            }]}
-            value={description}
-            onChangeText={setDescription}
+
+        {isGuidedMode ? (
+          // Guided Mode UI
+          <View>
+            <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+              <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                Transaction Type
+              </AppText>
+              <View style={styles.transactionTypeContainer}>
+                {(['expense', 'income', 'transfer'] as const).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.transactionTypeButton,
+                      transactionType === type && styles.transactionTypeButtonSelected,
+                      { 
+                        backgroundColor: transactionType === type ? theme.primary : theme.surface,
+                        borderColor: theme.border
+                      }
+                    ]}
+                    onPress={() => setTransactionType(type)}
+                  >
+                    <AppText 
+                      variant="body" 
+                      themeMode={themeMode}
+                      style={{ 
+                        color: transactionType === type ? '#fff' : theme.text,
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {type}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </AppCard>
+
+            <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+              <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                {transactionType === 'transfer' ? 'From Account' : 'Account'}
+              </AppText>
+              <View style={styles.accountSelector}>
+                {accounts
+                  .filter(acc => 
+                    transactionType === 'expense' 
+                      ? acc.accountType === AccountType.ASSET || acc.accountType === AccountType.LIABILITY
+                      : transactionType === 'income'
+                      ? acc.accountType === AccountType.ASSET
+                      : true // Transfer: all accounts
+                  )
+                  .map((account) => (
+                    <TouchableOpacity
+                      key={account.id}
+                      style={[
+                        styles.accountOption,
+                        fromAccount === account.id && styles.accountOptionSelected,
+                        { 
+                          backgroundColor: fromAccount === account.id ? theme.primary : theme.surface,
+                          borderColor: theme.border
+                        }
+                      ]}
+                      onPress={() => setFromAccount(account.id)}
+                    >
+                      <AppText 
+                        variant="body" 
+                        themeMode={themeMode}
+                        style={{ 
+                          color: fromAccount === account.id ? '#fff' : theme.text 
+                        }}
+                      >
+                        {account.name}
+                      </AppText>
+                      <AppText 
+                        variant="caption" 
+                        color="secondary"
+                        themeMode={themeMode}
+                        style={{ 
+                          color: fromAccount === account.id ? '#fff' : theme.textSecondary 
+                        }}
+                      >
+                        {account.accountType}
+                      </AppText>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            </AppCard>
+
+            {transactionType === 'transfer' && (
+              <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+                <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                  To Account
+                </AppText>
+                <View style={styles.accountSelector}>
+                  {accounts
+                    .filter(acc => acc.id !== fromAccount)
+                    .map((account) => (
+                      <TouchableOpacity
+                        key={account.id}
+                        style={[
+                          styles.accountOption,
+                          toAccount === account.id && styles.accountOptionSelected,
+                          { 
+                            backgroundColor: toAccount === account.id ? theme.primary : theme.surface,
+                            borderColor: theme.border
+                          }
+                        ]}
+                        onPress={() => setToAccount(account.id)}
+                      >
+                        <AppText 
+                          variant="body" 
+                          themeMode={themeMode}
+                          style={{ 
+                            color: toAccount === account.id ? '#fff' : theme.text 
+                          }}
+                        >
+                          {account.name}
+                        </AppText>
+                        <AppText 
+                          variant="caption" 
+                          color="secondary"
+                          themeMode={themeMode}
+                          style={{ 
+                            color: toAccount === account.id ? '#fff' : theme.textSecondary 
+                          }}
+                        >
+                          {account.accountType}
+                        </AppText>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              </AppCard>
+            )}
+
+            <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+              <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                Amount
+              </AppText>
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  color: theme.text 
+                }]}
+                value={amount}
+                onChangeText={(text) => {
+                  // Only allow numbers and decimal point
+                  const cleanedText = text.replace(/[^0-9.]/g, '')
+                  // Prevent multiple decimal points
+                  const parts = cleanedText.split('.')
+                  if (parts.length > 2) return
+                  if (parts.length === 2 && parts[1].length > 2) return
+                  setAmount(cleanedText)
+                }}
+                placeholder="0.00"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="numeric"
+              />
+            </AppCard>
+
+            {transactionType !== 'transfer' && (
+              <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+                <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                  Category (Optional)
+                </AppText>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    color: theme.text 
+                  }]}
+                  value={category}
+                  onChangeText={setCategory}
+                  placeholder={`e.g., ${transactionType === 'expense' ? 'Groceries, Gas' : 'Salary, Freelance'}`}
+                  placeholderTextColor={theme.textSecondary}
+                />
+              </AppCard>
+            )}
+
+            <AppButton
+              variant="primary"
+              size="lg"
+              onPress={createGuidedJournal}
+              disabled={isCreating}
+              themeMode={themeMode}
+              style={styles.createButton}
+            >
+              {isCreating ? 'Creating...' : `Create ${transactionType}`}
+            </AppButton>
+          </View>
+        ) : (
+          // Advanced Mode UI (existing)
+          <View>
+            <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
+              <AppText variant="title" themeMode={themeMode}>Create Journal Entry</AppText>
+            </AppCard>
+            
+            <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
+              <AppText variant="body" themeMode={themeMode} style={styles.label}>Date</AppText>
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  color: theme.text 
+                }]}
+                value={journalDate}
+                onChangeText={setJournalDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={theme.textSecondary}
+              />
+              
+              <AppText variant="body" themeMode={themeMode} style={styles.label}>Description</AppText>
+              <TextInput
+                style={[styles.input, styles.textArea, { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  color: theme.text 
+                }]}
+                value={description}
+                onChangeText={setDescription}
             placeholder="Enter description"
             placeholderTextColor={theme.textSecondary}
             multiline
@@ -384,6 +736,8 @@ export default function JournalEntryScreen() {
             {isCreating ? 'Creating...' : 'Create Journal'}
           </AppButton>
         </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Account Picker Modal */}
@@ -466,6 +820,61 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  modeToggleCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+    borderRadius: Shape.radius.md,
+    padding: Spacing.xs,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Shape.radius.sm,
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    // Shadow for active state
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.md,
+    fontWeight: '600',
+  },
+  transactionTypeContainer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  transactionTypeButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Shape.radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  transactionTypeButtonSelected: {
+    borderWidth: 2,
+  },
+  accountSelector: {
+    gap: Spacing.sm,
+  },
+  accountOption: {
+    padding: Spacing.md,
+    borderRadius: Shape.radius.md,
+    borderWidth: 1,
+  },
+  accountOptionSelected: {
+    borderWidth: 2,
+  },
   titleCard: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
@@ -521,11 +930,11 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: Spacing.sm,
   },
-  accountSelector: {
+  accountItem: {
+    padding: Spacing.md,
     borderWidth: 1,
     borderRadius: Shape.radius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -587,12 +996,5 @@ const styles = StyleSheet.create({
   },
   accountsList: {
     flex: 1,
-  },
-  accountItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
   },
 })

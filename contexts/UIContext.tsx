@@ -12,8 +12,9 @@
  * ========================================
  */
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
+import { preferences } from '../src/utils/preferences'
 
 // Simple UI state only - no domain data
 interface UIState {
@@ -25,12 +26,13 @@ interface UIState {
   
   // Simple UI flags
   isLoading: boolean
+  isInitialized: boolean // Track if preferences are loaded
 }
 
 interface UIContextType extends UIState {
   // Actions for UI state only
-  completeOnboarding: () => void
-  setThemePreference: (theme: 'light' | 'dark' | 'system') => void
+  completeOnboarding: () => Promise<void>
+  setThemePreference: (theme: 'light' | 'dark' | 'system') => Promise<void>
   setLoading: (loading: boolean) => void
 }
 
@@ -43,14 +45,52 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     hasCompletedOnboarding: false,
     themePreference: 'system',
     isLoading: false,
+    isInitialized: false,
   })
 
-  const completeOnboarding = () => {
-    setUIState(prev => ({ ...prev, hasCompletedOnboarding: true }))
+  // Load preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        setUIState(prev => ({ ...prev, isLoading: true }))
+        
+        const loadedPreferences = await preferences.loadPreferences()
+        
+        setUIState({
+          hasCompletedOnboarding: loadedPreferences.onboardingCompleted,
+          themePreference: loadedPreferences.theme || 'system',
+          isLoading: false,
+          isInitialized: true,
+        })
+      } catch (error) {
+        console.warn('Failed to load preferences:', error)
+        setUIState(prev => ({ ...prev, isLoading: false, isInitialized: true }))
+      }
+    }
+
+    loadPreferences()
+  }, [])
+
+  const completeOnboarding = async () => {
+    try {
+      await preferences.setOnboardingCompleted(true)
+      setUIState(prev => ({ ...prev, hasCompletedOnboarding: true }))
+    } catch (error) {
+      console.warn('Failed to save onboarding state:', error)
+      // Still update local state for better UX
+      setUIState(prev => ({ ...prev, hasCompletedOnboarding: true }))
+    }
   }
 
-  const setThemePreference = (theme: 'light' | 'dark' | 'system') => {
-    setUIState(prev => ({ ...prev, themePreference: theme }))
+  const setThemePreference = async (theme: 'light' | 'dark' | 'system') => {
+    try {
+      await preferences.setTheme(theme)
+      setUIState(prev => ({ ...prev, themePreference: theme }))
+    } catch (error) {
+      console.warn('Failed to save theme preference:', error)
+      // Still update local state for better UX
+      setUIState(prev => ({ ...prev, themePreference: theme }))
+    }
   }
 
   const setLoading = (loading: boolean) => {
