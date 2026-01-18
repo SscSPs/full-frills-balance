@@ -16,6 +16,7 @@ export default class Transaction extends Model {
   @field('currency_code') currencyCode!: string
   @field('transaction_date') transactionDate!: number
   @field('notes') notes?: string
+  @field('exchange_rate') exchangeRate?: number // For multi-currency transactions
   @field('running_balance') runningBalance?: number // Rebuildable cache only
 
   @date('created_at') createdAt!: Date

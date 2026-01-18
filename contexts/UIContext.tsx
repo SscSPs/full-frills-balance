@@ -20,10 +20,10 @@ import { preferences } from '../src/utils/preferences'
 interface UIState {
   // Onboarding state
   hasCompletedOnboarding: boolean
-  
+
   // Theme preference
   themePreference: 'light' | 'dark' | 'system'
-  
+
   // Simple UI flags
   isLoading: boolean
   isInitialized: boolean // Track if preferences are loaded
@@ -40,7 +40,7 @@ const UIContext = createContext<UIContextType | undefined>(undefined)
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme()
-  
+
   const [uiState, setUIState] = useState<UIState>({
     hasCompletedOnboarding: false,
     themePreference: 'system',
@@ -53,14 +53,21 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     const loadPreferences = async () => {
       try {
         setUIState(prev => ({ ...prev, isLoading: true }))
-        
+
         const loadedPreferences = await preferences.loadPreferences()
-        
+
         setUIState({
           hasCompletedOnboarding: loadedPreferences.onboardingCompleted,
           themePreference: loadedPreferences.theme || 'system',
           isLoading: false,
           isInitialized: true,
+        })
+
+        // Initialize currencies if needed (async, don't block UI)
+        import('../src/services/currency-init-service').then(({ currencyInitService }) => {
+          currencyInitService.initialize().catch(err => {
+            console.warn('Failed to initialize currencies:', err)
+          })
         })
       } catch (error) {
         console.warn('Failed to load preferences:', error)

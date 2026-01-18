@@ -1,5 +1,7 @@
 import { Q } from '@nozbe/watermelondb'
+import { auditService } from '../../services/audit-service'
 import { database } from '../database/Database'
+import { AuditAction } from '../models/AuditLog'
 import Journal, { JournalStatus } from '../models/Journal'
 import Transaction, { TransactionType } from '../models/Transaction'
 
@@ -12,6 +14,7 @@ export interface CreateJournalData {
     amount: number
     transactionType: TransactionType
     notes?: string
+    exchangeRate?: number // For multi-currency transactions
   }>
 }
 
@@ -57,7 +60,7 @@ export class JournalRepository {
     const totalDebits = transactionData
       .filter(t => t.transactionType === TransactionType.DEBIT)
       .reduce((sum, t) => sum + t.amount, 0)
-    
+
     const totalCredits = transactionData
       .filter(t => t.transactionType === TransactionType.CREDIT)
       .reduce((sum, t) => sum + t.amount, 0)
@@ -85,11 +88,25 @@ export class JournalRepository {
             journalId: journal.id,
             transactionDate: journalData.journalDate,
             currencyCode: journalData.currencyCode,
+            exchangeRate: txData.exchangeRate,
             // Never set running_balance during creation
             running_balance: undefined,
           })
         })
       }
+
+      // Log audit trail
+      await auditService.log({
+        entityType: 'journal',
+        entityId: journal.id,
+        action: AuditAction.CREATE,
+        changes: {
+          journalDate: journalData.journalDate,
+          description: journalData.description,
+          currencyCode: journalData.currencyCode,
+          transactionCount: transactionData.length,
+        },
+      })
 
       return journal
     })
@@ -102,7 +119,7 @@ export class JournalRepository {
     journalData: CreateJournalData
   ): Promise<Journal> {
     const { transactions: transactionData, ...journalFields } = journalData
-    
+
     return database.write(async () => {
       // Create the journal
       const journal = await this.journals.create((j) => {
@@ -157,7 +174,7 @@ export class JournalRepository {
     // Build results with transaction totals
     return journals.map(journal => {
       const journalTransactions = transactionsByJournal[journal.id] || []
-      
+
       // Calculate total amount (sum of debit transactions only)
       const totalAmount = journalTransactions
         .filter(tx => tx.transactionType === TransactionType.DEBIT)
@@ -228,8 +245,8 @@ export class JournalRepository {
     const reversalTransactions = originalTransactions.map(tx => ({
       accountId: tx.accountId,
       amount: tx.amount,
-      transactionType: tx.transactionType === TransactionType.DEBIT 
-        ? TransactionType.CREDIT 
+      transactionType: tx.transactionType === TransactionType.DEBIT
+        ? TransactionType.CREDIT
         : TransactionType.DEBIT,
       notes: reason ? `Reversal: ${reason}` : `Reversal of journal ${originalJournalId}`,
     }))
