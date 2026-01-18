@@ -5,18 +5,32 @@ import Account from '@/src/data/models/Account';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { AccountBalance } from '@/src/data/repositories/AccountRepository';
+
 interface AccountCardProps {
     account: Account;
     themeMode: ThemeMode;
     onPress: (account: Account) => void;
+    initialBalanceData?: AccountBalance;
 }
 
 /**
  * AccountCard - High-fidelity card for accounts
  * Inspired by Ivy Wallet's Account cards
  */
-export const AccountCard = ({ account, themeMode, onPress }: AccountCardProps) => {
-    const { balanceData, isLoading } = useAccountBalance(account.id);
+export const AccountCard = ({ account, themeMode, onPress, initialBalanceData }: AccountCardProps) => {
+    // Only fetch if initial data is not provided, or better: use useAccountBalance but bypass if we have data?
+    // Actually simpler: if initialBalanceData provided, use it. If not, fetch.
+    // However, we want updates. useAccountBalance provides updates.
+    // If we pass initial data, we usually still want live updates.
+    // But AccountsScreen re-renders when useNetWorth updates (which updates balances).
+    // So if we pass data from parent, we can just use that.
+
+    // Let's defer to the hook if no data passed, otherwise use passed data.
+    const hookData = useAccountBalance(initialBalanceData ? null : account.id);
+    const balanceData = initialBalanceData || hookData.balanceData;
+    const isLoading = initialBalanceData ? false : hookData.isLoading;
+
     const theme = useThemeColors(themeMode);
 
     const balance = balanceData?.balance || 0;

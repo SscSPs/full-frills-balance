@@ -1,21 +1,22 @@
+import { NetWorthCard } from '@/components/accounts/NetWorthCard'
 import { AppButton, AppText, FloatingActionButton } from '@/components/core'
 import { AccountCard } from '@/components/journal/AccountCard'
 import { Spacing, ThemeMode, useThemeColors } from '@/constants'
 import { useUser } from '@/contexts/UIContext'
 import { useColorScheme } from '@/hooks/use-color-scheme'
-import { useAccounts } from '@/hooks/use-data'
+import { useAccounts, useNetWorth } from '@/hooks/use-data'
 import Account from '@/src/data/models/Account'
 import { useRouter } from 'expo-router'
-import React from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
-
-// AccountItem replaced by AccountCard
+import React, { useMemo } from 'react'
+import { SectionList, StyleSheet, View } from 'react-native'
 
 export default function AccountsScreen() {
   const router = useRouter()
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
-  const { accounts, isLoading } = useAccounts()
+
+  const { accounts, isLoading: accountsLoading } = useAccounts()
+  const { balances, netWorth, totalAssets, totalLiabilities, isLoading: worthLoading } = useNetWorth()
 
   const themeMode: ThemeMode = themePreference === 'system'
     ? (systemColorScheme === 'dark' ? 'dark' : 'light')
@@ -39,9 +40,41 @@ export default function AccountsScreen() {
     router.push('/account-creation' as any)
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={[styles.headerButtons, { padding: Spacing.lg, backgroundColor: theme.background }]}>
+  // Combine accounts with their balances and group by type
+  const sections = useMemo(() => {
+    if (!accounts.length) return []
+
+    // Grouping
+    const groups: Record<string, Account[]> = {
+      ASSET: [],
+      LIABILITY: [],
+      EQUITY: [],
+      INCOME: [],
+      EXPENSE: []
+    }
+
+    accounts.forEach(acc => {
+      const type = acc.accountType.toUpperCase()
+      if (groups[type]) {
+        groups[type].push(acc)
+      }
+    })
+
+    const result = []
+
+    // Order matters
+    if (groups.ASSET.length > 0) result.push({ title: 'Assets', data: groups.ASSET })
+    if (groups.LIABILITY.length > 0) result.push({ title: 'Liabilities', data: groups.LIABILITY })
+    if (groups.EQUITY.length > 0) result.push({ title: 'Equity', data: groups.EQUITY })
+    if (groups.INCOME.length > 0) result.push({ title: 'Income', data: groups.INCOME })
+    if (groups.EXPENSE.length > 0) result.push({ title: 'Expenses', data: groups.EXPENSE })
+
+    return result
+  }, [accounts, balances])
+
+  const renderHeader = () => (
+    <View>
+      <View style={[styles.headerButtons, { backgroundColor: theme.background }]}>
         <AppButton
           variant="primary"
           size="sm"
@@ -70,26 +103,53 @@ export default function AccountsScreen() {
         </AppButton>
       </View>
 
-      {accounts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <AppText variant="body" color="secondary" themeMode={themeMode}>
-            No accounts yet. Create your first account to get started!
+      <NetWorthCard
+        netWorth={netWorth}
+        totalAssets={totalAssets}
+        totalLiabilities={totalLiabilities}
+        themeMode={themeMode}
+        isLoading={worthLoading}
+      />
+    </View>
+  )
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <SectionList
+        sections={sections}
+        refreshing={accountsLoading}
+        onRefresh={() => { }} // Reactivity handles updates, but need prop for PullToRefresh visual
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <AccountCard
+            account={item}
+            themeMode={themeMode}
+            onPress={handleAccountPress}
+            initialBalanceData={balances.find(b => b.accountId === item.id)}
+          />
+        )}
+        renderSectionHeader={({ section: { title } }) => (
+          <AppText
+            variant="subheading"
+            color="secondary"
+            themeMode={themeMode}
+            style={styles.sectionHeader}
+          >
+            {title}
           </AppText>
-        </View>
-      ) : (
-        <FlatList
-          data={accounts}
-          renderItem={({ item }) => (
-            <AccountCard
-              account={item}
-              themeMode={themeMode}
-              onPress={handleAccountPress}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
+        )}
+        ListHeaderComponent={renderHeader()}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <AppText variant="body" color="secondary" themeMode={themeMode}>
+              No accounts yet. Create your first account to get started!
+            </AppText>
+          </View>
+        }
+        contentContainerStyle={styles.listContainer}
+        stickySectionHeadersEnabled={false}
+      />
+
       <FloatingActionButton
         onPress={() => router.push('/journal-entry' as any)}
       />
@@ -101,44 +161,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-  },
   headerButtons: {
     flexDirection: 'row',
     gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
   listContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 80, // Space for FAB
-    gap: Spacing.md,
+    paddingBottom: 100, // Space for FAB
   },
-  accountCard: {
-    marginBottom: Spacing.md,
-  },
-  accountHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  sectionHeader: {
+    marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
-  accountDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: Spacing.xxl,
     alignItems: 'center',
   },
 })

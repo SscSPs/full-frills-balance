@@ -235,3 +235,67 @@ export function useAccountBalance(accountId: string | null) {
 
     return { balanceData, isLoading }
 }
+
+/**
+ * Hook to reactively get all account balances and net worth
+ */
+export function useNetWorth() {
+    const database = useDatabase()
+    const [data, setData] = useState<{
+        balances: AccountBalance[]
+        netWorth: number
+        totalAssets: number
+        totalLiabilities: number
+        isLoading: boolean
+    }>({
+        balances: [],
+        netWorth: 0,
+        totalAssets: 0,
+        totalLiabilities: 0,
+        isLoading: true
+    })
+
+    useEffect(() => {
+        // Subscribe to transaction changes to re-calculate everything
+        const collection = database.collections.get<Transaction>('transactions')
+        const subscription = collection
+            .query(Q.where('deleted_at', Q.eq(null)))
+            .observe()
+            .subscribe(async () => {
+                try {
+                    const balances = await accountRepository.getAccountBalances()
+
+                    let totalAssets = 0
+                    let totalLiabilities = 0
+
+                    balances.forEach(b => {
+                        if (b.accountType === 'ASSET') {
+                            totalAssets += b.balance
+                        } else if (b.accountType === 'LIABILITY') {
+                            totalLiabilities += b.balance // Liabilities are typically positive in balance but negative in net worth?
+                            // Wait, getAccountBalance returns normalized positive balance for the account itself (e.g., Credit Card debt of $500 is +500 in liability account).
+                            // But for Net Worth, Assets - Liabilities.
+                        }
+                    })
+
+                    // Assuming balances are positive numbers representing the magnitude of the account value
+                    const netWorth = totalAssets - totalLiabilities
+
+                    setData({
+                        balances,
+                        netWorth,
+                        totalAssets,
+                        totalLiabilities,
+                        isLoading: false
+                    })
+                } catch (error) {
+                    console.error('Failed to calculate net worth:', error)
+                    setData(prev => ({ ...prev, isLoading: false }))
+                }
+            })
+
+        return () => subscription.unsubscribe()
+    }, [database])
+
+    return data
+}

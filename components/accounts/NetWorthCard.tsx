@@ -1,0 +1,124 @@
+import { AppCard, AppText } from '@/components/core';
+import { Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+
+interface NetWorthCardProps {
+    netWorth: number;
+    totalAssets: number;
+    totalLiabilities: number;
+    themeMode: ThemeMode;
+    isLoading?: boolean;
+}
+
+export const NetWorthCard = ({
+    netWorth,
+    totalAssets,
+    totalLiabilities,
+    themeMode,
+    isLoading = false
+}: NetWorthCardProps) => {
+    const theme = useThemeColors(themeMode);
+    const [hidden, setHidden] = useState(false);
+
+    const formatCurrency = (amount: number) => {
+        if (isLoading) return '...';
+        if (hidden) return '••••••';
+        return amount.toLocaleString(undefined, {
+            style: 'currency',
+            currency: 'USD', // TODO: Global currency setting
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    };
+
+    return (
+        <AppCard
+            elevation="md"
+            padding="lg"
+            radius="r1"
+            style={[styles.container, { backgroundColor: theme.surface }]} // Maybe use primary color bg?
+            themeMode={themeMode}
+        >
+            <View style={styles.header}>
+                <AppText variant="subheading" color="secondary" themeMode={themeMode}>
+                    Net Worth
+                </AppText>
+                <TouchableOpacity onPress={() => setHidden(!hidden)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons
+                        name={hidden ? "eye-off" : "eye"}
+                        size={20}
+                        color={theme.textTertiary}
+                    />
+                </TouchableOpacity>
+            </View>
+
+            <AppText variant="title" themeMode={themeMode} style={styles.netWorthAmount}>
+                {formatCurrency(netWorth)}
+            </AppText>
+
+            <View style={styles.breakdownContainer}>
+                <View style={styles.breakdownItem}>
+                    <View style={[styles.dot, { backgroundColor: theme.asset }]} />
+                    <View>
+                        <AppText variant="caption" color="secondary" themeMode={themeMode}>Assets</AppText>
+                        <AppText variant="heading" color="asset" themeMode={themeMode}>
+                            {formatCurrency(totalAssets)}
+                        </AppText>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.breakdownItem}>
+                    <View style={[styles.dot, { backgroundColor: theme.liability }]} />
+                    <View>
+                        <AppText variant="caption" color="secondary" themeMode={themeMode}>Liabilities</AppText>
+                        <AppText variant="heading" color="liability" themeMode={themeMode}>
+                            {formatCurrency(totalLiabilities)}
+                        </AppText>
+                    </View>
+                </View>
+            </View>
+        </AppCard>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        marginBottom: Spacing.lg,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.xs,
+    },
+    netWorthAmount: {
+        fontSize: 36, // Larger than standard title
+        marginBottom: Spacing.xl,
+    },
+    breakdownContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start', // specific alignment
+    },
+    breakdownItem: {
+        flex: 1,
+        flexDirection: 'row',
+        gap: Spacing.sm,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginTop: 6, // Optical alignment with text
+    },
+    divider: {
+        width: 1,
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        marginHorizontal: Spacing.md,
+    }
+});
