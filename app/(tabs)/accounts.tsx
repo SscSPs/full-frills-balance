@@ -1,5 +1,5 @@
-import { NetWorthCard } from '@/components/accounts/NetWorthCard'
 import { AppButton, AppText, FloatingActionButton } from '@/components/core'
+import { NetWorthCard } from '@/components/dashboard/NetWorthCard'
 import { AccountCard } from '@/components/journal/AccountCard'
 import { Spacing, ThemeMode, useThemeColors } from '@/constants'
 import { useUser } from '@/contexts/UIContext'

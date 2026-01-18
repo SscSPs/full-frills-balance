@@ -1,11 +1,11 @@
 import { AppText, FloatingActionButton, SearchField } from '@/components/core';
+import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
-import { NetWorthCard } from '@/components/journal/NetWorthCard';
 import { Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useUser } from '@/contexts/UIContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useJournals } from '@/hooks/use-data';
+import { useJournals, useNetWorth } from '@/hooks/use-data';
 import { useSummary } from '@/hooks/use-summary';
 import Journal from '@/src/data/models/Journal';
 import { formatShortDate } from '@/src/utils/dateUtils';
@@ -20,7 +20,8 @@ export default function JournalListScreen() {
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
   const { journals, isLoading } = useJournals()
-  const { income, expense, netWorth, isPrivacyMode, togglePrivacyMode } = useSummary()
+  const { income, expense, isPrivacyMode } = useSummary() // netWorth removed from useSummary for home usage
+  const { netWorth, totalAssets, totalLiabilities, isLoading: worthLoading } = useNetWorth()
   const [searchQuery, setSearchQuery] = React.useState('')
 
   const themeMode: ThemeMode = themePreference === 'system'
@@ -77,10 +78,11 @@ export default function JournalListScreen() {
         ListHeaderComponent={
           <>
             <NetWorthCard
-              amount={netWorth}
-              isPrivacyMode={isPrivacyMode}
-              onTogglePrivacy={togglePrivacyMode}
+              netWorth={netWorth}
+              totalAssets={totalAssets}
+              totalLiabilities={totalLiabilities}
               themeMode={themeMode}
+              isLoading={worthLoading}
             />
             <DashboardSummary
               income={income}

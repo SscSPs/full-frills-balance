@@ -22,7 +22,7 @@ export const DashboardSummary = ({ income, expense, isPrivacyMode, themeMode }: 
     return (
         <View style={styles.container}>
             {/* Income Column */}
-            <AppCard elevation="sm" style={styles.column} themeMode={themeMode}>
+            <AppCard elevation="sm" padding="md" style={styles.column} themeMode={themeMode}>
                 <View style={styles.row}>
                     <View style={[styles.iconBox, { backgroundColor: theme.income + '20' }]}>
                         <Ionicons name="arrow-down-outline" size={16} color={theme.income} />
@@ -35,7 +35,7 @@ export const DashboardSummary = ({ income, expense, isPrivacyMode, themeMode }: 
             </AppCard>
 
             {/* Expense Column */}
-            <AppCard elevation="sm" style={styles.column} themeMode={themeMode}>
+            <AppCard elevation="sm" padding="md" style={styles.column} themeMode={themeMode}>
                 <View style={styles.row}>
                     <View style={[styles.iconBox, { backgroundColor: theme.expense + '20' }]}>
                         <Ionicons name="arrow-up-outline" size={16} color={theme.expense} />
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     },
     column: {
         flex: 1,
-        padding: Spacing.md,
+        // padding handled by AppCard
     },
     row: {
         flexDirection: 'row',
