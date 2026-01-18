@@ -5,29 +5,22 @@ import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
-import { exchangeRateService } from '@/src/services/exchange-rate-service';
+import { JournalCalculator, JournalLineInput } from '@/src/domain/accounting/JournalCalculator';
+import { JournalValidator } from '@/src/domain/accounting/JournalValidator';
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
 import { sanitizeAmount } from '@/src/utils/validation';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccountSelector } from '../components/journal/AccountSelector';
+import { JournalEntryLine, JournalLineItem } from '../components/journal/JournalLineItem';
+import { JournalSummary } from '../components/journal/JournalSummary';
 import SimpleJournalForm from '../components/journal/SimpleJournalForm';
 import { useUser } from '../contexts/UIContext';
 
-interface JournalEntryLine {
-  id: string;
-  accountId: string;
-  accountName: string;
-  accountType: AccountType;
-  accountCurrency?: string; // Currency of the selected account
-  amount: string; // Amount in account's currency (what user enters)
-  amountInJournalCurrency?: number; // Calculated amount in journal currency for balancing
-  transactionType: TransactionType;
-  notes: string;
-  exchangeRate?: string; // Exchange rate (auto-fetched or manual)
-}
+
 
 export default function JournalEntryScreen() {
   const router = useRouter()
@@ -144,25 +137,24 @@ export default function JournalEntryScreen() {
     }
 
     // Convert to base currency (USD) for balancing
-    // Formula: account_amount / exchange_rate = base_amount
-    // (e.g., 90.50 EUR / 1.1050 rate = 81.90 USD)
     const baseAmount = amount / rate;
     return Math.round(baseAmount * 100) / 100;
   }
 
-  const getTotalDebits = () => {
-    return lines
-      .filter(line => line.transactionType === TransactionType.DEBIT)
-      .reduce((sum, line) => sum + getLineBaseAmount(line), 0)
+  // Transform UI lines to Domain lines for calculation
+  const getDomainLines = (): JournalLineInput[] => {
+    return lines.map(line => ({
+      amount: getLineBaseAmount(line),
+      type: line.transactionType
+    }));
   }
 
-  const getTotalCredits = () => {
-    return lines
-      .filter(line => line.transactionType === TransactionType.CREDIT)
-      .reduce((sum, line) => sum + getLineBaseAmount(line), 0)
-  }
+  const getTotalDebits = () => JournalCalculator.calculateTotalDebits(getDomainLines());
 
-  const isBalanced = Math.abs(getTotalDebits() - getTotalCredits()) < 0.01
+  const getTotalCredits = () => JournalCalculator.calculateTotalCredits(getDomainLines());
+
+  const validationResult = JournalValidator.validate(getDomainLines());
+  const isBalanced = JournalCalculator.isBalanced(getDomainLines());
 
   const validateJournal = () => {
     if (!description.trim()) {
@@ -173,12 +165,10 @@ export default function JournalEntryScreen() {
       return { valid: false, error: 'All lines must have an account selected' }
     }
 
-    if (lines.some(line => !line.amount || sanitizeAmount(line.amount) === 0)) {
-      return { valid: false, error: 'All lines must have a valid amount' }
-    }
-
-    if (!isBalanced) {
-      return { valid: false, error: 'Journal must be balanced (debits must equal credits)' }
+    if (!validationResult.isValid) {
+      // Prioritize balance errors, then others
+      const balanceError = validationResult.errors.find(e => e.includes('balanced'));
+      return { valid: false, error: balanceError || validationResult.errors[0] };
     }
 
     return { valid: true, error: null }
@@ -338,188 +328,29 @@ export default function JournalEntryScreen() {
               </View>
 
               {lines.map((line, index) => (
-                <View key={line.id} style={[styles.lineContainer, {
-                  backgroundColor: theme.surfaceSecondary,
-                  borderColor: theme.border
-                }]}>
-                  <View style={styles.lineHeader}>
-                    <AppText variant="subheading" themeMode={themeMode}>Line {index + 1}</AppText>
-                    {lines.length > 2 && (
-                      <TouchableOpacity onPress={() => removeLine(line.id)} style={styles.removeButton}>
-                        <AppText variant="body" color="error" themeMode={themeMode}>Remove</AppText>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.accountSelector, {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border
-                    }]}
-                    onPress={() => {
-                      setSelectedLineId(line.id)
-                      setShowAccountPicker(true)
-                    }}
-                  >
-                    <AppText variant="body" themeMode={themeMode}>
-                      {line.accountName || 'Select Account'}
-                    </AppText>
-                    <AppText variant="body" color="secondary" themeMode={themeMode}>▼</AppText>
-                  </TouchableOpacity>
-
-                  <View style={styles.lineRow}>
-                    <View style={styles.halfWidth}>
-                      <AppText variant="body" themeMode={themeMode} style={styles.label}>Type</AppText>
-                      <View style={styles.typeButtons}>
-                        <TouchableOpacity
-                          style={[
-                            styles.typeButton,
-                            line.transactionType === TransactionType.DEBIT && styles.typeButtonActive,
-                            line.transactionType === TransactionType.DEBIT && { backgroundColor: theme.primary },
-                            { borderColor: theme.border }
-                          ]}
-                          onPress={() => updateLine(line.id, 'transactionType', TransactionType.DEBIT)}
-                        >
-                          <AppText
-                            variant="body"
-                            themeMode={themeMode}
-                            style={[
-                              line.transactionType === TransactionType.DEBIT && { color: theme.background }
-                            ]}
-                          >
-                            DEBIT
-                          </AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.typeButton,
-                            line.transactionType === TransactionType.CREDIT && styles.typeButtonActive,
-                            line.transactionType === TransactionType.CREDIT && { backgroundColor: theme.primary },
-                            { borderColor: theme.border }
-                          ]}
-                          onPress={() => updateLine(line.id, 'transactionType', TransactionType.CREDIT)}
-                        >
-                          <AppText
-                            variant="body"
-                            themeMode={themeMode}
-                            style={[
-                              line.transactionType === TransactionType.CREDIT && { color: theme.background }
-                            ]}
-                          >
-                            CREDIT
-                          </AppText>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={styles.halfWidth}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <AppText variant="body" themeMode={themeMode} style={styles.label}>Amount</AppText>
-                        {line.accountCurrency && (
-                          <AppText variant="caption" color="primary" themeMode={themeMode}>
-                            {line.accountCurrency}
-                          </AppText>
-                        )}
-                      </View>
-                      <TextInput
-                        style={[styles.input, {
-                          backgroundColor: theme.surface,
-                          borderColor: theme.border,
-                          color: theme.text
-                        }]}
-                        value={line.amount}
-                        onChangeText={(value) => updateLine(line.id, 'amount', value)}
-                        placeholder="0.00"
-                        placeholderTextColor={theme.textSecondary}
-                        keyboardType="numeric"
-                      />
-                      {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
-                          ≈ ${(getLineBaseAmount(line)).toFixed(2)} USD
-                        </AppText>
-                      )}
-                    </View>
-                  </View>
-
-                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Notes</AppText>
-                  <TextInput
-                    style={[styles.input, {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }]}
-                    value={line.notes}
-                    onChangeText={(value) => updateLine(line.id, 'notes', value)}
-                    placeholder="Optional notes"
-                    placeholderTextColor={theme.textSecondary}
-                  />
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <AppText variant="body" themeMode={themeMode} style={styles.label}>
-                      Exchange Rate (Optional)
-                    </AppText>
-                    {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
-                      <TouchableOpacity
-                        onPress={async () => {
-                          try {
-                            const rate = await exchangeRateService.getRate(
-                              line.accountCurrency!,
-                              AppConfig.defaultCurrency
-                            )
-                            updateLine(line.id, 'exchangeRate', rate.toString())
-                          } catch (error) {
-                            console.error('Failed to fetch rate:', error)
-                          }
-                        }}
-                      >
-                        <AppText variant="caption" color="primary" themeMode={themeMode}>Auto-fetch</AppText>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <TextInput
-                    style={[styles.input, {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                      color: theme.text
-                    }]}
-                    value={line.exchangeRate || ''}
-                    onChangeText={(value) => updateLine(line.id, 'exchangeRate', value)}
-                    placeholder="e.g., 1.1050"
-                    placeholderTextColor={theme.textSecondary}
-                    keyboardType="decimal-pad"
-                  />
-                  <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginTop: -8, marginBottom: 8 }}>
-                    {line.accountCurrency === AppConfig.defaultCurrency
-                      ? 'Not needed (same as base currency)'
-                      : `Rate to convert ${line.accountCurrency} to ${AppConfig.defaultCurrency}`}
-                  </AppText>
-                </View>
+                <JournalLineItem
+                  key={line.id}
+                  line={line}
+                  index={index}
+                  themeMode={themeMode}
+                  canRemove={lines.length > 2}
+                  onUpdate={(field, value) => updateLine(line.id, field, value)}
+                  onRemove={() => removeLine(line.id)}
+                  onSelectAccount={() => {
+                    setSelectedLineId(line.id)
+                    setShowAccountPicker(true)
+                  }}
+                  getLineBaseAmount={getLineBaseAmount}
+                />
               ))}
             </AppCard>
 
-            <AppCard elevation="sm" padding="lg" style={styles.summaryCard} themeMode={themeMode}>
-              <View style={styles.summaryRow}>
-                <AppText variant="body" themeMode={themeMode}>Total Debits:</AppText>
-                <AppText variant="body" themeMode={themeMode}>${getTotalDebits().toFixed(2)}</AppText>
-              </View>
-              <View style={styles.summaryRow}>
-                <AppText variant="body" themeMode={themeMode}>Total Credits:</AppText>
-                <AppText variant="body" themeMode={themeMode}>${getTotalCredits().toFixed(2)}</AppText>
-              </View>
-              <View style={styles.summaryRow}>
-                <AppText variant="heading" themeMode={themeMode}>Balance:</AppText>
-                <AppText
-                  variant="heading"
-                  color={isBalanced ? "success" : "error"}
-                  themeMode={themeMode}
-                >
-                  ${Math.abs(getTotalDebits() - getTotalCredits()).toFixed(2)}
-                </AppText>
-              </View>
-              <AppText variant="body" color={isBalanced ? "success" : "error"} themeMode={themeMode} style={styles.balanceText}>
-                {isBalanced ? '✓ Journal is balanced in USD' : '✗ Journal must be balanced in USD'}
-              </AppText>
-            </AppCard>
+            <JournalSummary
+              totalDebits={getTotalDebits()}
+              totalCredits={getTotalCredits()}
+              isBalanced={isBalanced}
+              themeMode={themeMode}
+            />
 
             <View style={styles.actions}>
               <AppButton
@@ -537,45 +368,13 @@ export default function JournalEntryScreen() {
       </ScrollView>
 
       {/* Account Picker Modal */}
-      <Modal
+      <AccountSelector
         visible={showAccountPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAccountPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
-            <View style={styles.modalHeader}>
-              <AppText variant="heading" themeMode={themeMode}>Select Account</AppText>
-              <TouchableOpacity onPress={() => setShowAccountPicker(false)}>
-                <AppText variant="body" color="secondary" themeMode={themeMode}>✕</AppText>
-              </TouchableOpacity>
-            </View>
-
-            <FlatList
-              data={accounts}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.accountItem, {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border
-                  }]}
-                  onPress={() => selectAccount(item.id)}
-                >
-                  <View>
-                    <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
-                      {item.accountType} • {item.currencyCode}
-                    </AppText>
-                  </View>
-                </TouchableOpacity>
-              )}
-              style={styles.accountsList}
-            />
-          </View>
-        </View>
-      </Modal>
+        accounts={accounts}
+        themeMode={themeMode}
+        onClose={() => setShowAccountPicker(false)}
+        onSelect={selectAccount}
+      />
     </SafeAreaView>
   )
 }
