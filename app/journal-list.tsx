@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppText } from '@/components/core';
-import { ThemeMode, useThemeColors } from '@/constants';
+import { Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useUser } from '@/contexts/UIContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { journalRepository, JournalWithTransactionTotals } from '@/src/data/repositories/JournalRepository';
@@ -161,16 +161,9 @@ export default function JournalListScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <AppText variant="heading" themeMode={themeMode}>Journal Entries</AppText>
-        <AppButton
-          variant="outline"
-          size="sm"
-          onPress={handleCreateJournal}
-          themeMode={themeMode}
-        >
-          + New Journal
-        </AppButton>
+      {/* Simple header */}
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <AppText variant="title" themeMode={themeMode}>Home</AppText>
       </View>
       
       <FlatList
@@ -181,8 +174,8 @@ export default function JournalListScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <AppText variant="subheading" themeMode={themeMode} style={styles.emptyText}>
-              No journal entries found
+            <AppText variant="heading" themeMode={themeMode} style={styles.emptyText}>
+              No transactions yet
             </AppText>
             <AppText 
               variant="body" 
@@ -190,7 +183,7 @@ export default function JournalListScreen() {
               themeMode={themeMode}
               style={styles.emptySubtext}
             >
-              Create your first journal entry to get started
+              Tap the + button to add your first transaction
             </AppText>
           </View>
         }
@@ -207,8 +200,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
   },
   title: {
     fontSize: 24,
@@ -302,7 +296,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    padding: 32,
   },
   errorText: {
     fontSize: 16,

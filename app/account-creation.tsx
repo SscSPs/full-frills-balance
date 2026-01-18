@@ -35,7 +35,7 @@ export default function AccountCreationScreen() {
       router.back()
     } else {
       // If no previous screen, go to accounts
-      router.push('/accounts' as any)
+      router.push('/accounts')
     }
   }
 
@@ -68,7 +68,7 @@ export default function AccountCreationScreen() {
       setAccountType(AccountType.ASSET)
       
       // Navigate to accounts list
-      router.push('/accounts' as any)
+      router.push('/accounts')
     } catch (error) {
       console.error('Error creating account:', error)
       showErrorAlert(error, 'Failed to Create Account')

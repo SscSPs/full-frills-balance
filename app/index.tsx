@@ -2,6 +2,7 @@ import 'react-native-get-random-values';
 
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
+import { TabNavigator } from '../components/layout';
 import { useUser } from '../contexts/UIContext';
 
 export default function IndexScreen() {
@@ -17,7 +18,8 @@ export default function IndexScreen() {
   }
 
   if (hasCompletedOnboarding) {
-    return <Redirect href="/accounts" />;
+    // Show custom tab navigator as home page
+    return <TabNavigator />;
   }
 
   return <Redirect href="/onboarding" />;

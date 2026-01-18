@@ -17,3 +17,7 @@ export type { SectionProps } from './Section'
 export { ScreenHeader } from './ScreenHeader'
 export type { ScreenHeaderProps } from './ScreenHeader'
 
+export { default as CustomTabBar } from './CustomTabBar'
+
+export { default as TabNavigator } from './TabNavigator'
+

@@ -7,7 +7,7 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
 import { sanitizeAmount } from '@/src/utils/validation';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,12 +25,26 @@ interface JournalEntryLine {
 
 export default function JournalEntryScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams()
   const { themePreference } = useUser()
   const colorScheme = useColorScheme()
   const themeMode: ThemeMode = themePreference === 'system' 
     ? (colorScheme === 'dark' ? 'dark' : 'light') 
     : themePreference
   const theme = useThemeColors(themeMode)
+  
+  // Handle URL parameters
+  useEffect(() => {
+    if (params.mode === 'simple') {
+      setIsGuidedMode(true)
+    } else if (params.mode === 'advanced') {
+      setIsGuidedMode(false)
+    }
+    
+    if (params.type === 'income' || params.type === 'expense' || params.type === 'transfer') {
+      setTransactionType(params.type as 'income' | 'expense' | 'transfer')
+    }
+  }, [params.mode, params.type])
   
   // Guided mode state
   const [isGuidedMode, setIsGuidedMode] = useState(true)
