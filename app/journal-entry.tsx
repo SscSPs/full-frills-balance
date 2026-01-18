@@ -1,10 +1,12 @@
 import { AppButton, AppCard, AppText } from '@/components/core';
+import { CurrencyConverterWidget } from '@/components/CurrencyConverterWidget';
 import { AppConfig, Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
+import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
 import { sanitizeAmount } from '@/src/utils/validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,9 +20,12 @@ interface JournalEntryLine {
   accountId: string;
   accountName: string;
   accountType: AccountType;
-  amount: string;
+  accountCurrency?: string; // Currency of the selected account
+  amount: string; // Amount in account's currency (what user enters)
+  amountInJournalCurrency?: number; // Calculated amount in journal currency for balancing
   transactionType: TransactionType;
   notes: string;
+  exchangeRate?: string; // Exchange rate (auto-fetched or manual)
 }
 
 export default function JournalEntryScreen() {
@@ -28,11 +33,11 @@ export default function JournalEntryScreen() {
   const params = useLocalSearchParams()
   const { themePreference } = useUser()
   const colorScheme = useColorScheme()
-  const themeMode: ThemeMode = themePreference === 'system' 
-    ? (colorScheme === 'dark' ? 'dark' : 'light') 
+  const themeMode: ThemeMode = themePreference === 'system'
+    ? (colorScheme === 'dark' ? 'dark' : 'light')
     : themePreference
   const theme = useThemeColors(themeMode)
-  
+
   // Handle URL parameters
   useEffect(() => {
     if (params.mode === 'simple') {
@@ -40,28 +45,28 @@ export default function JournalEntryScreen() {
     } else if (params.mode === 'advanced') {
       setIsGuidedMode(false)
     }
-    
+
     if (params.type === 'income' || params.type === 'expense' || params.type === 'transfer') {
       setTransactionType(params.type as 'income' | 'expense' | 'transfer')
     }
   }, [params.mode, params.type])
-  
+
   // Guided mode state
   const [isGuidedMode, setIsGuidedMode] = useState(true)
-  
+
   // Simple mode state
   const [transactionType, setTransactionType] = useState<'expense' | 'income' | 'transfer'>('expense')
   const [fromAccount, setFromAccount] = useState('')
   const [toAccount, setToAccount] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
-  
+
   // Advanced mode state (existing)
   const [description, setDescription] = useState('')
   const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0])
   const [lines, setLines] = useState<JournalEntryLine[]>([
-    { id: '1', accountId: '', accountName: '', accountType: AccountType.ASSET, amount: '', transactionType: TransactionType.DEBIT, notes: '' },
-    { id: '2', accountId: '', accountName: '', accountType: AccountType.ASSET, amount: '', transactionType: TransactionType.CREDIT, notes: '' },
+    { id: '1', accountId: '', accountName: '', accountType: AccountType.ASSET, amount: '', transactionType: TransactionType.DEBIT, notes: '', exchangeRate: '' },
+    { id: '2', accountId: '', accountName: '', accountType: AccountType.ASSET, amount: '', transactionType: TransactionType.CREDIT, notes: '', exchangeRate: '' },
   ])
   const [accounts, setAccounts] = useState<any[]>([])
   const [isCreating, setIsCreating] = useState(false)
@@ -94,7 +99,8 @@ export default function JournalEntryScreen() {
       accountType: AccountType.ASSET,
       amount: '',
       transactionType: TransactionType.DEBIT,
-      notes: ''
+      notes: '',
+      exchangeRate: ''
     }])
   }
 
@@ -105,24 +111,25 @@ export default function JournalEntryScreen() {
   }
 
   const updateLine = (id: string, field: keyof JournalEntryLine, value: any) => {
-    setLines(lines.map(line => 
+    setLines(lines.map(line =>
       line.id === id ? { ...line, [field]: value } : line
     ))
   }
 
   const selectAccount = (accountId: string) => {
     if (!selectedLineId) return
-    
+
     const account = accounts.find(acc => acc.id === accountId)
     if (account) {
       // Update all fields at once to avoid state conflicts
       const updatedLine = {
         accountId: accountId,
         accountName: account.name,
-        accountType: account.accountType
+        accountType: account.accountType,
+        accountCurrency: account.currencyCode
       }
-      
-      setLines(lines.map(line => 
+
+      setLines(lines.map(line =>
         line.id === selectedLineId ? { ...line, ...updatedLine } : line
       ))
     }
@@ -130,16 +137,31 @@ export default function JournalEntryScreen() {
     setSelectedLineId(null)
   }
 
+  const getLineBaseAmount = (line: JournalEntryLine): number => {
+    const amount = sanitizeAmount(line.amount) || 0;
+    const rate = line.exchangeRate && parseFloat(line.exchangeRate) ? parseFloat(line.exchangeRate) : 1;
+
+    // If account currency matches journal currency or no rate provided, use amount as is
+    if (!line.accountCurrency || line.accountCurrency === AppConfig.defaultCurrency) {
+      return amount;
+    }
+
+    // Convert to base currency (USD) for balancing
+    // Formula: account_amount / exchange_rate = base_amount
+    // (e.g., 90.50 EUR / 1.1050 rate = 81.90 USD)
+    return amount / rate;
+  }
+
   const getTotalDebits = () => {
     return lines
       .filter(line => line.transactionType === TransactionType.DEBIT)
-      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
+      .reduce((sum, line) => sum + getLineBaseAmount(line), 0)
   }
 
   const getTotalCredits = () => {
     return lines
       .filter(line => line.transactionType === TransactionType.CREDIT)
-      .reduce((sum, line) => sum + (sanitizeAmount(line.amount) || 0), 0)
+      .reduce((sum, line) => sum + getLineBaseAmount(line), 0)
   }
 
   const isBalanced = Math.abs(getTotalDebits() - getTotalCredits()) < 0.01
@@ -183,7 +205,7 @@ export default function JournalEntryScreen() {
     }
 
     setIsCreating(true)
-    
+
     try {
       const sanitizedAmount = sanitizeAmount(amount)!
       let journalData: CreateJournalData
@@ -221,6 +243,21 @@ export default function JournalEntryScreen() {
           throw new Error('No income account found. Please create an income account first.')
         }
 
+        // Income/Expense: Convert amount to base currency if needed
+        const acc = accounts.find(a => a.id === (toAccount || fromAccount))
+        const accCurrency = acc?.currencyCode || AppConfig.defaultCurrency
+
+        let baseAmount = sanitizedAmount
+        let rateToJournal: number | undefined
+
+        if (accCurrency !== AppConfig.defaultCurrency) {
+          const rate = await exchangeRateService.getRate(accCurrency, AppConfig.defaultCurrency)
+          baseAmount = sanitizedAmount * rate // (Wait, wait... if it's 100 EUR, and USD/EUR is 1.1, then 100 EUR = 110 USD? No, rate EUR/USD = 1.1. So 100 EUR * 1.1 = 110 USD. Correct.)
+          rateToJournal = rate
+        }
+
+        // (Already declared above)
+
         journalData = {
           journalDate: Date.now(),
           description: category || 'Income',
@@ -228,36 +265,61 @@ export default function JournalEntryScreen() {
           transactions: [
             {
               accountId: incomeAccount.id,
-              amount: sanitizedAmount,
+              amount: baseAmount,
               transactionType: TransactionType.CREDIT,
               notes: category
             },
             {
               accountId: toAccount || fromAccount,
-              amount: sanitizedAmount,
+              amount: baseAmount,
               transactionType: TransactionType.DEBIT,
-              notes: category
+              notes: category,
+              exchangeRate: rateToJournal
             }
           ]
         }
       } else {
         // Transfer: From account credit, To account debit
+        const fromAcc = accounts.find(a => a.id === fromAccount)
+        const toAcc = accounts.find(a => a.id === toAccount)
+
+        if (!fromAcc || !toAcc) {
+          throw new Error('Selected accounts not found')
+        }
+
+        const fromCurrency = fromAcc.currencyCode
+        const toCurrency = toAcc.currencyCode
+
+        // Calculate USD amounts for both legs to ensure journal balance
+        const fromToUSDRate = await exchangeRateService.getRate(fromCurrency, AppConfig.defaultCurrency)
+        const amountInUSD = sanitizedAmount * fromToUSDRate
+
+        // For the 'to' side, we also need to know its rate relative to USD
+        const toToUSDRate = await exchangeRateService.getRate(toCurrency, AppConfig.defaultCurrency)
+
+        // Final translated amount for UI description
+        const convertedToAccountAmount = toToUSDRate !== 0 ? amountInUSD / toToUSDRate : sanitizedAmount
+
         journalData = {
           journalDate: Date.now(),
-          description: 'Transfer',
+          description: fromCurrency !== toCurrency
+            ? `Transfer (${sanitizedAmount} ${fromCurrency} → ${convertedToAccountAmount.toFixed(2)} ${toCurrency})`
+            : 'Transfer',
           currencyCode: AppConfig.defaultCurrency,
           transactions: [
             {
               accountId: fromAccount,
-              amount: sanitizedAmount,
+              amount: amountInUSD,
               transactionType: TransactionType.CREDIT,
-              notes: 'Transfer'
+              notes: 'Transfer',
+              exchangeRate: fromToUSDRate,
             },
             {
               accountId: toAccount,
-              amount: sanitizedAmount,
+              amount: amountInUSD,
               transactionType: TransactionType.DEBIT,
-              notes: 'Transfer'
+              notes: 'Transfer',
+              exchangeRate: toToUSDRate,
             }
           ]
         }
@@ -282,7 +344,7 @@ export default function JournalEntryScreen() {
     }
 
     setIsCreating(true)
-    
+
     try {
       const journalData: CreateJournalData = {
         journalDate: new Date(journalDate).getTime(),
@@ -290,9 +352,12 @@ export default function JournalEntryScreen() {
         currencyCode: AppConfig.defaultCurrency,
         transactions: lines.map(line => ({
           accountId: line.accountId,
-          amount: sanitizeAmount(line.amount)!,
+          amount: getLineBaseAmount(line),
           transactionType: line.transactionType,
           notes: line.notes.trim() || undefined,
+          exchangeRate: line.exchangeRate && line.exchangeRate.trim()
+            ? parseFloat(line.exchangeRate)
+            : undefined,
         }))
       }
 
@@ -330,7 +395,7 @@ export default function JournalEntryScreen() {
           <AppText variant="body" themeMode={themeMode} style={styles.listButtonText}>List</AppText>
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Mode Toggle */}
         <AppCard elevation="sm" padding="lg" style={styles.modeToggleCard} themeMode={themeMode}>
@@ -343,8 +408,8 @@ export default function JournalEntryScreen() {
               ]}
               onPress={() => setIsGuidedMode(true)}
             >
-              <AppText 
-                variant="body" 
+              <AppText
+                variant="body"
                 themeMode={themeMode}
                 style={{ color: isGuidedMode ? '#fff' : theme.text }}
               >
@@ -359,8 +424,8 @@ export default function JournalEntryScreen() {
               ]}
               onPress={() => setIsGuidedMode(false)}
             >
-              <AppText 
-                variant="body" 
+              <AppText
+                variant="body"
                 themeMode={themeMode}
                 style={{ color: !isGuidedMode ? '#fff' : theme.text }}
               >
@@ -384,17 +449,17 @@ export default function JournalEntryScreen() {
                     style={[
                       styles.transactionTypeButton,
                       transactionType === type && styles.transactionTypeButtonSelected,
-                      { 
+                      {
                         backgroundColor: transactionType === type ? theme.primary : theme.surface,
                         borderColor: theme.border
                       }
                     ]}
                     onPress={() => setTransactionType(type)}
                   >
-                    <AppText 
-                      variant="body" 
+                    <AppText
+                      variant="body"
                       themeMode={themeMode}
-                      style={{ 
+                      style={{
                         color: transactionType === type ? '#fff' : theme.text,
                         textTransform: 'capitalize'
                       }}
@@ -412,12 +477,12 @@ export default function JournalEntryScreen() {
               </AppText>
               <View style={styles.accountSelector}>
                 {accounts
-                  .filter(acc => 
-                    transactionType === 'expense' 
+                  .filter(acc =>
+                    transactionType === 'expense'
                       ? acc.accountType === AccountType.ASSET || acc.accountType === AccountType.LIABILITY
                       : transactionType === 'income'
-                      ? acc.accountType === AccountType.ASSET
-                      : true // Transfer: all accounts
+                        ? acc.accountType === AccountType.ASSET
+                        : true // Transfer: all accounts
                   )
                   .map((account) => (
                     <TouchableOpacity
@@ -425,28 +490,28 @@ export default function JournalEntryScreen() {
                       style={[
                         styles.accountOption,
                         fromAccount === account.id && styles.accountOptionSelected,
-                        { 
+                        {
                           backgroundColor: fromAccount === account.id ? theme.primary : theme.surface,
                           borderColor: theme.border
                         }
                       ]}
                       onPress={() => setFromAccount(account.id)}
                     >
-                      <AppText 
-                        variant="body" 
+                      <AppText
+                        variant="body"
                         themeMode={themeMode}
-                        style={{ 
-                          color: fromAccount === account.id ? '#fff' : theme.text 
+                        style={{
+                          color: fromAccount === account.id ? '#fff' : theme.text
                         }}
                       >
                         {account.name}
                       </AppText>
-                      <AppText 
-                        variant="caption" 
+                      <AppText
+                        variant="caption"
                         color="secondary"
                         themeMode={themeMode}
-                        style={{ 
-                          color: fromAccount === account.id ? '#fff' : theme.textSecondary 
+                        style={{
+                          color: fromAccount === account.id ? '#fff' : theme.textSecondary
                         }}
                       >
                         {account.accountType}
@@ -470,28 +535,28 @@ export default function JournalEntryScreen() {
                         style={[
                           styles.accountOption,
                           toAccount === account.id && styles.accountOptionSelected,
-                          { 
+                          {
                             backgroundColor: toAccount === account.id ? theme.primary : theme.surface,
                             borderColor: theme.border
                           }
                         ]}
                         onPress={() => setToAccount(account.id)}
                       >
-                        <AppText 
-                          variant="body" 
+                        <AppText
+                          variant="body"
                           themeMode={themeMode}
-                          style={{ 
-                            color: toAccount === account.id ? '#fff' : theme.text 
+                          style={{
+                            color: toAccount === account.id ? '#fff' : theme.text
                           }}
                         >
                           {account.name}
                         </AppText>
-                        <AppText 
-                          variant="caption" 
+                        <AppText
+                          variant="caption"
                           color="secondary"
                           themeMode={themeMode}
-                          style={{ 
-                            color: toAccount === account.id ? '#fff' : theme.textSecondary 
+                          style={{
+                            color: toAccount === account.id ? '#fff' : theme.textSecondary
                           }}
                         >
                           {account.accountType}
@@ -507,10 +572,10 @@ export default function JournalEntryScreen() {
                 Amount
               </AppText>
               <TextInput
-                style={[styles.input, { 
+                style={[styles.input, {
                   backgroundColor: theme.surface,
                   borderColor: theme.border,
-                  color: theme.text 
+                  color: theme.text
                 }]}
                 value={amount}
                 onChangeText={(text) => {
@@ -528,16 +593,26 @@ export default function JournalEntryScreen() {
               />
             </AppCard>
 
+            {/* Show currency converter for cross-currency transfers */}
+            {transactionType === 'transfer' && fromAccount && toAccount && amount && (
+              <CurrencyConverterWidget
+                amount={sanitizeAmount(amount) || 0}
+                fromCurrency={accounts.find(a => a.id === fromAccount)?.currencyCode || 'USD'}
+                toCurrency={accounts.find(a => a.id === toAccount)?.currencyCode || 'USD'}
+                themeMode={themeMode}
+              />
+            )}
+
             {transactionType !== 'transfer' && (
               <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
                 <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
                   Category (Optional)
                 </AppText>
                 <TextInput
-                  style={[styles.input, { 
+                  style={[styles.input, {
                     backgroundColor: theme.surface,
                     borderColor: theme.border,
-                    color: theme.text 
+                    color: theme.text
                   }]}
                   value={category}
                   onChangeText={setCategory}
@@ -564,192 +639,239 @@ export default function JournalEntryScreen() {
             <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
               <AppText variant="title" themeMode={themeMode}>Create Journal Entry</AppText>
             </AppCard>
-            
+
             <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
               <AppText variant="body" themeMode={themeMode} style={styles.label}>Date</AppText>
               <TextInput
-                style={[styles.input, { 
+                style={[styles.input, {
                   backgroundColor: theme.surface,
                   borderColor: theme.border,
-                  color: theme.text 
+                  color: theme.text
                 }]}
                 value={journalDate}
                 onChangeText={setJournalDate}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor={theme.textSecondary}
               />
-              
+
               <AppText variant="body" themeMode={themeMode} style={styles.label}>Description</AppText>
               <TextInput
-                style={[styles.input, styles.textArea, { 
+                style={[styles.input, styles.textArea, {
                   backgroundColor: theme.surface,
                   borderColor: theme.border,
-                  color: theme.text 
+                  color: theme.text
                 }]}
                 value={description}
                 onChangeText={setDescription}
-            placeholder="Enter description"
-            placeholderTextColor={theme.textSecondary}
-            multiline
-          />
-        </AppCard>
+                placeholder="Enter description"
+                placeholderTextColor={theme.textSecondary}
+                multiline
+              />
+            </AppCard>
 
-        <AppCard elevation="sm" padding="lg" style={styles.linesCard} themeMode={themeMode}>
-          <View style={styles.linesHeader}>
-            <AppText variant="heading" themeMode={themeMode}>Journal Lines</AppText>
-            <TouchableOpacity onPress={addLine} style={styles.addButton}>
-              <AppText variant="body" color="primary" themeMode={themeMode}>+ Add Line</AppText>
-            </TouchableOpacity>
-          </View>
-          
-          {lines.map((line, index) => (
-            <View key={line.id} style={[styles.lineContainer, { 
-              backgroundColor: theme.surfaceSecondary,
-              borderColor: theme.border 
-            }]}>
-              <View style={styles.lineHeader}>
-                <AppText variant="subheading" themeMode={themeMode}>Line {index + 1}</AppText>
-                {lines.length > 2 && (
-                  <TouchableOpacity onPress={() => removeLine(line.id)} style={styles.removeButton}>
-                    <AppText variant="body" color="error" themeMode={themeMode}>Remove</AppText>
-                  </TouchableOpacity>
-                )}
+            <AppCard elevation="sm" padding="lg" style={styles.linesCard} themeMode={themeMode}>
+              <View style={styles.linesHeader}>
+                <AppText variant="heading" themeMode={themeMode}>Journal Lines</AppText>
+                <TouchableOpacity onPress={addLine} style={styles.addButton}>
+                  <AppText variant="body" color="primary" themeMode={themeMode}>+ Add Line</AppText>
+                </TouchableOpacity>
               </View>
-              
-              <TouchableOpacity
-                style={[styles.accountSelector, { 
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border 
-                }]}
-                onPress={() => {
-                  setSelectedLineId(line.id)
-                  setShowAccountPicker(true)
-                }}
-              >
-                <AppText variant="body" themeMode={themeMode}>
-                  {line.accountName || 'Select Account'}
-                </AppText>
-                <AppText variant="body" color="secondary" themeMode={themeMode}>▼</AppText>
-              </TouchableOpacity>
-              
-              <View style={styles.lineRow}>
-                <View style={styles.halfWidth}>
-                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Type</AppText>
-                  <View style={styles.typeButtons}>
-                    <TouchableOpacity
-                      style={[
-                        styles.typeButton,
-                        line.transactionType === TransactionType.DEBIT && styles.typeButtonActive,
-                        line.transactionType === TransactionType.DEBIT && { backgroundColor: theme.primary },
-                        { borderColor: theme.border }
-                      ]}
-                      onPress={() => updateLine(line.id, 'transactionType', TransactionType.DEBIT)}
-                    >
-                      <AppText 
-                        variant="body" 
-                        themeMode={themeMode}
-                        style={[
-                          line.transactionType === TransactionType.DEBIT && { color: theme.background }
-                        ]}
-                      >
-                        DEBIT
-                      </AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.typeButton,
-                        line.transactionType === TransactionType.CREDIT && styles.typeButtonActive,
-                        line.transactionType === TransactionType.CREDIT && { backgroundColor: theme.primary },
-                        { borderColor: theme.border }
-                      ]}
-                      onPress={() => updateLine(line.id, 'transactionType', TransactionType.CREDIT)}
-                    >
-                      <AppText 
-                        variant="body" 
-                        themeMode={themeMode}
-                        style={[
-                          line.transactionType === TransactionType.CREDIT && { color: theme.background }
-                        ]}
-                      >
-                        CREDIT
-                      </AppText>
-                    </TouchableOpacity>
+
+              {lines.map((line, index) => (
+                <View key={line.id} style={[styles.lineContainer, {
+                  backgroundColor: theme.surfaceSecondary,
+                  borderColor: theme.border
+                }]}>
+                  <View style={styles.lineHeader}>
+                    <AppText variant="subheading" themeMode={themeMode}>Line {index + 1}</AppText>
+                    {lines.length > 2 && (
+                      <TouchableOpacity onPress={() => removeLine(line.id)} style={styles.removeButton}>
+                        <AppText variant="body" color="error" themeMode={themeMode}>Remove</AppText>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                </View>
-                
-                <View style={styles.halfWidth}>
-                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Amount</AppText>
+
+                  <TouchableOpacity
+                    style={[styles.accountSelector, {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border
+                    }]}
+                    onPress={() => {
+                      setSelectedLineId(line.id)
+                      setShowAccountPicker(true)
+                    }}
+                  >
+                    <AppText variant="body" themeMode={themeMode}>
+                      {line.accountName || 'Select Account'}
+                    </AppText>
+                    <AppText variant="body" color="secondary" themeMode={themeMode}>▼</AppText>
+                  </TouchableOpacity>
+
+                  <View style={styles.lineRow}>
+                    <View style={styles.halfWidth}>
+                      <AppText variant="body" themeMode={themeMode} style={styles.label}>Type</AppText>
+                      <View style={styles.typeButtons}>
+                        <TouchableOpacity
+                          style={[
+                            styles.typeButton,
+                            line.transactionType === TransactionType.DEBIT && styles.typeButtonActive,
+                            line.transactionType === TransactionType.DEBIT && { backgroundColor: theme.primary },
+                            { borderColor: theme.border }
+                          ]}
+                          onPress={() => updateLine(line.id, 'transactionType', TransactionType.DEBIT)}
+                        >
+                          <AppText
+                            variant="body"
+                            themeMode={themeMode}
+                            style={[
+                              line.transactionType === TransactionType.DEBIT && { color: theme.background }
+                            ]}
+                          >
+                            DEBIT
+                          </AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.typeButton,
+                            line.transactionType === TransactionType.CREDIT && styles.typeButtonActive,
+                            line.transactionType === TransactionType.CREDIT && { backgroundColor: theme.primary },
+                            { borderColor: theme.border }
+                          ]}
+                          onPress={() => updateLine(line.id, 'transactionType', TransactionType.CREDIT)}
+                        >
+                          <AppText
+                            variant="body"
+                            themeMode={themeMode}
+                            style={[
+                              line.transactionType === TransactionType.CREDIT && { color: theme.background }
+                            ]}
+                          >
+                            CREDIT
+                          </AppText>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={styles.halfWidth}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <AppText variant="body" themeMode={themeMode} style={styles.label}>Amount</AppText>
+                        {line.accountCurrency && (
+                          <AppText variant="caption" color="primary" themeMode={themeMode}>
+                            {line.accountCurrency}
+                          </AppText>
+                        )}
+                      </View>
+                      <TextInput
+                        style={[styles.input, {
+                          backgroundColor: theme.surface,
+                          borderColor: theme.border,
+                          color: theme.text
+                        }]}
+                        value={line.amount}
+                        onChangeText={(value) => updateLine(line.id, 'amount', value)}
+                        placeholder="0.00"
+                        placeholderTextColor={theme.textSecondary}
+                        keyboardType="numeric"
+                      />
+                      {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
+                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                          ≈ ${(getLineBaseAmount(line)).toFixed(2)} USD
+                        </AppText>
+                      )}
+                    </View>
+                  </View>
+
+                  <AppText variant="body" themeMode={themeMode} style={styles.label}>Notes</AppText>
                   <TextInput
-                    style={[styles.input, { 
+                    style={[styles.input, {
                       backgroundColor: theme.surface,
                       borderColor: theme.border,
-                      color: theme.text 
+                      color: theme.text
                     }]}
-                    value={line.amount}
-                    onChangeText={(value) => updateLine(line.id, 'amount', value)}
-                    placeholder="0.00"
+                    value={line.notes}
+                    onChangeText={(value) => updateLine(line.id, 'notes', value)}
+                    placeholder="Optional notes"
                     placeholderTextColor={theme.textSecondary}
-                    keyboardType="numeric"
                   />
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <AppText variant="body" themeMode={themeMode} style={styles.label}>
+                      Exchange Rate (Optional)
+                    </AppText>
+                    {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          try {
+                            const rate = await exchangeRateService.getRate(
+                              line.accountCurrency!,
+                              AppConfig.defaultCurrency
+                            )
+                            updateLine(line.id, 'exchangeRate', rate.toString())
+                          } catch (error) {
+                            console.error('Failed to fetch rate:', error)
+                          }
+                        }}
+                      >
+                        <AppText variant="caption" color="primary" themeMode={themeMode}>Auto-fetch</AppText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <TextInput
+                    style={[styles.input, {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                      color: theme.text
+                    }]}
+                    value={line.exchangeRate || ''}
+                    onChangeText={(value) => updateLine(line.id, 'exchangeRate', value)}
+                    placeholder="e.g., 1.1050"
+                    placeholderTextColor={theme.textSecondary}
+                    keyboardType="decimal-pad"
+                  />
+                  <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginTop: -8, marginBottom: 8 }}>
+                    {line.accountCurrency === AppConfig.defaultCurrency
+                      ? 'Not needed (same as base currency)'
+                      : `Rate to convert ${line.accountCurrency} to ${AppConfig.defaultCurrency}`}
+                  </AppText>
                 </View>
+              ))}
+            </AppCard>
+
+            <AppCard elevation="sm" padding="lg" style={styles.summaryCard} themeMode={themeMode}>
+              <View style={styles.summaryRow}>
+                <AppText variant="body" themeMode={themeMode}>Total Debits:</AppText>
+                <AppText variant="body" themeMode={themeMode}>${getTotalDebits().toFixed(2)}</AppText>
               </View>
-              
-              <AppText variant="body" themeMode={themeMode} style={styles.label}>Notes</AppText>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
-                  color: theme.text 
-                }]}
-                value={line.notes}
-                onChangeText={(value) => updateLine(line.id, 'notes', value)}
-                placeholder="Optional notes"
-                placeholderTextColor={theme.textSecondary}
-              />
+              <View style={styles.summaryRow}>
+                <AppText variant="body" themeMode={themeMode}>Total Credits:</AppText>
+                <AppText variant="body" themeMode={themeMode}>${getTotalCredits().toFixed(2)}</AppText>
+              </View>
+              <View style={styles.summaryRow}>
+                <AppText variant="heading" themeMode={themeMode}>Balance:</AppText>
+                <AppText
+                  variant="heading"
+                  color={isBalanced ? "success" : "error"}
+                  themeMode={themeMode}
+                >
+                  ${Math.abs(getTotalDebits() - getTotalCredits()).toFixed(2)}
+                </AppText>
+              </View>
+              <AppText variant="body" color={isBalanced ? "success" : "error"} themeMode={themeMode} style={styles.balanceText}>
+                {isBalanced ? '✓ Journal is balanced in USD' : '✗ Journal must be balanced in USD'}
+              </AppText>
+            </AppCard>
+
+            <View style={styles.actions}>
+              <AppButton
+                variant="primary"
+                onPress={createJournal}
+                disabled={!isBalanced || isCreating}
+                themeMode={themeMode}
+                style={styles.createButton}
+              >
+                {isCreating ? 'Creating...' : 'Create Journal'}
+              </AppButton>
             </View>
-          ))}
-        </AppCard>
-
-        <AppCard elevation="sm" padding="lg" style={styles.summaryCard} themeMode={themeMode}>
-          <View style={styles.summaryRow}>
-            <AppText variant="body" themeMode={themeMode}>Total Debits:</AppText>
-            <AppText variant="body" themeMode={themeMode}>${getTotalDebits().toFixed(2)}</AppText>
-          </View>
-          <View style={styles.summaryRow}>
-            <AppText variant="body" themeMode={themeMode}>Total Credits:</AppText>
-            <AppText variant="body" themeMode={themeMode}>${getTotalCredits().toFixed(2)}</AppText>
-          </View>
-          <View style={styles.summaryRow}>
-            <AppText variant="heading" themeMode={themeMode}>Balance:</AppText>
-            <AppText 
-              variant="heading" 
-              color={isBalanced ? "success" : "error"}
-              themeMode={themeMode}
-            >
-              ${Math.abs(getTotalDebits() - getTotalCredits()).toFixed(2)}
-            </AppText>
-          </View>
-          <AppText 
-            variant="body" 
-            color={isBalanced ? "success" : "error"}
-            themeMode={themeMode}
-            style={styles.balanceText}
-          >
-            {isBalanced ? '✓ Journal is balanced' : '✗ Journal must be balanced'}
-          </AppText>
-        </AppCard>
-
-        <View style={styles.actions}>
-          <AppButton
-            variant="primary"
-            onPress={createJournal}
-            disabled={!isBalanced || isCreating}
-            themeMode={themeMode}
-            style={styles.createButton}
-          >
-            {isCreating ? 'Creating...' : 'Create Journal'}
-          </AppButton>
-        </View>
           </View>
         )}
       </ScrollView>
@@ -769,15 +891,15 @@ export default function JournalEntryScreen() {
                 <AppText variant="body" color="secondary" themeMode={themeMode}>✕</AppText>
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={accounts}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.accountItem, { 
+                  style={[styles.accountItem, {
                     backgroundColor: theme.surface,
-                    borderColor: theme.border 
+                    borderColor: theme.border
                   }]}
                   onPress={() => selectAccount(item.id)}
                 >

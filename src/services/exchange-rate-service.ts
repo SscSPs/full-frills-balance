@@ -5,6 +5,7 @@
  * Uses exchangerate-api.com free tier (1500 requests/month).
  */
 
+import { Q } from '@nozbe/watermelondb'
 import { database } from '../data/database/Database'
 import ExchangeRate from '../data/models/ExchangeRate'
 

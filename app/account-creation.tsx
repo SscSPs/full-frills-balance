@@ -1,7 +1,9 @@
 import { AppButton, AppCard, AppText } from '@/components/core'
 import { AppConfig, Shape, Spacing, ThemeMode, useThemeColors } from '@/constants'
 import { useColorScheme } from '@/hooks/use-color-scheme'
+import { database } from '@/src/data/database/Database'
 import { AccountType } from '@/src/data/models/Account'
+import Currency from '@/src/data/models/Currency'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { ValidationError } from '@/src/utils/errors'
@@ -9,7 +11,7 @@ import { sanitizeInput, validateAccountName } from '@/src/utils/validation'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { FlatList, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useUser } from '../contexts/UIContext'
 
@@ -17,17 +19,34 @@ export default function AccountCreationScreen() {
   const router = useRouter()
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
-  
+
   // Derive theme mode following the explicit pattern from design preview
-  const themeMode: ThemeMode = themePreference === 'system' 
+  const themeMode: ThemeMode = themePreference === 'system'
     ? (systemColorScheme === 'dark' ? 'dark' : 'light')
     : themePreference as ThemeMode
-  
+
   const theme = useThemeColors(themeMode)
-  
+
   const [accountName, setAccountName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET)
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(AppConfig.defaultCurrency)
+  const [currencies, setCurrencies] = useState<Currency[]>([])
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+
+  // Load available currencies
+  React.useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const currencyCollection = database.collections.get<Currency>('currencies')
+        const allCurrencies = await currencyCollection.query().fetch()
+        setCurrencies(allCurrencies)
+      } catch (error) {
+        console.error('Failed to load currencies:', error)
+      }
+    }
+    loadCurrencies()
+  }, [])
 
   const handleCancel = () => {
     // Go back to previous screen
@@ -49,24 +68,25 @@ export default function AccountCreationScreen() {
 
     const sanitizedName = sanitizeInput(accountName)
     setIsCreating(true)
-    
+
     try {
       await accountRepository.create({
         name: sanitizedName,
         accountType: accountType,
-        currencyCode: AppConfig.defaultCurrency,
-        description: `Created via onboarding`,
+        currencyCode: selectedCurrency,
+        description: `Created via account creation`,
       })
 
       showSuccessAlert(
         'Account Created',
         `"${sanitizedName}" has been created successfully!`
       )
-      
+
       // Reset form
       setAccountName('')
       setAccountType(AccountType.ASSET)
-      
+      setSelectedCurrency(AppConfig.defaultCurrency)
+
       // Navigate to accounts list
       router.push('/accounts')
     } catch (error) {
@@ -89,14 +109,14 @@ export default function AccountCreationScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header with back button */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleCancel}
           style={styles.backButton}
         >
-          <Ionicons 
-            name="chevron-back" 
-            size={24} 
-            color={theme.text} 
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.text}
           />
         </TouchableOpacity>
         <AppText variant="subheading" themeMode={themeMode}>
@@ -112,13 +132,13 @@ export default function AccountCreationScreen() {
         <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.subtitle}>
           Start tracking your finances
         </AppText>
-        
+
         <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode} style={styles.label}>Account Name</AppText>
           <TextInput
             style={[
               styles.input,
-              { 
+              {
                 borderColor: theme.border,
                 color: theme.text,
                 backgroundColor: theme.surface
@@ -143,24 +163,24 @@ export default function AccountCreationScreen() {
                 style={[
                   styles.accountTypeButton,
                   accountType === type.key && styles.accountTypeButtonSelected,
-                  { 
+                  {
                     borderColor: theme.border,
-                    backgroundColor: accountType === type.key 
-                      ? theme.primary 
+                    backgroundColor: accountType === type.key
+                      ? theme.primary
                       : theme.surface
                   }
                 ]}
                 onPress={() => setAccountType(type.key as AccountType)}
               >
-                <AppText 
-                  variant="body" 
+                <AppText
+                  variant="body"
                   themeMode={themeMode}
                   style={[
                     styles.accountTypeText,
                     accountType === type.key && styles.accountTypeTextSelected,
                     {
-                      color: accountType === type.key 
-                        ? '#fff' 
+                      color: accountType === type.key
+                        ? '#fff'
                         : theme.text
                     }
                   ]}
@@ -170,6 +190,31 @@ export default function AccountCreationScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </AppCard>
+
+        {/* Currency Selector */}
+        <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
+          <AppText variant="body" themeMode={themeMode} style={styles.label}>Currency</AppText>
+          <TouchableOpacity
+            style={[
+              styles.input,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.surface,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }
+            ]}
+            onPress={() => setShowCurrencyModal(true)}
+          >
+            <AppText variant="body" themeMode={themeMode}>
+              {currencies.find(c => c.code === selectedCurrency)?.name || selectedCurrency}
+            </AppText>
+            <AppText variant="body" color="secondary" themeMode={themeMode}>
+              {selectedCurrency} {currencies.find(c => c.code === selectedCurrency)?.symbol}
+            </AppText>
+          </TouchableOpacity>
         </AppCard>
 
         <AppButton
@@ -183,6 +228,50 @@ export default function AccountCreationScreen() {
           {isCreating ? 'Creating...' : 'Create Account'}
         </AppButton>
       </ScrollView>
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={showCurrencyModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCurrencyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <AppText variant="heading" themeMode={themeMode}>Select Currency</AppText>
+              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={currencies}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.currencyItem,
+                    { borderBottomColor: theme.border },
+                    selectedCurrency === item.code && { backgroundColor: theme.primaryLight }
+                  ]}
+                  onPress={() => {
+                    setSelectedCurrency(item.code)
+                    setShowCurrencyModal(false)
+                  }}
+                >
+                  <View>
+                    <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
+                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                      {item.code}
+                    </AppText>
+                  </View>
+                  <AppText variant="subheading" themeMode={themeMode}>{item.symbol}</AppText>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -258,5 +347,30 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: Spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    height: '70%',
+    borderTopLeftRadius: Shape.radius.lg,
+    borderTopRightRadius: Shape.radius.lg,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
   },
 });
