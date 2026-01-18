@@ -86,8 +86,6 @@ export class AccountRepository {
       }
     }
 
-    console.log(`Final balance for ${account.name}: ${balance}`)
-
     return {
       accountId: account.id,
       balance,
@@ -95,6 +93,57 @@ export class AccountRepository {
       asOfDate: cutoffDate,
       accountType: account.accountType
     }
+  }
+
+  /**
+   * Gets balances for all accounts in batch
+   */
+  async getAccountBalances(asOfDate?: number): Promise<AccountBalance[]> {
+    const accounts = await this.findAll()
+    const balances: AccountBalance[] = []
+
+    const cutoffDate = asOfDate || Date.now()
+    const allValidTransactions = await this.transactions
+      .query(
+        Q.on('journals', Q.and(
+          Q.where('status', JournalStatus.POSTED),
+          Q.where('deleted_at', Q.eq(null))
+        )),
+        Q.where('deleted_at', Q.eq(null)),
+        asOfDate ? Q.where('transaction_date', Q.lte(asOfDate)) : Q.where('id', Q.notEq(null))
+      )
+      .fetch() as any[]
+
+    const txByAccount = allValidTransactions.reduce((acc, tx) => {
+      if (!acc[tx.accountId]) acc[tx.accountId] = []
+      acc[tx.accountId].push(tx)
+      return acc
+    }, {} as Record<string, any[]>)
+
+    for (const account of accounts) {
+      const txs = txByAccount[account.id] || []
+      const direction = this.getBalanceDirection(account.accountType)
+      let balance = 0
+
+      for (const tx of txs) {
+        const amount = tx.amount || 0
+        if (tx.transactionType === TransactionType.DEBIT) {
+          balance += amount * direction.debit
+        } else if (tx.transactionType === TransactionType.CREDIT) {
+          balance += amount * direction.credit
+        }
+      }
+
+      balances.push({
+        accountId: account.id,
+        balance,
+        transactionCount: txs.length,
+        asOfDate: cutoffDate,
+        accountType: account.accountType
+      })
+    }
+
+    return balances
   }
 
   /**

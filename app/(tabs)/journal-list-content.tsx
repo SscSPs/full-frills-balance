@@ -1,9 +1,12 @@
 import { AppText, FloatingActionButton } from '@/components/core';
+import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
+import { NetWorthCard } from '@/components/journal/NetWorthCard';
 import { Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useUser } from '@/contexts/UIContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useJournals } from '@/hooks/use-data';
+import { useSummary } from '@/hooks/use-summary';
 import Journal from '@/src/data/models/Journal';
 import { formatShortDate } from '@/src/utils/dateUtils';
 import { useRouter } from 'expo-router';
@@ -17,6 +20,7 @@ export default function JournalListScreen() {
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
   const { journals, isLoading } = useJournals()
+  const { income, expense, netWorth, isPrivacyMode, togglePrivacyMode } = useSummary()
 
   const themeMode: ThemeMode = themePreference === 'system'
     ? (systemColorScheme === 'dark' ? 'dark' : 'light')
@@ -59,6 +63,25 @@ export default function JournalListScreen() {
         keyExtractor={(item) => item.id}
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <NetWorthCard
+              amount={netWorth}
+              isPrivacyMode={isPrivacyMode}
+              onTogglePrivacy={togglePrivacyMode}
+              themeMode={themeMode}
+            />
+            <DashboardSummary
+              income={income}
+              expense={expense}
+              isPrivacyMode={isPrivacyMode}
+              themeMode={themeMode}
+            />
+            <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+              Recent Transactions
+            </AppText>
+          </>
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <AppText variant="heading" themeMode={themeMode} style={styles.emptyText}>
@@ -85,6 +108,10 @@ export default function JournalListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.md,
+    marginTop: Spacing.sm,
   },
   header: {
     flexDirection: 'row',

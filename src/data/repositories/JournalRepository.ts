@@ -2,6 +2,7 @@ import { Q } from '@nozbe/watermelondb'
 import { auditService } from '../../services/audit-service'
 import { sanitizeAmount } from '../../utils/validation'
 import { database } from '../database/Database'
+import Account, { AccountType } from '../models/Account'
 import { AuditAction } from '../models/AuditLog'
 import Journal, { JournalStatus } from '../models/Journal'
 import Transaction, { TransactionType } from '../models/Transaction'
@@ -320,6 +321,56 @@ export class JournalRepository {
    */
   async delete(journal: Journal): Promise<void> {
     return journal.markAsDeleted()
+  }
+
+  /**
+   * Gets summary of income and expenses for a specific month
+   */
+  async getMonthlySummary(month: number, year: number): Promise<{ income: number, expense: number }> {
+    const startOfMonth = new Date(year, month, 1).getTime()
+    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime()
+
+    const txs = await this.transactions
+      .query(
+        Q.on('journals', Q.and(
+          Q.where('status', JournalStatus.POSTED),
+          Q.where('deleted_at', Q.eq(null))
+        )),
+        Q.where('transaction_date', Q.gte(startOfMonth)),
+        Q.where('transaction_date', Q.lte(endOfMonth)),
+        Q.where('deleted_at', Q.eq(null))
+      )
+      .fetch() as any[]
+
+    if (txs.length === 0) return { income: 0, expense: 0 }
+
+    const accountIds = Array.from(new Set(txs.map(t => t.accountId)))
+    const accounts = await database.collections.get<Account>('accounts')
+      .query(Q.where('id', Q.oneOf(accountIds)))
+      .fetch()
+
+    const accountTypeMap = accounts.reduce((acc: any, a: any) => {
+      acc[a.id] = a.accountType
+      return acc
+    }, {} as Record<string, AccountType>)
+
+    let totalIncome = 0
+    let totalExpense = 0
+
+    txs.forEach(t => {
+      const type = accountTypeMap[t.accountId]
+      if (type === AccountType.INCOME) {
+        // Income increases on CREDIT
+        if (t.transactionType === TransactionType.CREDIT) totalIncome += t.amount
+        else totalIncome -= t.amount
+      } else if (type === AccountType.EXPENSE) {
+        // Expense increases on DEBIT
+        if (t.transactionType === TransactionType.DEBIT) totalExpense += t.amount
+        else totalExpense -= t.amount
+      }
+    })
+
+    return { income: totalIncome, expense: totalExpense }
   }
 }
 
