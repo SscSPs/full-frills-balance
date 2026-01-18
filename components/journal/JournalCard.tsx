@@ -1,4 +1,4 @@
-import { AppCard, AppText, Badge } from '@/components/core';
+import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
 import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useJournalTransactions } from '@/hooks/use-data';
 import Journal from '@/src/data/models/Journal';
@@ -57,9 +57,24 @@ export const JournalCard = ({ journal, themeMode, onPress }: JournalCardProps) =
             <TouchableOpacity onPress={() => onPress(journal)} style={styles.content}>
                 {/* Header: Badges & Account Info */}
                 <View style={styles.header}>
-                    <Badge variant="default" size="sm" themeMode={themeMode}>
-                        {journal.currencyCode}
-                    </Badge>
+                    <View style={styles.badgeRow}>
+                        {journal.currencyCode !== 'USD' && (
+                            <Badge variant="default" size="sm" themeMode={themeMode}>
+                                {journal.currencyCode}
+                            </Badge>
+                        )}
+                        {/* Display account names involved */}
+                        {transactions.slice(0, 2).map((tx, idx) => (
+                            <Badge key={tx.id} variant={tx.transactionType === TransactionType.DEBIT ? 'expense' : 'income'} size="sm" themeMode={themeMode}>
+                                {tx.accountName || 'Unknown'}
+                            </Badge>
+                        ))}
+                        {transactions.length > 2 && (
+                            <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                                +{transactions.length - 2}
+                            </AppText>
+                        )}
+                    </View>
                     <View style={{ flex: 1 }} />
                     <AppText variant="caption" color="secondary" themeMode={themeMode}>
                         {formattedDate}
@@ -75,10 +90,12 @@ export const JournalCard = ({ journal, themeMode, onPress }: JournalCardProps) =
 
                 {/* Amount Row: Ivy Style */}
                 <View style={styles.amountRow}>
-                    {/* Circular Type Icon */}
-                    <View style={[styles.typeIcon, { backgroundColor: typeColor }]}>
-                        <AppText style={styles.typeIconLabel}>{typeLabel}</AppText>
-                    </View>
+                    <IvyIcon
+                        label={typeLabel}
+                        color={typeColor}
+                        size={40}
+                        style={{ marginRight: Spacing.md }}
+                    />
 
                     <View style={styles.amountInfo}>
                         <AppText variant="xl" themeMode={themeMode} style={styles.amountText}>
@@ -116,18 +133,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    typeIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    badgeRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: Spacing.md,
-    },
-    typeIconLabel: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: 'bold',
+        gap: Spacing.xs,
+        flex: 1,
+        flexWrap: 'wrap',
     },
     amountInfo: {
         flex: 1,

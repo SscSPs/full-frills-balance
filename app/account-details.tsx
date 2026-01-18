@@ -4,9 +4,9 @@
  * Shows account information and transaction history
  */
 
-import { AppButton, AppCard, AppText, Badge } from '@/components/core'
+import { AppButton, AppCard, AppText, Badge, IvyIcon } from '@/components/core'
 import { TransactionItem } from '@/components/journal/TransactionItem'
-import { Spacing } from '@/constants'
+import { Shape, Spacing } from '@/constants'
 import { useAccount, useAccountBalance, useAccountTransactions } from '@/hooks/use-data'
 import { useTheme } from '@/hooks/use-theme'
 import Ionicons from '@expo/vector-icons/Ionicons'
@@ -56,25 +56,32 @@ export default function AccountDetailsScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: theme.border }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={theme.text} />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={[styles.circularButton, { backgroundColor: theme.surface }]}>
+                    <Ionicons name="close" size={24} color={theme.text} />
                 </TouchableOpacity>
-                <AppText variant="subheading" themeMode={themeMode}>
+                <AppText variant="subheading" themeMode={themeMode} style={styles.headerTitle}>
                     Account Details
                 </AppText>
                 <View style={styles.placeholder} />
             </View>
 
             {/* Account Info Card */}
-            <AppCard elevation="md" padding="lg" style={styles.accountInfoCard} themeMode={themeMode}>
+            <AppCard elevation="sm" style={styles.accountInfoCard} themeMode={themeMode}>
                 <View style={styles.accountHeader}>
-                    <AppText variant="title" themeMode={themeMode}>
-                        {account.name}
-                    </AppText>
-                    <Badge variant={account.accountType.toLowerCase() as any} themeMode={themeMode}>
-                        {account.accountType}
-                    </Badge>
+                    <IvyIcon
+                        label={account.name}
+                        color={account.accountType.toLowerCase() === 'liability' ? theme.liability : (account.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
+                        size={48}
+                    />
+                    <View style={styles.titleInfo}>
+                        <AppText variant="title" themeMode={themeMode}>
+                            {account.name}
+                        </AppText>
+                        <Badge variant={account.accountType.toLowerCase() as any} themeMode={themeMode}>
+                            {account.accountType}
+                        </Badge>
+                    </View>
                 </View>
 
                 <View style={styles.accountStats}>
@@ -150,14 +157,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.md,
-        borderBottomWidth: 1,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.sm,
     },
-    backButton: {
-        padding: Spacing.sm,
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+        fontWeight: 'bold',
+    },
+    circularButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     placeholder: {
-        width: 32,
+        width: 40,
     },
     loadingContainer: {
         flex: 1,
@@ -173,12 +189,18 @@ const styles = StyleSheet.create({
     },
     accountInfoCard: {
         margin: Spacing.lg,
+        padding: Spacing.lg,
+        borderRadius: Shape.radius.xl,
     },
     accountHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: Spacing.md,
+    },
+    titleInfo: {
+        marginLeft: Spacing.md,
+        flex: 1,
+        gap: Spacing.xs,
     },
     accountStats: {
         flexDirection: 'row',

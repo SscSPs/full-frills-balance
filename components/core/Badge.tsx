@@ -4,31 +4,34 @@
  */
 
 import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { getContrastColor, useThemeColors } from '@/constants/theme-helpers'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 import { AppText } from './AppText'
 
 export type BadgeProps = ViewProps & {
   // Badge content
-  children: string
+  children: React.ReactNode
   // Badge variants - limited options
   variant?: 'default' | 'success' | 'warning' | 'error' | 'asset' | 'liability' | 'equity' | 'income' | 'expense'
   // Badge size
   size?: 'sm' | 'md'
+  // Use solid background instead of light tinted background
+  solid?: boolean
   // Theme mode override (for design preview)
   themeMode?: ThemeMode
 }
 
-export function Badge({ 
+export function Badge({
   children,
   variant = 'default',
   size = 'md',
+  solid = false,
   themeMode,
   style,
-  ...props 
+  ...props
 }: BadgeProps) {
   const theme = useThemeColors(themeMode)
-  
+
   // Get badge styles based on variant
   const getBadgeStyles = () => {
     const baseStyles = {
@@ -114,29 +117,36 @@ export function Badge({
     }
   }
 
-  // Get text color based on variant
-  const getTextColor = () => {
-    switch (variant) {
-      case 'success':
-        return theme.success
-      case 'warning':
-        return theme.warning
-      case 'error':
-        return theme.error
-      case 'asset':
-        return theme.asset
-      case 'liability':
-        return theme.liability
-      case 'equity':
-        return theme.equity
-      case 'income':
-        return theme.income
-      case 'expense':
-        return theme.expense
-      default:
-        return theme.textSecondary
+  // Get background and text colors based on variant and solid state
+  const getColors = () => {
+    let backgroundColor: string = theme.surfaceSecondary
+    let textColor: string = theme.textSecondary
+
+    const variants: Record<string, { main: string; light: string }> = {
+      success: { main: theme.success, light: theme.successLight },
+      warning: { main: theme.warning, light: theme.warningLight },
+      error: { main: theme.error, light: theme.errorLight },
+      asset: { main: theme.asset, light: theme.primaryLight },
+      liability: { main: theme.liability, light: theme.warningLight },
+      equity: { main: theme.equity, light: theme.successLight },
+      income: { main: theme.income, light: theme.successLight },
+      expense: { main: theme.expense, light: theme.errorLight },
     }
+
+    if (variants[variant]) {
+      const colors = variants[variant]
+      backgroundColor = solid ? colors.main : colors.light
+      textColor = solid ? getContrastColor(colors.main) : colors.main
+    } else {
+      // Default variant
+      backgroundColor = theme.surfaceSecondary
+      textColor = theme.textSecondary
+    }
+
+    return { backgroundColor, textColor }
   }
+
+  const { backgroundColor, textColor } = getColors()
 
   // Get text styles based on size
   const getTextStyles = () => {
@@ -165,6 +175,7 @@ export function Badge({
         styles.badge,
         getBadgeStyles(),
         getSizeStyles(),
+        { backgroundColor },
         style,
       ]}
       {...props}
@@ -173,7 +184,7 @@ export function Badge({
         variant="caption"
         style={[
           getTextStyles(),
-          { color: getTextColor() }
+          { color: textColor }
         ]}
       >
         {children}

@@ -125,11 +125,11 @@ export function useAccountTransactions(accountId: string | null) {
 }
 
 /**
- * Hook to reactively get transactions for a specific journal
+ * Hook to reactively get transactions for a specific journal with account names
  */
 export function useJournalTransactions(journalId: string | null) {
     const database = useDatabase()
-    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [transactions, setTransactions] = useState<(Transaction & { accountName?: string })[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -146,8 +146,15 @@ export function useJournalTransactions(journalId: string | null) {
                 Q.where('deleted_at', Q.eq(null))
             )
             .observe()
-            .subscribe((transactions) => {
-                setTransactions(transactions)
+            .subscribe(async (txs) => {
+                // Fetch account names for each transaction
+                const enrichedTxs = await Promise.all(txs.map(async (tx) => {
+                    const account = await tx.account.fetch()
+                    const txWithInfo = tx as any
+                    txWithInfo.accountName = account?.name || 'Unknown'
+                    return txWithInfo
+                }))
+                setTransactions(enrichedTxs)
                 setIsLoading(false)
             })
 

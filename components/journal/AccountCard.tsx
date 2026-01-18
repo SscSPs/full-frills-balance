@@ -1,4 +1,4 @@
-import { AppCard, AppText, Badge } from '@/components/core';
+import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
 import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useAccountBalance } from '@/hooks/use-data';
 import Account from '@/src/data/models/Account';
@@ -23,12 +23,12 @@ export const AccountCard = ({ account, themeMode, onPress }: AccountCardProps) =
     const transactionCount = balanceData?.transactionCount || 0;
 
     // Determine color based on account type
-    let typeColor = theme.asset;
+    let accountColor: string = theme.asset;
     const typeLower = account.accountType.toLowerCase();
-    if (typeLower === 'liability') typeColor = theme.liability;
-    if (typeLower === 'equity') typeColor = theme.equity;
-    if (typeLower === 'income') typeColor = theme.income;
-    if (typeLower === 'expense') typeColor = theme.expense;
+    if (typeLower === 'liability') accountColor = theme.liability;
+    if (typeLower === 'equity') accountColor = theme.equity;
+    if (typeLower === 'income') accountColor = theme.income;
+    if (typeLower === 'expense') accountColor = theme.expense;
 
     return (
         <AppCard
@@ -37,15 +37,14 @@ export const AccountCard = ({ account, themeMode, onPress }: AccountCardProps) =
             themeMode={themeMode}
         >
             <TouchableOpacity onPress={() => onPress(account)} style={styles.content}>
-                <View style={styles.row}>
-                    {/* Circular Type Icon */}
-                    <View style={[styles.typeIcon, { backgroundColor: typeColor }]}>
-                        <AppText style={styles.typeIconLabel}>
-                            {account.name.charAt(0).toUpperCase()}
-                        </AppText>
-                    </View>
-
-                    <View style={styles.mainInfo}>
+                {/* Header: Status Icon & Account Name */}
+                <View style={styles.header}>
+                    <IvyIcon
+                        label={account.name}
+                        color={accountColor}
+                        size={32}
+                    />
+                    <View style={styles.titleInfo}>
                         <AppText variant="heading" themeMode={themeMode} numberOfLines={1}>
                             {account.name}
                         </AppText>
@@ -82,24 +81,12 @@ const styles = StyleSheet.create({
     content: {
         padding: Spacing.lg,
     },
-    row: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    typeIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: Spacing.md,
-    },
-    typeIconLabel: {
-        color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: 'bold',
-    },
-    mainInfo: {
+    titleInfo: {
+        marginLeft: Spacing.md,
         flex: 1,
     },
     badgeRow: {

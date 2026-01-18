@@ -1,4 +1,4 @@
-import { AppCard, AppText, Badge } from '@/components/core';
+import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
 import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { TransactionWithAccountInfo } from '@/src/types/readModels';
@@ -27,6 +27,7 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
     const isDebit = transaction.transactionType === TransactionType.DEBIT;
     const typeColor = isDebit ? theme.expense : theme.income;
     const typeLabel = isDebit ? '−' : '+';
+    const statusColor = typeColor; // IvyIcon color
 
     return (
         <AppCard
@@ -35,12 +36,15 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
             themeMode={themeMode}
         >
             <View style={styles.row}>
-                {/* Status Circle */}
-                <View style={[styles.statusCircle, { backgroundColor: typeColor }]}>
-                    <AppText style={styles.statusLabel}>{typeLabel}</AppText>
-                </View>
+                {/* Status Icon */}
+                <IvyIcon
+                    label={typeLabel}
+                    color={statusColor}
+                    size={32}
+                    style={{ marginRight: Spacing.md }}
+                />
 
-                <View style={styles.mainInfo}>
+                <View style={styles.content}>
                     <View style={styles.headerRow}>
                         <AppText variant="body" themeMode={themeMode} style={styles.accountName}>
                             {transaction.accountName}
@@ -92,20 +96,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    statusCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: Spacing.md,
-    },
-    statusLabel: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    mainInfo: {
+    content: {
         flex: 1,
     },
     headerRow: {

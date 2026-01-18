@@ -1,4 +1,4 @@
-import { AppText, FloatingActionButton } from '@/components/core';
+import { AppText, FloatingActionButton, SearchField } from '@/components/core';
 import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
 import { NetWorthCard } from '@/components/journal/NetWorthCard';
@@ -21,6 +21,7 @@ export default function JournalListScreen() {
   const systemColorScheme = useColorScheme()
   const { journals, isLoading } = useJournals()
   const { income, expense, netWorth, isPrivacyMode, togglePrivacyMode } = useSummary()
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   const themeMode: ThemeMode = themePreference === 'system'
     ? (systemColorScheme === 'dark' ? 'dark' : 'light')
@@ -39,6 +40,16 @@ export default function JournalListScreen() {
     alert(`Journal Entry\n\n${message}`);
   }
 
+  // Filter journals based on search query
+  const filteredJournals = journals.filter(j => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (j.description?.toLowerCase() || '').includes(q) ||
+      (j.currencyCode.toLowerCase()).includes(q)
+    );
+  });
+
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -52,7 +63,7 @@ export default function JournalListScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
-        data={journals}
+        data={filteredJournals}
         renderItem={({ item }) => (
           <JournalCard
             journal={item}
@@ -77,8 +88,13 @@ export default function JournalListScreen() {
               isPrivacyMode={isPrivacyMode}
               themeMode={themeMode}
             />
+            <SearchField
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              themeMode={themeMode}
+            />
             <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
-              Recent Transactions
+              {searchQuery ? 'Search Results' : 'Recent Transactions'}
             </AppText>
           </>
         }
