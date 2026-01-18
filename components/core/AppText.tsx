@@ -9,28 +9,31 @@ import { StyleSheet, Text, type TextProps } from 'react-native'
 
 export type AppTextProps = TextProps & {
   // Typography variants - limited and intentional
-  variant?: 'caption' | 'body' | 'subheading' | 'heading' | 'title'
+  variant?: 'caption' | 'body' | 'subheading' | 'heading' | 'title' | 'xl'
   // Semantic color options
   color?: 'primary' | 'secondary' | 'tertiary' | 'success' | 'warning' | 'error' | 'asset' | 'liability' | 'equity' | 'income' | 'expense'
   // Text alignment
   align?: 'auto' | 'left' | 'right' | 'center' | 'justify'
   // Weight variants
   weight?: 'regular' | 'medium' | 'semibold' | 'bold'
+  // Italic support
+  italic?: boolean
   // Theme mode override (for design preview)
   themeMode?: ThemeMode
 }
 
-export function AppText({ 
+export function AppText({
   variant = 'body',
   color = 'primary',
   align = 'auto',
   weight = 'regular',
+  italic = false,
   themeMode,
   style,
-  ...props 
+  ...props
 }: AppTextProps) {
   const theme = useThemeColors(themeMode)
-  
+
   // Get typography styles based on variant
   const getTypographyStyles = () => {
     switch (variant) {
@@ -66,6 +69,13 @@ export function AppText({
         return {
           fontSize: Typography.sizes.xxxl,
           lineHeight: Typography.sizes.xxxl * Typography.lineHeights.tight,
+          fontFamily: Typography.fonts.bold,
+          letterSpacing: Typography.letterSpacing.tight,
+        }
+      case 'xl':
+        return {
+          fontSize: Typography.sizes.xxl,
+          lineHeight: Typography.sizes.xxl * Typography.lineHeights.tight,
           fontFamily: Typography.fonts.bold,
           letterSpacing: Typography.letterSpacing.tight,
         }
@@ -127,6 +137,7 @@ export function AppText({
           color: getColor(),
           textAlign: align,
           fontWeight: getFontWeight(),
+          fontStyle: italic ? 'italic' : 'normal',
         },
         style,
       ]}

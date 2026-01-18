@@ -1,89 +1,16 @@
-import { AppButton, AppCard, AppText } from '@/components/core';
+import { AppText } from '@/components/core';
+import { JournalCard } from '@/components/journal/JournalCard';
 import { Spacing, ThemeMode, useThemeColors } from '@/constants';
 import { useUser } from '@/contexts/UIContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useJournals, useJournalTransactions } from '@/hooks/use-data';
+import { useJournals } from '@/hooks/use-data';
 import Journal from '@/src/data/models/Journal';
-import { TransactionType } from '@/src/data/models/Transaction';
 import { formatShortDate } from '@/src/utils/dateUtils';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
-interface JournalItemProps {
-  journal: Journal;
-  themeMode: ThemeMode;
-  onPress: (journal: Journal) => void;
-  onInfo: (journal: Journal, totalAmount: number, transactionCount: number) => void;
-}
-
-const JournalItem = ({ journal, themeMode, onPress, onInfo }: JournalItemProps) => {
-  const { transactions, isLoading } = useJournalTransactions(journal.id);
-  const theme = useThemeColors(themeMode);
-  const formattedDate = formatShortDate(journal.journalDate);
-
-  // Calculate totals from transactions reactively
-  const totalAmount = transactions
-    .filter(tx => tx.transactionType === TransactionType.DEBIT)
-    .reduce((sum, tx) => sum + (tx.amount || 0), 0);
-
-  const transactionCount = transactions.length;
-
-  return (
-    <AppCard
-      elevation="sm"
-      padding="lg"
-      style={styles.journalCard}
-      themeMode={themeMode}
-    >
-      <TouchableOpacity onPress={() => onPress(journal)}>
-        <View style={styles.journalHeader}>
-          <AppText variant="body" themeMode={themeMode} style={styles.journalDate}>
-            {formattedDate}
-          </AppText>
-          <TouchableOpacity
-            style={[styles.infoButton, { backgroundColor: theme.surfaceSecondary }]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onInfo(journal, totalAmount, transactionCount);
-            }}
-          >
-            <AppText variant="caption" themeMode={themeMode}>ℹ️</AppText>
-          </TouchableOpacity>
-        </View>
-
-        <AppText
-          variant="body"
-          color="secondary"
-          themeMode={themeMode}
-          style={styles.journalDescription}
-        >
-          {journal.description || 'No description'}
-        </AppText>
-
-        <View style={styles.journalFooter}>
-          <AppText variant="heading" themeMode={themeMode} style={styles.journalAmount}>
-            {isLoading ? '...' : totalAmount.toFixed(2)} {journal.currencyCode}
-          </AppText>
-          <AppText variant="caption" color="secondary" themeMode={themeMode}>
-            {isLoading ? '...' : `${transactionCount} transaction${transactionCount !== 1 ? 's' : ''}`}
-          </AppText>
-        </View>
-
-        <View style={styles.journalActions}>
-          <AppButton
-            variant="outline"
-            size="sm"
-            onPress={() => onPress(journal)}
-            themeMode={themeMode}
-          >
-            View Transactions
-          </AppButton>
-        </View>
-      </TouchableOpacity>
-    </AppCard>
-  );
-};
+// JournalItem replaced by JournalCard
 
 export default function JournalListScreen() {
   const router = useRouter()
@@ -123,11 +50,10 @@ export default function JournalListScreen() {
       <FlatList
         data={journals}
         renderItem={({ item }) => (
-          <JournalItem
+          <JournalCard
             journal={item}
             themeMode={themeMode}
             onPress={handleJournalPress}
-            onInfo={handleJournalInfo}
           />
         )}
         keyExtractor={(item) => item.id}

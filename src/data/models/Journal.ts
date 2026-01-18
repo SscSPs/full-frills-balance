@@ -9,6 +9,9 @@ export enum JournalStatus {
 
 export default class Journal extends Model {
   static table = 'journals'
+  static associations = {
+    transactions: { type: 'has_many', foreignKey: 'journal_id' },
+  } as const
 
   @field('journal_date') journalDate!: number
   @field('description') description?: string
@@ -16,7 +19,7 @@ export default class Journal extends Model {
   @field('status') status!: JournalStatus
   @field('original_journal_id') originalJournalId?: string
   @field('reversing_journal_id') reversingJournalId?: string
-  
+
   @date('created_at') createdAt!: Date
   @date('updated_at') updatedAt!: Date
   @date('deleted_at') deletedAt?: Date

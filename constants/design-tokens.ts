@@ -223,79 +223,122 @@ export const Shape = {
   },
 } as const
 
+// === IVY PALETTE ===
+// Raw colors from Ivy Wallet source code
+export const Palette = {
+  white: '#FAFAFA',
+  black: '#111114',
+  trueBlack: '#000000',
+
+  // Primary
+  ivy: '#6B4DFF',
+  purple: '#6B4DFF',
+  purple1: '#C34CFF',
+  purple2: '#FF4CFF',
+
+  blue: '#4CC3FF',
+  blue2: '#45E6E6',
+  blue3: '#457BE6',
+
+  green: '#14CC9E',
+  green2: '#45E67B',
+  green3: '#96E645',
+  green4: '#C7E62E',
+
+  yellow: '#FFEE33',
+  orange: '#F29F30',
+  orange2: '#E67B45',
+  orange3: '#FFC34C',
+
+  red: '#FF4060',
+  red2: '#E62E2E',
+  red3: '#FF4CA6',
+
+  // Neutral
+  mediumBlack: '#2B2C2D',
+  gray: '#939199',
+  mediumWhite: '#EFEEF0',
+} as const
+
 // === SEMANTIC COLORS ===
 // Ivy Wallet inspired clean color palette
 export const Colors = {
   // Light theme
   light: {
     // Primary colors
-    primary: '#007AFF',        // iOS blue, clean and professional
-    primaryLight: '#E3F2FD',    // Light blue for backgrounds
-    
+    primary: Palette.purple,
+    primaryLight: '#D5CCFF',    // IvyLight
+
     // Semantic colors
-    success: '#10B981',         // Clean green
-    successLight: '#D1FAE5',    // Light green background
-    warning: '#F59E0B',         // Warm amber
-    warningLight: '#FEF3C7',   // Light amber background
-    error: '#EF4444',           // Clean red
-    errorLight: '#FEE2E2',      // Light red background
-    
-    // Account type colors (subtle, professional)
-    asset: '#007AFF',           // Blue for assets
-    liability: '#F59E0B',        // Amber for liabilities
-    equity: '#10B981',          // Green for equity
-    income: '#10B981',          // Green for income
-    expense: '#EF4444',         // Red for expenses
-    
+    success: Palette.green,
+    successLight: '#AAF2E0',    // GreenLight
+    warning: Palette.orange,
+    warningLight: '#FFDEB3',    // OrangeLight
+    error: Palette.red,
+    errorLight: '#FFCCD5',      // RedLight
+
+    // Account type colors
+    asset: Palette.blue,
+    liability: Palette.orange,
+    equity: Palette.green,
+    income: Palette.green,
+    expense: Palette.red,
+    transfer: Palette.purple,
+
     // Neutral colors
-    background: '#FFFFFF',       // Pure white
-    surface: '#F8F9FA',         // Light gray for cards
-    surfaceSecondary: '#F1F3F4', // Slightly darker surface
-    border: '#E5E7EB',          // Subtle borders
-    text: '#1F2937',            // Dark gray for text
-    textSecondary: '#6B7280',   // Medium gray for secondary text
-    textTertiary: '#9CA3AF',    // Light gray for tertiary text
-    icon: '#6B7280',            // Medium gray for icons
-    
+    background: Palette.white,
+    surface: '#F1F1F4',         // Medium in Ivy Light
+    surfaceSecondary: '#E5E5E8',
+    border: '#EBEBEF',
+    text: Palette.black,
+    textSecondary: Palette.gray,
+    textTertiary: '#B1B1B8',
+    icon: Palette.gray,
+
     // Special colors
-    overlay: 'rgba(0, 0, 0, 0.5)', // Modal overlays
-    divider: '#E5E7EB',         // Dividers
+    overlay: 'rgba(0, 0, 0, 0.5)',
+    divider: '#EBEBEF',
+    pure: '#FFFFFF',
+    pureInverse: '#000000',
   },
 
   // Dark theme
   dark: {
     // Primary colors
-    primary: '#0A84FF',        // Lighter blue for dark mode
-    primaryLight: '#1E3A8A',    // Dark blue background
-    
+    primary: Palette.purple,
+    primaryLight: '#352680',    // IvyDark
+
     // Semantic colors
-    success: '#34D399',         // Lighter green
-    successLight: '#064E3B',    // Dark green background
-    warning: '#FBBF24',         // Lighter amber
-    warningLight: '#78350F',    // Dark amber background
-    error: '#F87171',           // Lighter red
-    errorLight: '#7F1D1D',      // Dark red background
-    
-    // Account type colors (adjusted for dark mode)
-    asset: '#0A84FF',           // Lighter blue
-    liability: '#FBBF24',       // Lighter amber
-    equity: '#34D399',          // Lighter green
-    income: '#34D399',          // Lighter green
-    expense: '#F87171',         // Lighter red
-    
+    success: Palette.green,
+    successLight: '#0A664F',    // GreenDark
+    warning: Palette.orange,
+    warningLight: '#734B17',    // OrangeDark
+    error: Palette.red,
+    errorLight: '#801919',      // RedDark
+
+    // Account type colors
+    asset: '#266280',           // BlueDark
+    liability: '#806226',        // Orange3Dark
+    equity: '#0A664F',          // GreenDark
+    income: '#14CC9E',          // Green
+    expense: '#FF4060',         // Red
+    transfer: Palette.purple,
+
     // Neutral colors
-    background: '#000000',       // Pure black
-    surface: '#1C1C1E',         // Dark gray for cards
-    surfaceSecondary: '#2C2C2E', // Slightly lighter surface
-    border: '#38383A',          // Subtle borders
-    text: '#FFFFFF',            // White for text
-    textSecondary: '#AEAEB2',   // Light gray for secondary text
-    textTertiary: '#8E8E93',    // Medium gray for tertiary text
-    icon: '#AEAEB2',            // Light gray for icons
-    
+    background: Palette.black,
+    surface: '#1B1C20',         // Medium in Ivy Dark
+    surfaceSecondary: '#25262B',
+    border: '#2A2B32',
+    text: '#FAFAFC',            // White in Ivy
+    textSecondary: Palette.gray,
+    textTertiary: '#5C5C64',
+    icon: Palette.gray,
+
     // Special colors
-    overlay: 'rgba(0, 0, 0, 0.7)', // Darker overlays
-    divider: '#4A4A4C',         // More visible dividers in dark mode
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    divider: '#2A2B32',
+    pure: '#000000',
+    pureInverse: '#FFFFFF',
   },
 } as const
 

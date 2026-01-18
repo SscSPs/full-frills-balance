@@ -1,9 +1,9 @@
 import { AppCard, AppText } from '@/components/core'
+import { TransactionItem } from '@/components/journal/TransactionItem'
 import { ThemeMode, useThemeColors } from '@/constants'
 import { useUser } from '@/contexts/UIContext'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { database } from '@/src/data/database/Database'
-import { TransactionType } from '@/src/data/models/Transaction'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { TransactionWithAccountInfo } from '@/src/types/readModels'
 import { showErrorAlert } from '@/src/utils/alerts'
@@ -18,14 +18,14 @@ export default function TransactionDetailsScreen() {
   const { journalId } = useLocalSearchParams<{ journalId: string }>()
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
-  
+
   // Derive theme mode following the explicit pattern from design preview
-  const themeMode: ThemeMode = themePreference === 'system' 
+  const themeMode: ThemeMode = themePreference === 'system'
     ? (systemColorScheme === 'dark' ? 'dark' : 'light')
     : themePreference as ThemeMode
-  
+
   const theme = useThemeColors(themeMode)
-  
+
   const [transactions, setTransactions] = useState<TransactionWithAccountInfo[]>([]);
   const [journalInfo, setJournalInfo] = useState<{ description?: string; date: number; status: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,7 @@ export default function TransactionDetailsScreen() {
       }
 
       console.log('Loading transactions for journalId:', journalId);
-      
+
       try {
         setIsLoading(true);
         // Use new repository-owned read model
@@ -71,54 +71,11 @@ export default function TransactionDetailsScreen() {
   }, [journalId]);
 
   const renderTransaction = ({ item: transaction }: { item: TransactionWithAccountInfo }) => {
-    const formattedDate = formatDate(transaction.transactionDate, { includeTime: true });
-    const formattedAmount = transaction.amount ? Math.abs(transaction.amount).toFixed(2) : '0.00';
-    const formattedRunningBalance = transaction.runningBalance !== undefined && transaction.runningBalance !== null
-      ? transaction.runningBalance.toFixed(2) 
-      : null;
-    const transactionTypeColor = transaction.transactionType === TransactionType.DEBIT ? '#DC3545' : '#10B981';
-    
     return (
-      <AppCard elevation="sm" padding="md" style={styles.transactionCard} themeMode={themeMode}>
-        <View style={styles.transactionHeader}>
-          <View style={styles.transactionInfo}>
-            <AppText variant="body" themeMode={themeMode}>{transaction.accountName}</AppText>
-            <AppText variant="caption" color="secondary" themeMode={themeMode}>{transaction.accountType}</AppText>
-          </View>
-          <View style={styles.transactionTypeBadge}>
-            <AppText 
-              variant="caption" 
-              color={transaction.transactionType === TransactionType.DEBIT ? 'expense' : 'income'}
-              themeMode={themeMode}
-            >
-              {transaction.transactionType}
-            </AppText>
-          </View>
-        </View>
-        
-        <View style={styles.transactionDetails}>
-          <AppText variant="caption" color="secondary" themeMode={themeMode}>{formattedDate}</AppText>
-          <View style={styles.amountContainer}>
-            <AppText 
-              variant="body" 
-              color={transaction.transactionType === TransactionType.DEBIT ? 'expense' : 'income'}
-              themeMode={themeMode}
-            >
-              {formattedAmount}
-            </AppText>
-            {formattedRunningBalance && (
-              <AppText variant="caption" color="tertiary" themeMode={themeMode}>
-                Balance: {formattedRunningBalance}
-              </AppText>
-            )}
-          </View>
-          {transaction.notes && (
-            <AppText variant="caption" color="secondary" themeMode={themeMode} style={styles.transactionNotes}>
-              {transaction.notes}
-            </AppText>
-          )}
-        </View>
-      </AppCard>
+      <TransactionItem
+        transaction={transaction}
+        themeMode={themeMode}
+      />
     );
   };
 
@@ -172,7 +129,7 @@ export default function TransactionDetailsScreen() {
           <AppText variant="caption" color="tertiary" themeMode={themeMode}>{journalInfo.status}</AppText>
         </AppCard>
       )}
-      
+
       <FlatList
         data={transactions}
         renderItem={renderTransaction}

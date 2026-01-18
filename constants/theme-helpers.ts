@@ -10,7 +10,7 @@ import { Colors, ThemeMode } from './design-tokens'
 export const useThemeColors = (mode?: ThemeMode) => {
   const systemColorScheme = useColorScheme()
   const theme = mode || systemColorScheme || 'light'
-  
+
   return Colors[theme]
 }
 
@@ -29,6 +29,43 @@ export const createThemedStyle = <T extends Record<string, any>>(
     const theme = mode || 'light'
     return theme === 'dark' ? { ...lightStyles, ...darkStyles } : lightStyles
   }
-  
+
   return useThemedStyles
 }
+
+// === LUMINANCE & CONTRAST HELPERS ===
+
+/**
+ * Calculate relative luminance of a hex color
+ * Formula: 0.2126 * R + 0.7152 * G + 0.0722 * B
+ * where R, G, B are linear values
+ */
+export const getLuminance = (hex: string): number => {
+  const cleanHex = hex.replace('#', '');
+  const rIdx = cleanHex.length === 3 ? 0 : 0;
+  const gIdx = cleanHex.length === 3 ? 1 : 2;
+  const bIdx = cleanHex.length === 3 ? 2 : 4;
+  const length = cleanHex.length === 3 ? 1 : 2;
+
+  const extract = (start: number) => {
+    const part = cleanHex.substring(start, start + length);
+    const val = parseInt(length === 1 ? part + part : part, 16);
+    const srgb = val / 255;
+    return srgb <= 0.03928 ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
+  };
+
+  const r = extract(rIdx);
+  const g = extract(gIdx);
+  const b = extract(bIdx);
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+/**
+ * Get contrast color (White or Black) for a given background color
+ */
+export const getContrastColor = (backgroundColor: string): string => {
+  const luminance = getLuminance(backgroundColor);
+  // Ivy Wallet uses 0.5 as threshold
+  return luminance > 0.5 ? '#111114' : '#FAFAFA';
+};

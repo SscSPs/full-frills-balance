@@ -8,6 +8,10 @@ export enum TransactionType {
 
 export default class Transaction extends Model {
   static table = 'transactions'
+  static associations = {
+    journals: { type: 'belongs_to', key: 'journal_id' },
+    accounts: { type: 'belongs_to', key: 'account_id' },
+  } as const
 
   @field('journal_id') journalId!: string
   @field('account_id') accountId!: string

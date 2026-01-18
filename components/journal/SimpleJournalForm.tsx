@@ -1,5 +1,5 @@
 import { AppButton, AppText } from '@/components/core';
-import { Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { AppConfig, Spacing, ThemeMode, useThemeColors } from '@/constants';
 import Account, { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -73,10 +73,10 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: accounts.find(a => a.id === destinationId)?.name || 'Expense',
-                    currencyCode: accounts.find(a => a.id === sourceId)?.currencyCode || 'USD',
+                    currencyCode: AppConfig.defaultCurrency,
                     transactions: [
-                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT },
-                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT }
+                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: 1 },
+                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: 1 }
                     ]
                 });
                 await preferences.setLastUsedSourceAccountId(sourceId);
@@ -85,40 +85,51 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: accounts.find(a => a.id === sourceId)?.name || 'Income',
-                    currencyCode: accounts.find(a => a.id === destinationId)?.currencyCode || 'USD',
+                    currencyCode: AppConfig.defaultCurrency,
                     transactions: [
-                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT },
-                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT }
+                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: 1 },
+                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: 1 }
                     ]
                 });
                 await preferences.setLastUsedDestinationAccountId(destinationId);
             } else {
                 // Transfer: Source (Asset) Credit -> Destination (Asset) Debit
-                // Need to handle multi-currency here if needed, but for simple form we can keep it basic or fetch rate.
-                const fromCurrency = accounts.find(a => a.id === sourceId)?.currencyCode || 'USD';
-                const toCurrency = accounts.find(a => a.id === destinationId)?.currencyCode || 'USD';
+                const fromAcc = accounts.find(a => a.id === sourceId);
+                const toAcc = accounts.find(a => a.id === destinationId);
+                const fromCurrency = fromAcc?.currencyCode || AppConfig.defaultCurrency;
+                const toCurrency = toAcc?.currencyCode || AppConfig.defaultCurrency;
+
+                // We store amounts in account-local currency. 
+                // We need to calculate how much toCredit and how much toDebit.
+                // Normally the user enters the amount they "send" (fromAmount).
+                const fromToUSDRate = await exchangeRateService.getRate(fromCurrency, AppConfig.defaultCurrency);
+                const toToUSDRate = await exchangeRateService.getRate(toCurrency, AppConfig.defaultCurrency);
 
                 let fromAmount = numAmount;
                 let toAmount = numAmount;
 
                 if (fromCurrency !== toCurrency) {
-                    const rate = await exchangeRateService.getRate(fromCurrency, toCurrency);
-                    toAmount = numAmount * rate;
+                    const fromToToRate = await exchangeRateService.getRate(fromCurrency, toCurrency);
+                    toAmount = Math.round(numAmount * fromToToRate * 100) / 100;
                 }
-
-                // Balance in journal currency (default USD)
-                // For simplicity in this form, we'll use USD as journal currency and balance there.
-                const fromToUSDRate = await exchangeRateService.getRate(fromCurrency, 'USD');
-                const amountInUSD = numAmount * fromToUSDRate;
-                const toToUSDRate = await exchangeRateService.getRate(toCurrency, 'USD');
 
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: `Transfer: ${fromCurrency} to ${toCurrency}`,
-                    currencyCode: 'USD',
+                    currencyCode: AppConfig.defaultCurrency,
                     transactions: [
-                        { accountId: destinationId, amount: amountInUSD, transactionType: TransactionType.DEBIT, exchangeRate: toToUSDRate },
-                        { accountId: sourceId, amount: amountInUSD, transactionType: TransactionType.CREDIT, exchangeRate: fromToUSDRate }
+                        {
+                            accountId: destinationId,
+                            amount: toAmount,
+                            transactionType: TransactionType.DEBIT,
+                            exchangeRate: toToUSDRate
+                        },
+                        {
+                            accountId: sourceId,
+                            amount: fromAmount,
+                            transactionType: TransactionType.CREDIT,
+                            exchangeRate: fromToUSDRate
+                        }
                     ]
                 });
                 await preferences.setLastUsedSourceAccountId(sourceId);

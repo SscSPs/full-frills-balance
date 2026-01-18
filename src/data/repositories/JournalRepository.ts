@@ -1,5 +1,6 @@
 import { Q } from '@nozbe/watermelondb'
 import { auditService } from '../../services/audit-service'
+import { sanitizeAmount } from '../../utils/validation'
 import { database } from '../database/Database'
 import { AuditAction } from '../models/AuditLog'
 import Journal, { JournalStatus } from '../models/Journal'
@@ -56,18 +57,28 @@ export class JournalRepository {
   ): Promise<Journal> {
     const { transactions: transactionData, ...journalFields } = journalData
 
-    // Validate double-entry accounting
+    // Validate double-entry accounting by converting transaction amounts to journal currency
+    // Formula: journal_amount = account_amount / exchange_rate
+    const getJournalAmount = (t: typeof transactionData[0]) => {
+      const rate = t.exchangeRate || 1
+      return t.amount / rate
+    }
+
     const totalDebits = transactionData
       .filter(t => t.transactionType === TransactionType.DEBIT)
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => sum + getJournalAmount(t), 0)
 
     const totalCredits = transactionData
       .filter(t => t.transactionType === TransactionType.CREDIT)
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => sum + getJournalAmount(t), 0)
 
-    if (totalDebits !== totalCredits) {
+    // Validate double-entry accounting with epsilon for floating point noise
+    const epsilon = 0.01 // Balances must be within 1 cent in the journal currency
+    const difference = Math.abs(totalDebits - totalCredits)
+
+    if (difference > epsilon) {
       throw new Error(
-        `Double-entry violation: total debits (${totalDebits}) must equal total credits (${totalCredits})`
+        `Double-entry violation in journal currency: total debits (${totalDebits.toFixed(4)}) must equal total credits (${totalCredits.toFixed(4)}). Difference: ${difference.toFixed(4)}`
       )
     }
 
@@ -82,9 +93,11 @@ export class JournalRepository {
 
       // Create all transactions
       for (const txData of transactionData) {
+        const amount = sanitizeAmount(txData.amount) || 0
         await this.transactions.create((tx) => {
           Object.assign(tx, {
             ...txData,
+            amount,
             journalId: journal.id,
             transactionDate: journalData.journalDate,
             currencyCode: journalData.currencyCode,

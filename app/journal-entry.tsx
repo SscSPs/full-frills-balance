@@ -145,7 +145,8 @@ export default function JournalEntryScreen() {
     // Convert to base currency (USD) for balancing
     // Formula: account_amount / exchange_rate = base_amount
     // (e.g., 90.50 EUR / 1.1050 rate = 81.90 USD)
-    return amount / rate;
+    const baseAmount = amount / rate;
+    return Math.round(baseAmount * 100) / 100;
   }
 
   const getTotalDebits = () => {
@@ -199,7 +200,7 @@ export default function JournalEntryScreen() {
         currencyCode: AppConfig.defaultCurrency,
         transactions: lines.map(line => ({
           accountId: line.accountId,
-          amount: getLineBaseAmount(line),
+          amount: sanitizeAmount(line.amount) || 0,
           transactionType: line.transactionType,
           notes: line.notes.trim() || undefined,
           exchangeRate: line.exchangeRate && line.exchangeRate.trim()
