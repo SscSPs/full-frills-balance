@@ -1,50 +1,54 @@
-# Welcome to your Expo app 👋
+# Full Frills Balance
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A double-entry personal finance app built with React Native and Expo. Track your net worth with proper accounting semantics.
 
-## Get started
+## Philosophy
 
-1. Install dependencies
+> **"Balances are derived, never cached"**
 
-   ```bash
-   npm install
-   ```
+- All balances come from transaction sums
+- Journals must always balance (debits = credits)
+- Offline-first — no network required
+- Every mutation leaves an audit trail
 
-2. Start the app
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full technical overview.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting Started
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Documentation
 
-## Learn more
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System layers, data models, services |
+| [CONVENTIONS.md](docs/CONVENTIONS.md) | Coding standards, naming, testing |
+| [CHANGELOG.md](docs/CHANGELOG.md) | Version history and changes |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | UI component guidelines |
 
-To learn more about developing your project with Expo, look at the following resources:
+## Tech Stack
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **Framework**: Expo SDK 54, React Native
+- **Navigation**: Expo Router (file-based)
+- **Database**: WatermelonDB (SQLite)
+- **State**: React Context + observable hooks
+- **Design**: Ivy Wallet-inspired system
 
-## Join the community
+## Testing
 
-Join our community of developers creating universal apps.
+```bash
+npm test                    # Run Jest tests
+npx expo start --dev-client # Visual testing via /_design-preview
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Project Principles
+
+See [.agent/rules/principles.md](.agent/rules/principles.md) for the guiding principles that shape every decision in this codebase.
