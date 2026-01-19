@@ -78,48 +78,63 @@ export default function SettingsScreen() {
         }
     };
 
-    const handleCleanup = () => {
-        Alert.alert(
-            'Cleanup Database',
-            'This will permanently delete all records marked as deleted (journals, transactions, accounts). This action is irreversible. Continue?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Cleanup',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const result = await cleanupDatabase();
-                            Alert.alert('Cleanup Complete', `Permanently removed ${result.deletedCount} records.`);
-                        } catch (error) {
-                            Alert.alert('Error', 'Cleanup failed.');
-                        }
-                    }
-                }
-            ]
-        );
+    const handleCleanup = async () => {
+        logger.debug('[Settings] User clicked Cleanup Database');
+
+        const proceed = Platform.OS === 'web'
+            ? confirm('This will permanently delete all records marked as deleted (journals, transactions, accounts). This action is irreversible. Continue?')
+            : await new Promise<boolean>(resolve => {
+                Alert.alert(
+                    'Cleanup Database',
+                    'This will permanently delete all records marked as deleted (journals, transactions, accounts). This action is irreversible. Continue?',
+                    [
+                        { text: 'Cancel', style: 'cancel', onPress: () => { logger.debug('[Settings] Cleanup cancelled'); resolve(false); } },
+                        { text: 'Cleanup', style: 'destructive', onPress: () => resolve(true) }
+                    ]
+                );
+            });
+
+        if (!proceed) return;
+
+        logger.info('[Settings] Starting database cleanup process...');
+        try {
+            const result = await cleanupDatabase();
+            logger.info(`[Settings] Cleanup success: ${result.deletedCount} items removed`);
+            Alert.alert('Cleanup Complete', `Permanently removed ${result.deletedCount} records.`);
+        } catch (error) {
+            logger.error('[Settings] Cleanup action failed', error);
+            const msg = error instanceof Error ? error.message : String(error);
+            Alert.alert('Error', `Cleanup failed: ${msg}`);
+        }
     };
 
-    const handleFactoryReset = () => {
-        Alert.alert(
-            'FACTORY RESET',
-            'THIS WILL PERMANENTLY ERASE ALL YOUR DATA, ACCOUNTS, AND SETTINGS. THIS CANNOT BE UNDONE. Are you absolutely sure?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'RESET EVERYTHING',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await resetApp();
-                            // UIContext will handle state update and redirect
-                        } catch (error) {
-                            Alert.alert('Error', 'Reset failed.');
-                        }
-                    }
-                }
-            ]
-        );
+    const handleFactoryReset = async () => {
+        logger.warn('[Settings] User clicked FACTORY RESET');
+
+        const proceed = Platform.OS === 'web'
+            ? confirm('FACTORY RESET: THIS WILL PERMANENTLY ERASE ALL YOUR DATA. THIS CANNOT BE UNDONE. Are you absolutely sure?')
+            : await new Promise<boolean>(resolve => {
+                Alert.alert(
+                    'FACTORY RESET',
+                    'THIS WILL PERMANENTLY ERASE ALL YOUR DATA, ACCOUNTS, AND SETTINGS. THIS CANNOT BE UNDONE. Are you absolutely sure?',
+                    [
+                        { text: 'Cancel', style: 'cancel', onPress: () => { logger.debug('[Settings] Reset cancelled'); resolve(false); } },
+                        { text: 'RESET EVERYTHING', style: 'destructive', onPress: () => resolve(true) }
+                    ]
+                );
+            });
+
+        if (!proceed) return;
+
+        logger.warn('[Settings] Initiating EVERYTHING RESET...');
+        try {
+            await resetApp();
+            logger.info('[Settings] App reset successful');
+        } catch (error) {
+            logger.error('[Settings] Reset action failed', error);
+            const msg = error instanceof Error ? error.message : String(error);
+            Alert.alert('Error', `Reset failed: ${msg}`);
+        }
     };
 
     return (
@@ -195,10 +210,9 @@ export default function SettingsScreen() {
                         themeMode={themeMode}
                         onPress={handleCleanup}
                         style={{ borderColor: theme.error }}
+                        loading={isLoading}
                     >
-                        <AppText variant="body" themeMode={themeMode} style={{ color: theme.error }}>
-                            Cleanup Deleted Data
-                        </AppText>
+                        Cleanup Deleted Data
                     </AppButton>
 
                     <View style={styles.divider} />
@@ -211,6 +225,7 @@ export default function SettingsScreen() {
                         themeMode={themeMode}
                         onPress={handleFactoryReset}
                         style={{ backgroundColor: theme.error }}
+                        loading={isLoading}
                     >
                         Factory Reset
                     </AppButton>

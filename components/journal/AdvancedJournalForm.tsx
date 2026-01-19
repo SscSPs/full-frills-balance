@@ -21,6 +21,10 @@ interface AdvancedJournalFormProps {
     onSelectAccountRequest: (lineId: string) => void;
     lines: JournalEntryLine[];
     setLines: (lines: JournalEntryLine[]) => void;
+    initialDescription?: string;
+    initialDate?: string;
+    isEdit?: boolean;
+    journalId?: string;
 }
 
 export const AdvancedJournalForm = ({
@@ -30,12 +34,22 @@ export const AdvancedJournalForm = ({
     onSuccess,
     onSelectAccountRequest,
     lines,
-    setLines
+    setLines,
+    initialDescription = '',
+    initialDate = new Date().toISOString().split('T')[0],
+    isEdit = false,
+    journalId
 }: AdvancedJournalFormProps) => {
     const router = useRouter();
-    const [description, setDescription] = useState('');
-    const [journalDate, setJournalDate] = useState(new Date().toISOString().split('T')[0]);
-    const [isCreating, setIsCreating] = useState(false);
+    const [description, setDescription] = useState(initialDescription);
+    const [journalDate, setJournalDate] = useState(initialDate);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Update local state if initial values change (e.g. after async load in parent)
+    React.useEffect(() => {
+        if (initialDescription) setDescription(initialDescription);
+        if (initialDate) setJournalDate(initialDate);
+    }, [initialDescription, initialDate]);
 
     const addLine = () => {
         const newId = (Math.max(...lines.map(l => parseInt(l.id))) + 1).toString();
@@ -106,7 +120,7 @@ export const AdvancedJournalForm = ({
             return;
         }
 
-        setIsCreating(true);
+        setIsSubmitting(true);
         try {
             const journalData: CreateJournalData = {
                 journalDate: new Date(journalDate).getTime(),
@@ -123,21 +137,31 @@ export const AdvancedJournalForm = ({
                 }))
             };
 
-            await journalRepository.createJournalWithTransactions(journalData);
-            showSuccessAlert('Success', 'Journal entry created successfully');
+            if (isEdit && journalId) {
+                // For editing, we delete and recreate for simplicity and balance integrity
+                const existingJournal = await journalRepository.find(journalId);
+                if (existingJournal) {
+                    await journalRepository.delete(existingJournal);
+                }
+                await journalRepository.createJournalWithTransactions(journalData);
+                showSuccessAlert('Success', 'Journal entry updated successfully');
+            } else {
+                await journalRepository.createJournalWithTransactions(journalData);
+                showSuccessAlert('Success', 'Journal entry created successfully');
+            }
             onSuccess();
         } catch (error) {
-            console.error('Failed to create journal:', error);
-            showErrorAlert('Failed to create journal entry');
+            console.error('Failed to save journal:', error);
+            showErrorAlert('Failed to save journal entry');
         } finally {
-            setIsCreating(false);
+            setIsSubmitting(false);
         }
     };
 
     return (
         <View>
             <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
-                <AppText variant="title" themeMode={themeMode}>Create Journal Entry</AppText>
+                <AppText variant="title" themeMode={themeMode}>{isEdit ? 'Edit Journal Entry' : 'Create Journal Entry'}</AppText>
             </AppCard>
 
             <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
@@ -203,11 +227,11 @@ export const AdvancedJournalForm = ({
                 <AppButton
                     variant="primary"
                     onPress={createJournal}
-                    disabled={!isBalanced || isCreating}
+                    disabled={!isBalanced || isSubmitting}
                     themeMode={themeMode}
                     style={styles.createButton}
                 >
-                    {isCreating ? 'Creating...' : 'Create Journal'}
+                    {isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Journal' : 'Create Journal')}
                 </AppButton>
             </View>
         </View>

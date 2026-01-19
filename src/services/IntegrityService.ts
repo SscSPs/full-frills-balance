@@ -199,11 +199,17 @@ class IntegrityService {
      * WARNING: Irreversible action.
      */
     async resetDatabase(): Promise<void> {
-        logger.warn('[IntegrityService] PERFORMING FACTORY RESET...')
-        await database.write(async () => {
-            await database.unsafeResetDatabase()
-        })
-        logger.info('[IntegrityService] Factory reset complete.')
+        logger.warn('[IntegrityService] STARTING FACTORY RESET...')
+        try {
+            logger.debug('[IntegrityService] Calling database.unsafeResetDatabase() inside writer...')
+            await database.write(async () => {
+                await database.unsafeResetDatabase()
+            })
+            logger.info('[IntegrityService] Database reset successful.')
+        } catch (error) {
+            logger.error('[IntegrityService] CRITICAL: Factory reset failed:', error)
+            throw error
+        }
     }
 
     /**
@@ -213,23 +219,32 @@ class IntegrityService {
         logger.info('[IntegrityService] Starting database cleanup...')
         let totalDeleted = 0
 
-        await database.write(async () => {
-            const collections = ['journals', 'transactions', 'accounts', 'audit_logs']
+        const collections = ['journals', 'transactions', 'accounts']
 
-            for (const table of collections) {
-                const deletedRecords = await database.collections.get(table)
-                    .query(Q.where('deleted_at', Q.notEq(null)))
-                    .fetch()
+        try {
+            await database.write(async () => {
+                for (const table of collections) {
+                    logger.debug(`[IntegrityService] Cleaning table: ${table}...`)
+                    const deletedRecords = await database.collections.get(table)
+                        .query(Q.where('deleted_at', Q.notEq(null)))
+                        .fetch()
 
-                totalDeleted += deletedRecords.length
+                    logger.debug(`[IntegrityService] Found ${deletedRecords.length} records to delete in ${table}`)
+                    totalDeleted += deletedRecords.length
 
-                for (const record of deletedRecords) {
-                    await record.destroyPermanently()
+                    for (const record of deletedRecords) {
+                        // Using destroyPermanently to fully purge from DB
+                        await record.destroyPermanently()
+                    }
+                    logger.debug(`[IntegrityService] Table ${table} cleanup complete.`)
                 }
-            }
-        })
+            })
+            logger.info(`[IntegrityService] Cleanup complete. Removed ${totalDeleted} records permanently.`)
+        } catch (error) {
+            logger.error('[IntegrityService] Cleanup failed:', error)
+            throw error
+        }
 
-        logger.info(`[IntegrityService] Cleanup complete. Removed ${totalDeleted} records permanently.`)
         return { deletedCount: totalDeleted }
     }
 }

@@ -81,6 +81,8 @@ export class TransactionRepository {
         currencyCode: tx.currencyCode,
         transactionDate: tx.transactionDate, // Keep for display, but journalDate determines ordering
         notes: tx.notes,
+        accountId: tx.accountId,
+        exchangeRate: tx.exchangeRate,
         accountName: account?.name || 'Unknown Account',
         accountType: account?.accountType || ('ASSET' as any), // Fallback for safety
         runningBalance: tx.runningBalance, // Include running balance if available
@@ -216,8 +218,10 @@ export class TransactionRepository {
     transaction: Transaction,
     updates: Partial<Transaction>
   ): Promise<Transaction> {
-    return transaction.update((tx) => {
-      Object.assign(tx, updates)
+    return database.write(async () => {
+      return transaction.update((tx) => {
+        Object.assign(tx, updates)
+      })
     })
   }
 
@@ -225,7 +229,14 @@ export class TransactionRepository {
    * Soft deletes a transaction
    */
   async delete(transaction: Transaction): Promise<void> {
-    return transaction.markAsDeleted()
+    return database.write(async () => {
+      await transaction.update((t) => {
+        t.deletedAt = new Date()
+      })
+
+      // Trigger rebuild for balance integrity
+      await this.rebuildRunningBalances(transaction.accountId)
+    })
   }
 }
 

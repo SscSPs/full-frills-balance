@@ -15,14 +15,16 @@ export interface TransactionWithAccountInfo {
   currencyCode: string
   transactionDate: number
   notes?: string
-  
+  accountId: string
+  exchangeRate?: number
+
   // Account information for display
   accountName: string
   accountType: AccountType
-  
+
   // Running balance for this transaction
   runningBalance?: number
-  
+
   // Audit fields
   createdAt: Date
   updatedAt: Date
@@ -35,13 +37,13 @@ export interface JournalWithTransactionSummary {
   description?: string
   currencyCode: string
   status: string
-  
+
   // Computed transaction summary
   totalDebits: number
   totalCredits: number
   transactionCount: number
   isBalanced: boolean
-  
+
   // Audit fields
   createdAt: Date
   updatedAt: Date
@@ -54,12 +56,12 @@ export interface AccountWithBalance {
   accountType: AccountType
   currencyCode: string
   description?: string
-  
+
   // Computed balance information
   currentBalance: number
   transactionCount: number
   lastActivityDate?: number
-  
+
   // Audit fields
   createdAt: Date
   updatedAt: Date

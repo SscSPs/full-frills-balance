@@ -14,6 +14,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
+import { integrityService } from '../src/services/IntegrityService'
+import { logger } from '../src/utils/logger'
 import { preferences } from '../src/utils/preferences'
 
 // Simple UI state only - no domain data
@@ -135,11 +137,16 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
   const resetApp = async () => {
     try {
+      logger.warn('[UIContext] resetApp called. Starting process...')
       setLoading(true)
-      const { integrityService } = await import('../src/services/IntegrityService')
+
+      logger.debug('[UIContext] Calling integrityService.resetDatabase()...')
       await integrityService.resetDatabase()
+
+      logger.debug('[UIContext] Clearing preferences...')
       await preferences.clearPreferences()
 
+      logger.info('[UIContext] Reset complete. Updating state...')
       setUIState({
         hasCompletedOnboarding: false,
         themePreference: 'system',
@@ -148,7 +155,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         isInitialized: true,
       })
     } catch (error) {
-      console.warn('Failed to reset app:', error)
+      logger.error('[UIContext] Failed to reset app:', error)
       throw error
     } finally {
       setLoading(false)
@@ -157,12 +164,13 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
   const cleanupDatabase = async () => {
     try {
+      logger.info('[UIContext] cleanupDatabase called.')
       setLoading(true)
-      const { integrityService } = await import('../src/services/IntegrityService')
       const result = await integrityService.cleanupDatabase()
+      logger.info(`[UIContext] cleanupDatabase successful. Deleted ${result.deletedCount} records.`)
       return result
     } catch (error) {
-      console.warn('Failed to cleanup database:', error)
+      logger.error('[UIContext] Failed to cleanup database:', error)
       throw error
     } finally {
       setLoading(false)

@@ -219,8 +219,10 @@ export class JournalRepository {
   }
 
   async update(journal: Journal, updates: Partial<Journal>): Promise<Journal> {
-    return journal.update((j) => {
-      Object.assign(j, updates)
+    return database.write(async () => {
+      return journal.update((j) => {
+        Object.assign(j, updates)
+      })
     })
   }
 
@@ -270,7 +272,44 @@ export class JournalRepository {
   }
 
   async delete(journal: Journal): Promise<void> {
-    await journal.markAsDeleted()
+    return database.write(async () => {
+      // 1. Mark journal as soft-deleted
+      await journal.update((j) => {
+        j.deletedAt = new Date()
+      })
+
+      // 2. Find and soft-delete all associated transactions
+      const associatedTransactions = await this.transactions
+        .query(Q.where('journal_id', journal.id), Q.where('deleted_at', Q.eq(null)))
+        .fetch()
+
+      const accountIdsToRebuild = new Set<string>()
+      for (const tx of associatedTransactions) {
+        accountIdsToRebuild.add(tx.accountId)
+        await tx.update((t) => {
+          t.deletedAt = new Date()
+        })
+      }
+
+      // 3. Log audit trail
+      await auditService.log({
+        entityType: 'journal',
+        entityId: journal.id,
+        action: AuditAction.DELETE,
+        changes: {
+          description: journal.description,
+          totalAmount: journal.totalAmount,
+        }
+      })
+
+      // 4. Trigger rebuilds for all affected accounts to maintain balance integrity
+      if (accountIdsToRebuild.size > 0) {
+        for (const accId of accountIdsToRebuild) {
+          // Note: This is an async call but we wait for it to ensure integrity
+          await transactionRepository.rebuildRunningBalances(accId)
+        }
+      }
+    })
   }
 
   /**

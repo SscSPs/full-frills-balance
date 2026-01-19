@@ -1,9 +1,11 @@
 import { AppText } from '@/components/core';
 import { ThemeMode, useThemeColors } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { database } from '@/src/data/database/Database';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
+import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { showErrorAlert } from '@/src/utils/alerts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -41,6 +43,11 @@ export default function JournalEntryScreen() {
   const [showAccountPicker, setShowAccountPicker] = useState(false)
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null)
 
+  // Edit mode state
+  const [initialDescription, setInitialDescription] = useState('')
+  const [initialDate, setInitialDate] = useState(new Date().toISOString().split('T')[0])
+  const [isEdit, setIsEdit] = useState(false)
+
   // Handle URL parameters
   useEffect(() => {
     if (params.mode === 'simple') {
@@ -52,7 +59,42 @@ export default function JournalEntryScreen() {
     if (params.type === 'income' || params.type === 'expense' || params.type === 'transfer') {
       setTransactionType(params.type as 'income' | 'expense' | 'transfer')
     }
-  }, [params.mode, params.type])
+
+    if (params.journalId) {
+      setIsEdit(true)
+      setIsGuidedMode(false) // Always use advanced mode for editing existing journals for now
+      loadJournalData(params.journalId as string)
+    }
+  }, [params.mode, params.type, params.journalId])
+
+  const loadJournalData = async (id: string) => {
+    try {
+      const journal = await database.collections.get('journals').find(id)
+      if (journal) {
+        const j = journal as any
+        setInitialDescription(j.description || '')
+        setInitialDate(new Date(j.journalDate).toISOString().split('T')[0])
+
+        const txs = await transactionRepository.findByJournalWithAccountInfo(id)
+        if (txs.length > 0) {
+          setLines(txs.map(tx => ({
+            id: tx.id,
+            accountId: tx.accountId,
+            accountName: tx.accountName,
+            accountType: tx.accountType || AccountType.ASSET,
+            amount: tx.amount.toString(),
+            transactionType: tx.transactionType,
+            notes: tx.notes || '',
+            exchangeRate: tx.exchangeRate ? tx.exchangeRate.toString() : '',
+            accountCurrency: tx.currencyCode
+          })))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load journal data:', error)
+      showErrorAlert('Failed to load transaction for editing')
+    }
+  }
 
   useEffect(() => {
     loadAccounts()
@@ -103,18 +145,20 @@ export default function JournalEntryScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <JournalEntryHeader
-        title={isGuidedMode ? 'New Transaction' : 'Journal Entry'}
+        title={isEdit ? 'Edit Transaction' : (isGuidedMode ? 'New Transaction' : 'Journal Entry')}
         theme={theme}
         themeMode={themeMode}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <JournalModeToggle
-          isGuidedMode={isGuidedMode}
-          setIsGuidedMode={setIsGuidedMode}
-          theme={theme}
-          themeMode={themeMode}
-        />
+        {!isEdit && (
+          <JournalModeToggle
+            isGuidedMode={isGuidedMode}
+            setIsGuidedMode={setIsGuidedMode}
+            theme={theme}
+            themeMode={themeMode}
+          />
+        )}
 
         {isGuidedMode ? (
           <SimpleJournalForm
@@ -135,6 +179,10 @@ export default function JournalEntryScreen() {
             }}
             lines={lines}
             setLines={setLines}
+            initialDescription={initialDescription}
+            initialDate={initialDate}
+            isEdit={isEdit}
+            journalId={params.journalId as string}
           />
         )}
       </ScrollView>

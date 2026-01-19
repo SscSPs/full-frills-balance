@@ -1,7 +1,5 @@
 import { AppCard, AppText, Badge } from '@/components/core'
 import { Spacing, ThemeMode, useThemeColors } from '@/constants'
-import { useUser } from '@/contexts/UIContext'
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import { database } from '@/src/data/database/Database'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { TransactionWithAccountInfo } from '@/src/types/readModels'
@@ -9,8 +7,9 @@ import { formatDate } from '@/src/utils/dateUtils'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useUI } from '../contexts/UIContext'
 
 // Reusable info row component
 const InfoRow = ({ label, value, themeMode }: { label: string, value: string, themeMode: ThemeMode }) => (
@@ -23,17 +22,11 @@ const InfoRow = ({ label, value, themeMode }: { label: string, value: string, th
 export default function TransactionDetailsScreen() {
   const router = useRouter()
   const { journalId } = useLocalSearchParams<{ journalId: string }>()
-  const { themePreference } = useUser()
-  const systemColorScheme = useColorScheme()
-
-  const themeMode: ThemeMode = themePreference === 'system'
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode
-
+  const { themeMode } = useUI()
   const theme = useThemeColors(themeMode)
 
   const [transactions, setTransactions] = useState<TransactionWithAccountInfo[]>([]);
-  const [journalInfo, setJournalInfo] = useState<{ description?: string; date: number; status: string; currency: string } | null>(null);
+  const [journalInfo, setJournalInfo] = useState<{ description?: string; date: number; status: string; currency: string; displayType?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +46,8 @@ export default function TransactionDetailsScreen() {
             description: j.description,
             date: j.journalDate,
             status: j.status,
-            currency: j.currencyCode // Ensure this field exists/is fetched
+            currency: j.currencyCode,
+            displayType: j.displayType
           });
         }
       } catch (error) {
@@ -91,70 +85,76 @@ export default function TransactionDetailsScreen() {
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
         <AppText variant="subheading" themeMode={themeMode}>Transaction Details</AppText>
-        <TouchableOpacity onPress={() => {/* Edit Action */ }} style={styles.navButton}>
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/journal-entry', params: { journalId } })}
+          style={styles.navButton}
+        >
           <Ionicons name="create-outline" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        {/* Receipt Card */}
-        <AppCard elevation="md" radius="r2" padding="lg" themeMode={themeMode} style={styles.receiptCard}>
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          {/* Receipt Card */}
+          <AppCard elevation="md" radius="r2" padding="lg" themeMode={themeMode} style={styles.receiptCard}>
 
-          {/* Big Icon */}
-          <View style={styles.iconContainer}>
-            <View style={[styles.bigIcon, { backgroundColor: theme.primary + '20' }]}>
-              <Ionicons name="receipt" size={32} color={theme.primary} />
+            {/* Big Icon */}
+            <View style={styles.iconContainer}>
+              <View style={[styles.bigIcon, { backgroundColor: theme.primary + '20' }]}>
+                <Ionicons name="receipt" size={32} color={theme.primary} />
+              </View>
             </View>
-          </View>
 
-          {/* Amount & Title */}
-          <View style={styles.headerSection}>
-            <AppText variant="title" themeMode={themeMode} style={{ fontSize: 32, marginBottom: 8 }}>
-              {totalAmount.toLocaleString(undefined, { style: 'currency', currency: journalInfo?.currency || 'USD' })}
+            {/* Amount & Title */}
+            <View style={styles.headerSection}>
+              <AppText variant="title" themeMode={themeMode} style={{ fontSize: 32, marginBottom: 8 }}>
+                {totalAmount.toLocaleString(undefined, { style: 'currency', currency: journalInfo?.currency || 'USD' })}
+              </AppText>
+              <AppText variant="body" color="secondary" themeMode={themeMode}>
+                {journalInfo?.description || 'No description'}
+              </AppText>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm" themeMode={themeMode}>
+                  {journalInfo?.status}
+                </Badge>
+                {journalInfo?.displayType && (
+                  <Badge variant="default" size="sm" themeMode={themeMode}>
+                    {journalInfo.displayType}
+                  </Badge>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Metadata List */}
+            <View style={styles.infoSection}>
+              <InfoRow label="Date" value={formattedDate} themeMode={themeMode} />
+              <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} themeMode={themeMode} />
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Splits / Breakdown */}
+            <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginBottom: 12 }}>
+              BREAKDOWN
             </AppText>
-            <AppText variant="body" color="secondary" themeMode={themeMode}>
-              {journalInfo?.description || 'No description'}
-            </AppText>
-            <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm" themeMode={themeMode} style={{ marginTop: 12 }}>
-              {journalInfo?.status}
-            </Badge>
-          </View>
 
-          <View style={styles.divider} />
-
-          {/* Metadata List */}
-          <View style={styles.infoSection}>
-            <InfoRow label="Date" value={formattedDate} themeMode={themeMode} />
-            <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} themeMode={themeMode} />
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Splits / Breakdown */}
-          <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginBottom: 12 }}>
-            BREAKDOWN
-          </AppText>
-
-          <FlatList
-            data={transactions}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
-              <View style={styles.splitRow}>
+            {transactions.map(item => (
+              <View key={item.id} style={styles.splitRow}>
                 <View style={styles.splitInfo}>
                   <AppText variant="body" themeMode={themeMode}>{item.accountName}</AppText>
                   <AppText variant="caption" color="secondary" themeMode={themeMode}>{item.transactionType}</AppText>
                 </View>
-                <AppText variant="subheading" themeMode={themeMode} color={item.transactionType === 'DEBIT' ? 'secondary' : 'secondary'}>
-                  {/* Use secondary for color prop as 'text' is not valid in AppText props, assuming default handles 'text' color */}
+                <AppText variant="subheading" themeMode={themeMode}>
                   {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </AppText>
               </View>
-            )}
-          />
+            ))}
 
-        </AppCard>
-      </View>
+          </AppCard>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -178,8 +178,10 @@ const styles = StyleSheet.create({
   navButton: {
     padding: Spacing.xs,
   },
-  content: {
+  scrollContent: {
     flex: 1,
+  },
+  content: {
     padding: Spacing.lg,
   },
   receiptCard: {
