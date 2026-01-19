@@ -11,13 +11,13 @@ import Journal from '@/src/data/models/Journal';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function JournalListScreen() {
   const router = useRouter()
   const { themePreference } = useUser()
   const systemColorScheme = useColorScheme()
-  const { journals, isLoading } = useJournals()
+  const { journals, isLoading, isLoadingMore, hasMore, loadMore } = useJournals()
   const { income, expense, isPrivacyMode } = useSummary()
   const { netWorth, totalAssets, totalLiabilities, isLoading: worthLoading } = useNetWorth()
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -106,6 +106,18 @@ export default function JournalListScreen() {
             </AppText>
           </View>
         }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" />
+              <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                Loading more...
+              </AppText>
+            </View>
+          ) : null
+        }
+        onEndReached={!searchQuery ? loadMore : undefined}
+        onEndReachedThreshold={0.5}
       />
       <FloatingActionButton
         onPress={() => router.push('/journal-entry' as any)}
@@ -145,5 +157,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.6,
     textAlign: 'center',
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    gap: Spacing.sm,
   },
 });

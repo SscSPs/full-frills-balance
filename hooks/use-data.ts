@@ -64,30 +64,45 @@ export function useAccountsByType(accountType: string) {
 }
 
 /**
- * Hook to reactively get all journals
+ * Hook to reactively get journals with pagination
+ * 
+ * @param pageSize - Number of journals to load per page (default 50)
  */
-export function useJournals() {
+export function useJournals(pageSize: number = 50) {
     const database = useDatabase()
     const [journals, setJournals] = useState<Journal[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [hasMore, setHasMore] = useState(true)
+    const [currentLimit, setCurrentLimit] = useState(pageSize)
 
     useEffect(() => {
         const collection = database.collections.get<Journal>('journals')
         const subscription = collection
             .query(
                 Q.where('deleted_at', Q.eq(null)),
-                Q.sortBy('journal_date', Q.desc)
+                Q.sortBy('journal_date', Q.desc),
+                Q.take(currentLimit)
             )
             .observe()
-            .subscribe((journals) => {
-                setJournals(journals)
+            .subscribe((loadedJournals) => {
+                setJournals(loadedJournals)
+                // If we got fewer than the limit, there are no more
+                setHasMore(loadedJournals.length >= currentLimit)
                 setIsLoading(false)
+                setIsLoadingMore(false)
             })
 
         return () => subscription.unsubscribe()
-    }, [database])
+    }, [database, currentLimit])
 
-    return { journals, isLoading }
+    const loadMore = () => {
+        if (isLoadingMore || !hasMore) return
+        setIsLoadingMore(true)
+        setCurrentLimit(prev => prev + pageSize)
+    }
+
+    return { journals, isLoading, isLoadingMore, hasMore, loadMore }
 }
 
 /**

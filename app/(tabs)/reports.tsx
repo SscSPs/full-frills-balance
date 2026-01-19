@@ -1,17 +1,82 @@
-import { AppText } from '@/components/core';
+import { AppButton, AppCard, AppText } from '@/components/core';
+import { Spacing } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { exportService } from '@/src/services/export-service';
+import { logger } from '@/src/utils/logger';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import React, { useState } from 'react';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
 
 export default function ReportsScreen() {
     const { theme, themeMode } = useTheme();
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const jsonData = await exportService.exportToJSON();
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const filename = `balance-export-${timestamp}.json`;
+
+            // Web: Use browser download
+            if (Platform.OS === 'web') {
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                return;
+            }
+
+            // Native: Use file system + sharing
+            const fileUri = `${FileSystem.documentDirectory}${filename}`;
+            await FileSystem.writeAsStringAsync(fileUri, jsonData);
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/json',
+                    dialogTitle: 'Export Your Balance Data',
+                });
+            } else {
+                Alert.alert('Export Ready', `File saved to ${fileUri}`);
+            }
+        } catch (error) {
+            logger.error('Export failed', error);
+            Alert.alert('Export Failed', 'Could not export data. Please try again.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <AppText variant="heading" themeMode={themeMode}>Reports</AppText>
-            <AppText variant="body" themeMode={themeMode} color="secondary" style={styles.subtitle}>
-                Coming Soon: Net Worth, Income vs Expense, and more.
-            </AppText>
+            <AppCard elevation="sm" padding="lg" themeMode={themeMode} style={styles.section}>
+                <AppText variant="heading" themeMode={themeMode}>Data Export</AppText>
+                <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.description}>
+                    Export all your accounts, journals, and transactions as a JSON file.
+                </AppText>
+                <AppButton
+                    variant="primary"
+                    onPress={handleExport}
+                    loading={isExporting}
+                    themeMode={themeMode}
+                >
+                    {isExporting ? 'Exporting...' : 'Export to JSON'}
+                </AppButton>
+            </AppCard>
+
+            <AppCard elevation="none" padding="lg" themeMode={themeMode} style={styles.section}>
+                <AppText variant="heading" themeMode={themeMode}>Reports</AppText>
+                <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.description}>
+                    Coming Soon: Net Worth trends, Income vs Expense charts, and account-level analytics.
+                </AppText>
+            </AppCard>
         </View>
     );
 }
@@ -19,12 +84,12 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
+        padding: Spacing.lg,
     },
-    subtitle: {
-        textAlign: 'center',
-        marginTop: 10,
+    section: {
+        marginBottom: Spacing.lg,
+    },
+    description: {
+        marginVertical: Spacing.md,
     },
 });

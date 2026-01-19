@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
 
+import { ErrorBoundary } from '@/components/core';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   Raleway_600SemiBold,
@@ -32,19 +33,21 @@ export default function RootLayout() {
     <DatabaseProvider database={database}>
       <UIProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
-            <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
-            <Stack.Screen name="account-details" options={{ headerShown: false }} />
-            <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
-          </Stack>
+          <ErrorBoundary>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
+              <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
+              <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
+              <Stack.Screen name="account-details" options={{ headerShown: false }} />
+              <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
+            </Stack>
+          </ErrorBoundary>
 
           <StatusBar style="auto" />
         </ThemeProvider>

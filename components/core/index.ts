@@ -29,6 +29,7 @@ export type { BadgeProps } from './Badge'
 export { Divider } from './Divider'
 export type { DividerProps } from './Divider'
 
+export { ErrorBoundary } from './ErrorBoundary'
 export { FloatingActionButton } from './FloatingActionButton'
 export { IvyIcon } from './IvyIcon'
 export { SearchField } from './SearchField'

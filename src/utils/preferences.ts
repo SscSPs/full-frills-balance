@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from './logger';
 
 const PREFERENCES_KEY = 'full_frills_balance_ui_preferences';
 
@@ -28,7 +29,7 @@ class PreferencesHelper {
       }
     } catch (error) {
       // Silently fail - preferences are optional
-      console.warn('Failed to load preferences:', error);
+      logger.warn('Failed to load preferences', { error });
     }
     return this.preferences;
   }
@@ -38,7 +39,7 @@ class PreferencesHelper {
       await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(this.preferences));
     } catch (error) {
       // Silently fail - preferences are optional
-      console.warn('Failed to save preferences:', error);
+      logger.warn('Failed to save preferences', { error });
     }
   }
 
@@ -111,7 +112,7 @@ class PreferencesHelper {
     try {
       await AsyncStorage.removeItem(PREFERENCES_KEY);
     } catch (error) {
-      console.warn('Failed to clear preferences:', error);
+      logger.warn('Failed to clear preferences', { error });
     }
   }
 }

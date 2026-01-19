@@ -65,12 +65,12 @@ class IntegrityService {
         // Fetch all posted, non-deleted transactions for this account
         const transactions = await database.collections.get<Transaction>('transactions')
             .query(
-                Q.and(
-                    Q.where('account_id', accountId),
-                    Q.where('deleted_at', Q.eq(null)),
-                    Q.on('journals', Q.where('status', JournalStatus.POSTED)),
-                    Q.on('journals', Q.where('deleted_at', Q.eq(null)))
-                )
+                Q.where('account_id', accountId),
+                Q.where('deleted_at', Q.eq(null)),
+                Q.on('journals', Q.and(
+                    Q.where('status', JournalStatus.POSTED),
+                    Q.where('deleted_at', Q.eq(null))
+                ))
             )
             .fetch()
 

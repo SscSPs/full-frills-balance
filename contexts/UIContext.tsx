@@ -24,6 +24,9 @@ interface UIState {
   // Theme preference
   themePreference: 'light' | 'dark' | 'system'
 
+  // Computed theme mode (resolved from preference + system)
+  themeMode: 'light' | 'dark'
+
   // Simple UI flags
   isLoading: boolean
   isInitialized: boolean // Track if preferences are loaded
@@ -44,9 +47,21 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [uiState, setUIState] = useState<UIState>({
     hasCompletedOnboarding: false,
     themePreference: 'system',
+    themeMode: systemColorScheme === 'dark' ? 'dark' : 'light',
     isLoading: false,
     isInitialized: false,
   })
+
+  // Update themeMode when preference or system scheme changes
+  useEffect(() => {
+    const newThemeMode = uiState.themePreference === 'system'
+      ? (systemColorScheme === 'dark' ? 'dark' : 'light')
+      : uiState.themePreference
+
+    if (newThemeMode !== uiState.themeMode) {
+      setUIState(prev => ({ ...prev, themeMode: newThemeMode }))
+    }
+  }, [uiState.themePreference, systemColorScheme])
 
   // Load preferences on mount
   useEffect(() => {
@@ -55,10 +70,15 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         setUIState(prev => ({ ...prev, isLoading: true }))
 
         const loadedPreferences = await preferences.loadPreferences()
+        const themePreference = loadedPreferences.theme || 'system'
+        const computedThemeMode = themePreference === 'system'
+          ? (systemColorScheme === 'dark' ? 'dark' : 'light')
+          : themePreference
 
         setUIState({
           hasCompletedOnboarding: loadedPreferences.onboardingCompleted,
-          themePreference: loadedPreferences.theme || 'system',
+          themePreference,
+          themeMode: computedThemeMode,
           isLoading: false,
           isInitialized: true,
         })
@@ -66,7 +86,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         // Initialize currencies if needed (async, don't block UI)
         import('../src/services/currency-init-service').then(({ currencyInitService }) => {
           currencyInitService.initialize().catch(err => {
-            console.warn('Failed to initialize currencies:', err)
+            // Silent fail - currencies are optional initialization
           })
         })
 
@@ -129,5 +149,5 @@ export function useUI() {
   return context
 }
 
-// Legacy export for backward compatibility
+// @deprecated Use useUI instead - to be removed in future version
 export const useUser = useUI

@@ -132,13 +132,12 @@ export class TransactionRepository {
     // For safety, let's rebuild ALL for now (O(N) per account is okay for 50k total txs, ~5k per account).
     const transactions = await this.transactions
       .query(
-        Q.and(
-          Q.where('account_id', accountId),
-          Q.where('deleted_at', Q.eq(null)),
-          // Standard Q.on syntax: Q.on('table', Q.where('col', val))
-          Q.on('journals', Q.where('status', 'POSTED')),
-          Q.on('journals', Q.where('deleted_at', Q.eq(null)))
-        )
+        Q.where('account_id', accountId),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', Q.and(
+          Q.where('status', 'POSTED'),
+          Q.where('deleted_at', Q.eq(null))
+        ))
       )
       .extend(Q.sortBy('journal_date', 'asc')) // Primary sort: Journal Date
       .extend(Q.sortBy('created_at', 'asc'))   // Secondary sort: Creation Time

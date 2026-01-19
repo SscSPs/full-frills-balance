@@ -27,6 +27,7 @@ import {
 } from '@/components/core'
 import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants'
 import { useColorScheme } from '@/hooks/use-color-scheme'
+import { Redirect } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, StyleSheet, Switch, View } from 'react-native'
 
@@ -47,6 +48,11 @@ const TokenBox = ({ size, radius }: { size: number; radius: number }) => {
 }
 
 export default function DesignPreviewScreen() {
+  // Gate this screen to development only
+  if (!__DEV__) {
+    return <Redirect href="/(tabs)" />
+  }
+
   const systemColorScheme = useColorScheme()
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark')
   const themeMode: ThemeMode = isDarkMode ? 'dark' : 'light'
@@ -69,23 +75,23 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Typography</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <AppText variant="title" themeMode={themeMode}>Title</AppText>
         <AppText variant="heading" themeMode={themeMode}>Heading</AppText>
         <AppText variant="subheading" themeMode={themeMode}>Subheading</AppText>
         <AppText variant="body" themeMode={themeMode}>Body</AppText>
         <AppText variant="caption" themeMode={themeMode}>Caption</AppText>
-        
+
         <Divider themeMode={themeMode} />
-        
+
         <AppText variant="body" color="primary" themeMode={themeMode}>Primary Text</AppText>
         <AppText variant="body" color="secondary" themeMode={themeMode}>Secondary Text</AppText>
         <AppText variant="body" color="tertiary" themeMode={themeMode}>Tertiary Text</AppText>
-        
+
         <AppText variant="body" color="success" themeMode={themeMode}>Success</AppText>
         <AppText variant="body" color="warning" themeMode={themeMode}>Warning</AppText>
         <AppText variant="body" color="error" themeMode={themeMode}>Error</AppText>
-        
+
         <AppText variant="body" color="asset" themeMode={themeMode}>Asset</AppText>
         <AppText variant="body" color="liability" themeMode={themeMode}>Liability</AppText>
         <AppText variant="body" color="equity" themeMode={themeMode}>Equity</AppText>
@@ -97,23 +103,23 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Cards</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <AppCard elevation="none" padding="md" style={styles.cardExample} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode}>No elevation</AppText>
         </AppCard>
-        
+
         <AppCard elevation="sm" padding="md" style={styles.cardExample} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode}>Small elevation</AppText>
         </AppCard>
-        
+
         <AppCard elevation="md" padding="md" style={styles.cardExample} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode}>Medium elevation</AppText>
         </AppCard>
-        
+
         <AppCard elevation="lg" padding="md" style={styles.cardExample} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode}>Large elevation</AppText>
         </AppCard>
-        
+
         <AppCard variant="secondary" elevation="sm" padding="md" style={styles.cardExample} themeMode={themeMode}>
           <AppText variant="body" themeMode={themeMode}>Secondary variant</AppText>
         </AppCard>
@@ -123,7 +129,7 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Buttons</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <View style={styles.buttonRow}>
           <AppButton variant="primary" themeMode={themeMode}>
             Primary
@@ -135,7 +141,7 @@ export default function DesignPreviewScreen() {
             Outline
           </AppButton>
         </View>
-        
+
         <View style={styles.buttonRow}>
           <AppButton variant="primary" loading themeMode={themeMode}>
             Loading
@@ -150,14 +156,14 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Badges</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <View style={styles.badgeRow}>
           <Badge variant="default" themeMode={themeMode}>Default</Badge>
           <Badge variant="success" themeMode={themeMode}>Success</Badge>
           <Badge variant="warning" themeMode={themeMode}>Warning</Badge>
           <Badge variant="error" themeMode={themeMode}>Error</Badge>
         </View>
-        
+
         <View style={styles.badgeRow}>
           <Badge variant="asset" themeMode={themeMode}>ASSET</Badge>
           <Badge variant="liability" themeMode={themeMode}>LIABILITY</Badge>
@@ -170,13 +176,13 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>List Rows</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <ListRow
           title="Simple Row"
           subtitle="Just a title and subtitle"
           themeMode={themeMode}
         />
-        
+
         <ListRow
           title="Row with Badge"
           subtitle="Account type badge"
@@ -184,16 +190,16 @@ export default function DesignPreviewScreen() {
           showDivider
           themeMode={themeMode}
         />
-        
+
         <ListRow
           title="Clickable Row"
           subtitle="Tap this row"
           trailing={<Badge variant="income" themeMode={themeMode}>+$500</Badge>}
           showDivider
-          onPress={() => {}}
+          onPress={() => { }}
           themeMode={themeMode}
         />
-        
+
         <ListRow
           title="Row with Leading Icon"
           subtitle="Custom leading content"
@@ -208,7 +214,7 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Dividers</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <AppText variant="body" themeMode={themeMode}>Horizontal dividers:</AppText>
         <View style={{
           marginVertical: Spacing.md,
@@ -226,7 +232,7 @@ export default function DesignPreviewScreen() {
         }}>
           <Divider orientation="horizontal" thickness="medium" length="full" themeMode={themeMode} />
         </View>
-        
+
         <AppText variant="body" themeMode={themeMode}>Vertical dividers:</AppText>
         <View style={styles.verticalDividerContainer}>
           <TokenBox size={Spacing.lg} radius={Shape.radius.sm} />
@@ -241,7 +247,7 @@ export default function DesignPreviewScreen() {
       <AppCard elevation="sm" padding="lg" style={styles.section} themeMode={themeMode}>
         <AppText variant="heading" themeMode={themeMode}>Spacing Scale</AppText>
         <Divider themeMode={themeMode} />
-        
+
         <AppText variant="body" themeMode={themeMode}>4px grid system:</AppText>
         {Object.entries(Spacing).map(([key, value]) => (
           <View key={key} style={styles.spacingRow}>
