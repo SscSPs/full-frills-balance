@@ -1,6 +1,6 @@
 import { AppButton, AppCard, AppText } from '@/components/core'
-import { AppConfig, Shape, Spacing, ThemeMode, useThemeColors } from '@/constants'
-import { useColorScheme } from '@/hooks/use-color-scheme'
+import { AppConfig, Shape, Spacing } from '@/constants'
+import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import { AccountType } from '@/src/data/models/Account'
 import Currency from '@/src/data/models/Currency'
@@ -13,23 +13,16 @@ import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { FlatList, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useUser } from '../contexts/UIContext'
+import { useUI } from '../contexts/UIContext'
 
 export default function AccountCreationScreen() {
   const router = useRouter()
-  const { themePreference } = useUser()
-  const systemColorScheme = useColorScheme()
-
-  // Derive theme mode following the explicit pattern from design preview
-  const themeMode: ThemeMode = themePreference === 'system'
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode
-
-  const theme = useThemeColors(themeMode)
+  const { theme, themeMode } = useTheme()
+  const { defaultCurrency } = useUI()
 
   const [accountName, setAccountName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(AppConfig.defaultCurrency)
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(defaultCurrency || AppConfig.defaultCurrency)
   const [currencies, setCurrencies] = useState<Currency[]>([])
   const [showCurrencyModal, setShowCurrencyModal] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -85,7 +78,7 @@ export default function AccountCreationScreen() {
       // Reset form
       setAccountName('')
       setAccountType(AccountType.ASSET)
-      setSelectedCurrency(AppConfig.defaultCurrency)
+      setSelectedCurrency(defaultCurrency || AppConfig.defaultCurrency)
 
       // Navigate to accounts list
       router.push('/(tabs)/accounts' as any)

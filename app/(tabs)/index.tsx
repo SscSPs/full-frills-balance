@@ -1,11 +1,12 @@
-import { useUser } from '@/contexts/UIContext';
+import { useUI } from '@/contexts/UIContext';
 import { Redirect } from 'expo-router';
+import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-get-random-values';
 import JournalListScreen from './journal-list-content';
 
 export default function IndexScreen() {
-  const { hasCompletedOnboarding, isInitialized } = useUser();
+  const { hasCompletedOnboarding, isInitialized } = useUI();
 
   // Show loading screen while preferences are being loaded
   if (!isInitialized) {

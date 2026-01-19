@@ -5,11 +5,11 @@
  */
 
 import { ThemeMode, useThemeColors } from '@/constants'
-import { useUser } from '@/contexts/UIContext'
+import { useUI } from '@/contexts/UIContext'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 
 export function useTheme() {
-    const { themePreference } = useUser()
+    const { themePreference, defaultCurrency } = useUI()
     const systemColorScheme = useColorScheme()
 
     const themeMode: ThemeMode = themePreference === 'system'

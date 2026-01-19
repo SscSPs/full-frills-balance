@@ -7,11 +7,16 @@ import { useColorScheme } from 'react-native'
 import { Colors, ThemeMode } from './design-tokens'
 
 // Enhanced theme colors with semantic naming
-export const useThemeColors = (mode?: ThemeMode) => {
+export const useThemeColors = (mode?: ThemeMode | 'system') => {
   const systemColorScheme = useColorScheme()
-  const theme = mode || systemColorScheme || 'light'
 
-  return Colors[theme]
+  // Resolve theme: explicit mode -> system preference -> fallback to light
+  let resolvedMode = mode === 'system' ? systemColorScheme : mode
+  if (!resolvedMode || (resolvedMode !== 'light' && resolvedMode !== 'dark')) {
+    resolvedMode = systemColorScheme === 'dark' ? 'dark' : 'light'
+  }
+
+  return Colors[resolvedMode as 'light' | 'dark']
 }
 
 // Helper function to get color by semantic name

@@ -11,10 +11,12 @@ import Account from '../data/models/Account';
 import Journal from '../data/models/Journal';
 import Transaction from '../data/models/Transaction';
 import { logger } from '../utils/logger';
+import { preferences } from '../utils/preferences';
 
 export interface ExportData {
     exportDate: string;
     version: string;
+    preferences: any;
     accounts: AccountExport[];
     journals: JournalExport[];
     transactions: TransactionExport[];
@@ -75,9 +77,12 @@ class ExportService {
                 .query(Q.where('deleted_at', Q.eq(null)))
                 .fetch();
 
+            const userPreferences = await preferences.loadPreferences();
+
             const exportData: ExportData = {
                 exportDate: new Date().toISOString(),
                 version: '1.0.0',
+                preferences: userPreferences,
                 accounts: accounts.map(a => ({
                     id: a.id,
                     name: a.name,

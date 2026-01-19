@@ -32,15 +32,20 @@ interface UIState {
   // Simple UI flags
   isLoading: boolean
   isInitialized: boolean // Track if preferences are loaded
+
+  // User details
+  userName: string
+  defaultCurrency: string
 }
 
 interface UIContextType extends UIState {
   // Actions for UI state only
-  completeOnboarding: () => Promise<void>
+  completeOnboarding: (name: string, currency: string) => Promise<void>
   setThemePreference: (theme: 'light' | 'dark' | 'system') => Promise<void>
   setLoading: (loading: boolean) => void
   resetApp: () => Promise<void>
   cleanupDatabase: () => Promise<{ deletedCount: number }>
+  updateUserDetails: (name: string, currency: string) => Promise<void>
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined)
@@ -54,6 +59,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     themeMode: systemColorScheme === 'dark' ? 'dark' : 'light',
     isLoading: false,
     isInitialized: false,
+    userName: '',
+    defaultCurrency: 'USD',
   })
 
   // Update themeMode when preference or system scheme changes
@@ -83,6 +90,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           hasCompletedOnboarding: loadedPreferences.onboardingCompleted,
           themePreference,
           themeMode: computedThemeMode,
+          userName: loadedPreferences.userName || '',
+          defaultCurrency: loadedPreferences.defaultCurrencyCode || 'USD',
           isLoading: false,
           isInitialized: true,
         })
@@ -109,14 +118,35 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     loadPreferences()
   }, [])
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = async (name: string, currency: string) => {
     try {
+      await preferences.setUserName(name)
+      await preferences.setDefaultCurrencyCode(currency)
       await preferences.setOnboardingCompleted(true)
-      setUIState(prev => ({ ...prev, hasCompletedOnboarding: true }))
+      setUIState(prev => ({
+        ...prev,
+        hasCompletedOnboarding: true,
+        userName: name,
+        defaultCurrency: currency
+      }))
     } catch (error) {
       console.warn('Failed to save onboarding state:', error)
       // Still update local state for better UX
       setUIState(prev => ({ ...prev, hasCompletedOnboarding: true }))
+    }
+  }
+
+  const updateUserDetails = async (name: string, currency: string) => {
+    try {
+      if (name) await preferences.setUserName(name)
+      if (currency) await preferences.setDefaultCurrencyCode(currency)
+      setUIState(prev => ({
+        ...prev,
+        userName: name || prev.userName,
+        defaultCurrency: currency || prev.defaultCurrency
+      }))
+    } catch (error) {
+      console.warn('Failed to update user details:', error)
     }
   }
 
@@ -151,6 +181,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         hasCompletedOnboarding: false,
         themePreference: 'system',
         themeMode: systemColorScheme === 'dark' ? 'dark' : 'light',
+        userName: '',
+        defaultCurrency: 'USD',
         isLoading: false,
         isInitialized: true,
       })
@@ -184,6 +216,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     setLoading,
     resetApp,
     cleanupDatabase,
+    updateUserDetails,
   }
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>

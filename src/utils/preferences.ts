@@ -5,13 +5,14 @@ const PREFERENCES_KEY = 'full_frills_balance_ui_preferences';
 
 interface UIPreferences {
   onboardingCompleted: boolean;
+  userName?: string;
+  defaultCurrencyCode?: string;
   lastSelectedAccountId?: string;
   lastDateRange?: {
     startDate: number;
     endDate: number;
   };
   theme?: 'light' | 'dark' | 'system';
-  defaultCurrencyCode?: string;
   lastUsedSourceAccountId?: string;
   lastUsedDestinationAccountId?: string;
 }
@@ -19,6 +20,8 @@ interface UIPreferences {
 class PreferencesHelper {
   private preferences: UIPreferences = {
     onboardingCompleted: false,
+    userName: '',
+    defaultCurrencyCode: 'USD',
   };
 
   async loadPreferences(): Promise<UIPreferences> {
@@ -49,6 +52,15 @@ class PreferencesHelper {
 
   async setOnboardingCompleted(completed: boolean): Promise<void> {
     this.preferences.onboardingCompleted = completed;
+    await this.savePreferences();
+  }
+
+  get userName(): string | undefined {
+    return this.preferences.userName;
+  }
+
+  async setUserName(name: string): Promise<void> {
+    this.preferences.userName = name;
     await this.savePreferences();
   }
 

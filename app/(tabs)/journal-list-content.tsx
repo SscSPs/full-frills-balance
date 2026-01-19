@@ -2,31 +2,29 @@ import { AppText, FloatingActionButton, SearchField } from '@/components/core';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
-import { Spacing, ThemeMode, useThemeColors } from '@/constants';
-import { useUser } from '@/contexts/UIContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Spacing } from '@/constants'; // Removed useThemeColors
+import { useUI } from '@/contexts/UIContext'; // Changed useUser to useUI
 import { useJournals, useNetWorth } from '@/hooks/use-data';
 import { useSummary } from '@/hooks/use-summary';
+import { useTheme } from '@/hooks/use-theme'; // Added useTheme, removed useColorScheme
 import Journal from '@/src/data/models/Journal';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router'; // Added usePathname
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function JournalListScreen() {
   const router = useRouter()
-  const { themePreference } = useUser()
-  const systemColorScheme = useColorScheme()
+  const pathname = usePathname(); // Added for navigation stability
+  const { userName } = useUI() // Changed from themePreference, systemColorScheme, useUser
+  const { theme, themeMode } = useTheme(); // Replaced themePreference, systemColorScheme, useThemeColors
   const { journals, isLoading, isLoadingMore, hasMore, loadMore } = useJournals()
   const { income, expense, isPrivacyMode } = useSummary()
   const { netWorth, totalAssets, totalLiabilities, isLoading: worthLoading } = useNetWorth()
   const [searchQuery, setSearchQuery] = React.useState('')
-
-  const themeMode: ThemeMode = themePreference === 'system'
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode
-
-  const theme = useThemeColors(themeMode)
+  // WORKAROUND: FlashList 2.0.2 types are currently incompatible with React 19/RN 0.81 JSX checks.
+  // We use 'any' here to unblock the build while keeping the core logic intact.
+  const TypedFlashList = FlashList as any
 
   const handleJournalPress = (journal: Journal) => {
     router.push(`/transaction-details?journalId=${journal.id}` as any);
@@ -54,20 +52,28 @@ export default function JournalListScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <FlashList
+      <TypedFlashList
         data={filteredJournals}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Journal }) => (
           <JournalCard
             journal={item}
             themeMode={themeMode}
             onPress={handleJournalPress}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Journal) => item.id}
         estimatedItemSize={120}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <>
+            <View style={{ marginBottom: Spacing.lg }}>
+              <AppText variant="title" themeMode={themeMode}>
+                Hello, {userName || 'there'}!
+              </AppText>
+              <AppText variant="body" color="secondary" themeMode={themeMode}>
+                Here's your financial overview
+              </AppText>
+            </View>
             <NetWorthCard
               netWorth={netWorth}
               totalAssets={totalAssets}
