@@ -1,4 +1,5 @@
-import { AppConfig, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { AppConfig, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -8,11 +9,10 @@ interface DashboardSummaryProps {
     income: number;
     expense: number;
     isPrivacyMode: boolean;
-    themeMode: ThemeMode;
 }
 
-export const DashboardSummary = ({ income, expense, isPrivacyMode, themeMode }: DashboardSummaryProps) => {
-    const theme = useThemeColors(themeMode);
+export const DashboardSummary = ({ income, expense, isPrivacyMode }: DashboardSummaryProps) => {
+    const { theme } = useTheme();
 
     const formatValue = (val: number) => {
         if (isPrivacyMode) return '••••';
@@ -22,27 +22,27 @@ export const DashboardSummary = ({ income, expense, isPrivacyMode, themeMode }: 
     return (
         <View style={styles.container}>
             {/* Income Column */}
-            <AppCard elevation="sm" padding="md" style={styles.column} themeMode={themeMode}>
+            <AppCard elevation="sm" padding="md" style={styles.column}>
                 <View style={styles.row}>
                     <View style={[styles.iconBox, { backgroundColor: theme.income + '20' }]}>
                         <Ionicons name="arrow-down-outline" size={16} color={theme.income} />
                     </View>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>INCOME</AppText>
+                    <AppText variant="caption" color="secondary">INCOME</AppText>
                 </View>
-                <AppText variant="subheading" themeMode={themeMode} style={[styles.value, { color: theme.income }]}>
+                <AppText variant="subheading" style={[styles.value, { color: theme.income }]}>
                     {formatValue(income)}
                 </AppText>
             </AppCard>
 
             {/* Expense Column */}
-            <AppCard elevation="sm" padding="md" style={styles.column} themeMode={themeMode}>
+            <AppCard elevation="sm" padding="md" style={styles.column}>
                 <View style={styles.row}>
                     <View style={[styles.iconBox, { backgroundColor: theme.expense + '20' }]}>
                         <Ionicons name="arrow-up-outline" size={16} color={theme.expense} />
                     </View>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>EXPENSE</AppText>
+                    <AppText variant="caption" color="secondary">EXPENSE</AppText>
                 </View>
-                <AppText variant="subheading" themeMode={themeMode} style={[styles.value, { color: theme.expense }]}>
+                <AppText variant="subheading" style={[styles.value, { color: theme.expense }]}>
                     {formatValue(expense)}
                 </AppText>
             </AppCard>

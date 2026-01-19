@@ -1,29 +1,20 @@
 import { AppButton, AppCard, AppText } from '@/components/core'
-import { Spacing, ThemeMode, useThemeColors } from '@/constants'
-import { useUser } from '@/contexts/UIContext'
-import { useColorScheme } from '@/hooks/use-color-scheme'
+import { Spacing } from '@/constants'
+import { useTheme } from '@/hooks/use-theme'
 import { Link } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 
 export default function ModalScreen() {
-  const { themePreference } = useUser()
-  const systemColorScheme = useColorScheme()
-  
-  // Derive theme mode following the explicit pattern from design preview
-  const themeMode: ThemeMode = themePreference === 'system' 
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode
-  
-  const theme = useThemeColors(themeMode)
+  const { theme, themeMode } = useTheme()
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <AppCard elevation="md" padding="lg" themeMode={themeMode}>
-        <AppText variant="heading" themeMode={themeMode} style={styles.title}>
+      <AppCard elevation="md" padding="lg">
+        <AppText variant="heading" style={styles.title}>
           This is a modal
         </AppText>
         <Link href="/" dismissTo style={styles.link}>
-          <AppButton variant="outline" themeMode={themeMode}>
+          <AppButton variant="outline">
             Go to home screen
           </AppButton>
         </Link>

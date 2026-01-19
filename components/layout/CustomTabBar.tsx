@@ -1,7 +1,6 @@
 import { AppText } from '@/components/core';
-import { Spacing, ThemeMode, useThemeColors } from '@/constants';
-import { useUser } from '@/contexts/UIContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Shape, Spacing, withOpacity } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -19,23 +18,16 @@ interface CustomTabBarProps {
 const FAB_SIZE = 40; // Reduced from 56 to 40
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function CustomTabBar({ 
-  activeTab, 
-  onTabChange, 
+export default function CustomTabBar({
+  activeTab,
+  onTabChange,
   onAddIncome,
   onAddExpense,
   onAddTransfer,
-  onAddAccount 
+  onAddAccount
 }: CustomTabBarProps) {
   const [expanded, setExpanded] = useState(false);
-  const { themePreference } = useUser();
-  const systemColorScheme = useColorScheme();
-  
-  const themeMode: ThemeMode = themePreference === 'system' 
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode;
-  
-  const theme = useThemeColors(themeMode);
+  const { theme } = useTheme();
 
   // Animation values
   const fabRotation = React.useRef(new Animated.Value(0)).current;
@@ -45,7 +37,7 @@ export default function CustomTabBar({
   const toggleExpanded = () => {
     if (activeTab === 'home') {
       const toValue = expanded ? 0 : 1;
-      
+
       Animated.parallel([
         Animated.timing(fabRotation, {
           toValue: toValue * 45,
@@ -63,7 +55,7 @@ export default function CustomTabBar({
           useNativeDriver: true,
         }),
       ]).start();
-      
+
       setExpanded(!expanded);
     } else if (activeTab === 'accounts' && onAddAccount) {
       onAddAccount();
@@ -107,10 +99,10 @@ export default function CustomTabBar({
   return (
     <View style={{ flex: 1 }}>
       {/* Main content */}
-      <SafeAreaView 
+      <SafeAreaView
         style={[
-          styles.container, 
-          { 
+          styles.container,
+          {
             backgroundColor: theme.background,
             borderTopColor: theme.border,
           }
@@ -124,29 +116,29 @@ export default function CustomTabBar({
               style={[
                 styles.tab,
                 activeTab === tab.id && {
-                  backgroundColor: theme.primary + '20',
+                  backgroundColor: withOpacity(theme.primary, 0.12),
                 },
               ]}
               onPress={() => onTabChange(tab.id)}
             >
               <View style={styles.tabContent}>
-                <AppText 
-                  variant="body" 
+                <AppText
+                  variant="body"
                   style={[
                     styles.tabIcon,
-                    { 
-                      color: activeTab === tab.id ? theme.primary : theme.textSecondary 
+                    {
+                      color: activeTab === tab.id ? theme.primary : theme.textSecondary
                     }
                   ]}
                 >
                   {tab.icon}
                 </AppText>
-                <AppText 
-                  variant="caption" 
+                <AppText
+                  variant="caption"
                   style={[
                     styles.tabTitle,
-                    { 
-                      color: activeTab === tab.id ? theme.primary : theme.textSecondary 
+                    {
+                      color: activeTab === tab.id ? theme.primary : theme.textSecondary
                     }
                   ]}
                 >
@@ -188,10 +180,10 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('income')}
             testID="transaction-button"
           >
-            <Ionicons name="add" size={24} color="#fff" />
+            <Ionicons name="add" size={24} color={theme.pureInverse} />
           </TouchableOpacity>
-          <AppText 
-            variant="caption" 
+          <AppText
+            variant="caption"
             style={[
               styles.transactionLabel,
               {
@@ -217,10 +209,10 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('expense')}
             testID="transaction-button"
           >
-            <Ionicons name="remove" size={24} color="#fff" />
+            <Ionicons name="remove" size={24} color={theme.pureInverse} />
           </TouchableOpacity>
-          <AppText 
-            variant="caption" 
+          <AppText
+            variant="caption"
             style={[
               styles.transactionLabel,
               {
@@ -246,10 +238,10 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('transfer')}
             testID="transaction-button"
           >
-            <Ionicons name="swap-horizontal" size={24} color="#fff" />
+            <Ionicons name="swap-horizontal" size={24} color={theme.pureInverse} />
           </TouchableOpacity>
-          <AppText 
-            variant="caption" 
+          <AppText
+            variant="caption"
             style={[
               styles.transactionLabel,
               {
@@ -269,7 +261,7 @@ export default function CustomTabBar({
         style={[
           styles.fab,
           {
-            backgroundColor: activeTab === 'home' 
+            backgroundColor: activeTab === 'home'
               ? (expanded ? theme.surface : theme.primary)
               : theme.success, // Green for accounts tab
             left: fabX,
@@ -283,17 +275,19 @@ export default function CustomTabBar({
           style={[
             styles.fabIcon,
             {
-              transform: [{ rotate: fabRotation.interpolate({
-                inputRange: [0, 45],
-                outputRange: ['0deg', '45deg'],
-              }) }],
+              transform: [{
+                rotate: fabRotation.interpolate({
+                  inputRange: [0, 45],
+                  outputRange: ['0deg', '45deg'],
+                })
+              }],
             },
           ]}
         >
-          <Ionicons 
-            name={expanded ? 'close' : 'add'} 
-            size={24} 
-            color="#fff" 
+          <Ionicons
+            name={expanded ? 'close' : 'add'}
+            size={24}
+            color={theme.pureInverse}
           />
         </Animated.View>
       </TouchableOpacity>
@@ -353,11 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: FAB_SIZE / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...Shape.elevation.md,
   },
   transactionLabel: {
     position: 'absolute',
@@ -373,11 +363,7 @@ const styles = StyleSheet.create({
     borderRadius: FAB_SIZE / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...Shape.elevation.md,
     zIndex: 300,
   },
   fabIcon: {

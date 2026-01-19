@@ -17,7 +17,7 @@ export default function JournalListScreen() {
   const router = useRouter()
   const pathname = usePathname(); // Added for navigation stability
   const { userName } = useUI() // Changed from themePreference, systemColorScheme, useUser
-  const { theme, themeMode } = useTheme(); // Replaced themePreference, systemColorScheme, useThemeColors
+  const { theme } = useTheme(); // Replaced themePreference, systemColorScheme, useThemeColors
   const { journals, isLoading, isLoadingMore, hasMore, loadMore } = useJournals()
   const { income, expense, isPrivacyMode } = useSummary()
   const { netWorth, totalAssets, totalLiabilities, isLoading: worthLoading } = useNetWorth()
@@ -44,7 +44,7 @@ export default function JournalListScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <AppText variant="body" themeMode={themeMode}>Loading journals...</AppText>
+          <AppText variant="body">Loading journals...</AppText>
         </View>
       </View>
     );
@@ -57,7 +57,6 @@ export default function JournalListScreen() {
         renderItem={({ item }: { item: Journal }) => (
           <JournalCard
             journal={item}
-            themeMode={themeMode}
             onPress={handleJournalPress}
           />
         )}
@@ -67,10 +66,10 @@ export default function JournalListScreen() {
         ListHeaderComponent={
           <>
             <View style={{ marginBottom: Spacing.lg }}>
-              <AppText variant="title" themeMode={themeMode}>
+              <AppText variant="title">
                 Hello, {userName || 'there'}!
               </AppText>
-              <AppText variant="body" color="secondary" themeMode={themeMode}>
+              <AppText variant="body" color="secondary">
                 Here's your financial overview
               </AppText>
             </View>
@@ -78,34 +77,30 @@ export default function JournalListScreen() {
               netWorth={netWorth}
               totalAssets={totalAssets}
               totalLiabilities={totalLiabilities}
-              themeMode={themeMode}
               isLoading={worthLoading}
             />
             <DashboardSummary
               income={income}
               expense={expense}
               isPrivacyMode={isPrivacyMode}
-              themeMode={themeMode}
             />
             <SearchField
               value={searchQuery}
               onChangeText={setSearchQuery}
-              themeMode={themeMode}
             />
-            <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+            <AppText variant="subheading" style={styles.sectionTitle}>
               {searchQuery ? 'Search Results' : 'Recent Transactions'}
             </AppText>
           </>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <AppText variant="heading" themeMode={themeMode} style={styles.emptyText}>
+            <AppText variant="heading" style={styles.emptyText}>
               No transactions yet
             </AppText>
             <AppText
               variant="body"
               color="secondary"
-              themeMode={themeMode}
               style={styles.emptySubtext}
             >
               Tap the + button to add your first transaction
@@ -116,7 +111,7 @@ export default function JournalListScreen() {
           isLoadingMore ? (
             <View style={styles.loadingMore}>
               <ActivityIndicator size="small" />
-              <AppText variant="caption" color="secondary" themeMode={themeMode}>
+              <AppText variant="caption" color="secondary">
                 Loading more...
               </AppText>
             </View>

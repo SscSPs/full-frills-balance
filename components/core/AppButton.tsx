@@ -5,6 +5,7 @@
 
 import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
+import { useTheme } from '@/hooks/use-theme'
 import {
   ActivityIndicator,
   StyleSheet,
@@ -38,7 +39,9 @@ export function AppButton({
   themeMode,
   ...props
 }: AppButtonProps) {
-  const theme = useThemeColors(themeMode)
+  const { theme: globalTheme } = useTheme()
+  const overrideTheme = useThemeColors(themeMode)
+  const theme = themeMode ? overrideTheme : globalTheme
 
   // Get button styles based on variant
   const getButtonStyles = (): ViewStyle => {
@@ -114,7 +117,7 @@ export function AppButton({
 
     switch (variant) {
       case 'primary':
-        return '#FFFFFF' // Always white on primary
+        return theme.pureInverse // Always contrast on primary
       case 'secondary':
         return theme.text
       case 'outline':

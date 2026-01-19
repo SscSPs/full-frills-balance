@@ -20,6 +20,9 @@ export type { AppCardProps } from './AppCard'
 export { AppButton } from './AppButton'
 export type { AppButtonProps } from './AppButton'
 
+export { AppInput } from './AppInput'
+export type { AppInputProps } from './AppInput'
+
 export { ListRow } from './ListRow'
 export type { ListRowProps } from './ListRow'
 

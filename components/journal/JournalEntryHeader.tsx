@@ -1,5 +1,6 @@
 import { AppText } from '@/components/core';
-import { Spacing, ThemeMode } from '@/constants';
+import { Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -7,13 +8,12 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface JournalEntryHeaderProps {
     title: string;
-    theme: any;
-    themeMode: ThemeMode;
     onClose?: () => void;
 }
 
-export const JournalEntryHeader = ({ title, theme, themeMode, onClose }: JournalEntryHeaderProps) => {
+export const JournalEntryHeader = ({ title, onClose }: JournalEntryHeaderProps) => {
     const router = useRouter();
+    const { theme } = useTheme();
 
     const handleClose = onClose || (() => router.back());
 
@@ -23,7 +23,7 @@ export const JournalEntryHeader = ({ title, theme, themeMode, onClose }: Journal
                 <Ionicons name="close" size={28} color={theme.text} />
             </TouchableOpacity>
 
-            <AppText variant="heading" themeMode={themeMode} style={styles.headerTitle}>
+            <AppText variant="heading" style={styles.headerTitle}>
                 {title}
             </AppText>
 

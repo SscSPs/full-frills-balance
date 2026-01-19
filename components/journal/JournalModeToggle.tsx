@@ -1,31 +1,31 @@
 import { AppCard, AppText } from '@/components/core';
-import { Shape, Spacing, ThemeMode } from '@/constants';
+import { Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface JournalModeToggleProps {
     isGuidedMode: boolean;
     setIsGuidedMode: (mode: boolean) => void;
-    theme: any;
-    themeMode: ThemeMode;
 }
 
-export const JournalModeToggle = ({ isGuidedMode, setIsGuidedMode, theme, themeMode }: JournalModeToggleProps) => {
+export const JournalModeToggle = ({ isGuidedMode, setIsGuidedMode }: JournalModeToggleProps) => {
+    const { theme } = useTheme();
+
     return (
-        <AppCard elevation="sm" padding="lg" style={styles.modeToggleCard} themeMode={themeMode}>
-            <View style={styles.modeToggleContainer}>
+        <AppCard elevation="sm" padding="lg" style={styles.modeToggleCard}>
+            <View style={[styles.modeToggleContainer, { backgroundColor: theme.surfaceSecondary }]}>
                 <TouchableOpacity
                     style={[
                         styles.modeButton,
                         isGuidedMode && styles.modeButtonActive,
-                        { backgroundColor: isGuidedMode ? theme.primary : theme.surface }
+                        { backgroundColor: isGuidedMode ? theme.primary : 'transparent' }
                     ]}
                     onPress={() => setIsGuidedMode(true)}
                 >
                     <AppText
                         variant="body"
-                        themeMode={themeMode}
-                        style={{ color: isGuidedMode ? '#fff' : theme.text }}
+                        style={{ color: isGuidedMode ? theme.pureInverse : theme.text }}
                     >
                         Simple
                     </AppText>
@@ -35,14 +35,13 @@ export const JournalModeToggle = ({ isGuidedMode, setIsGuidedMode, theme, themeM
                     style={[
                         styles.modeButton,
                         !isGuidedMode && styles.modeButtonActive,
-                        { backgroundColor: !isGuidedMode ? theme.primary : theme.surface }
+                        { backgroundColor: !isGuidedMode ? theme.primary : 'transparent' }
                     ]}
                     onPress={() => setIsGuidedMode(false)}
                 >
                     <AppText
                         variant="body"
-                        themeMode={themeMode}
-                        style={{ color: !isGuidedMode ? '#fff' : theme.text }}
+                        style={{ color: !isGuidedMode ? theme.pureInverse : theme.text }}
                     >
                         Advanced
                     </AppText>
@@ -59,7 +58,6 @@ const styles = StyleSheet.create({
     },
     modeToggleContainer: {
         flexDirection: 'row',
-        backgroundColor: '#f5f5f5',
         borderRadius: Shape.radius.full,
         padding: Spacing.xs,
     },
@@ -71,10 +69,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modeButtonActive: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
+        ...Shape.elevation.sm,
     },
 });

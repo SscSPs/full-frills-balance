@@ -5,7 +5,7 @@
  * NOT part of design system - reduces duplication in app screens only
  */
 
-import { useThemeColors } from '@/constants'
+import { useTheme } from '@/hooks/use-theme'
 import React from 'react'
 import { type ViewProps } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -16,10 +16,10 @@ export type ScreenProps = ViewProps & {
 }
 
 export function Screen({ children, style, ...props }: ScreenProps) {
-  const theme = useThemeColors()
-  
+  const { theme } = useTheme()
+
   return (
-    <SafeAreaView 
+    <SafeAreaView
       style={[{
         flex: 1,
         backgroundColor: theme.background,

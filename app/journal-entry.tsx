@@ -1,6 +1,5 @@
 import { AppText } from '@/components/core';
-import { ThemeMode, useThemeColors } from '@/constants';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 import { database } from '@/src/data/database/Database';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
@@ -17,17 +16,11 @@ import { JournalEntryHeader } from '../components/journal/JournalEntryHeader';
 import { JournalEntryLine } from '../components/journal/JournalLineItem';
 import { JournalModeToggle } from '../components/journal/JournalModeToggle';
 import SimpleJournalForm from '../components/journal/SimpleJournalForm';
-import { useUser } from '../contexts/UIContext';
 
 export default function JournalEntryScreen() {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const { themePreference } = useUser()
-  const colorScheme = useColorScheme()
-  const themeMode: ThemeMode = themePreference === 'system'
-    ? (colorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode
-  const theme = useThemeColors(themeMode)
+  const { theme } = useTheme()
 
   // Guided mode state
   const [isGuidedMode, setIsGuidedMode] = useState(true)
@@ -136,7 +129,7 @@ export default function JournalEntryScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <AppText variant="body" themeMode={themeMode}>Loading accounts...</AppText>
+          <AppText variant="body">Loading accounts...</AppText>
         </View>
       </View>
     )
@@ -146,8 +139,6 @@ export default function JournalEntryScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <JournalEntryHeader
         title={isEdit ? 'Edit Transaction' : (isGuidedMode ? 'New Transaction' : 'Journal Entry')}
-        theme={theme}
-        themeMode={themeMode}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -155,23 +146,18 @@ export default function JournalEntryScreen() {
           <JournalModeToggle
             isGuidedMode={isGuidedMode}
             setIsGuidedMode={setIsGuidedMode}
-            theme={theme}
-            themeMode={themeMode}
           />
         )}
 
         {isGuidedMode ? (
           <SimpleJournalForm
             accounts={accounts}
-            themeMode={themeMode}
             onSuccess={() => router.push('/(tabs)')}
             initialType={transactionType}
           />
         ) : (
           <AdvancedJournalForm
             accounts={accounts}
-            theme={theme}
-            themeMode={themeMode}
             onSuccess={() => router.push('/(tabs)')}
             onSelectAccountRequest={(id) => {
               setSelectedLineId(id)
@@ -190,7 +176,6 @@ export default function JournalEntryScreen() {
       <AccountSelector
         visible={showAccountPicker}
         accounts={accounts}
-        themeMode={themeMode}
         onClose={() => setShowAccountPicker(false)}
         onSelect={selectAccount}
       />

@@ -1,11 +1,9 @@
-import { ThemeMode, useThemeColors } from '@/constants';
-import { useUser } from '@/contexts/UIContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import AccountsScreen from '../../app/accounts';
-import JournalListScreen from '../../app/journal-list';
+import AccountsScreen from '../../app/(tabs)/accounts';
+import JournalListScreen from '../../app/(tabs)/journal-list-content';
 import CustomTabBar from './CustomTabBar';
 
 interface TabNavigatorProps {
@@ -14,15 +12,8 @@ interface TabNavigatorProps {
 
 export default function TabNavigator({ initialTab = 'home' }: TabNavigatorProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'accounts'>(initialTab);
-  const { themePreference } = useUser();
-  const systemColorScheme = useColorScheme();
+  const { theme } = useTheme();
   const router = useRouter();
-  
-  const themeMode: ThemeMode = themePreference === 'system' 
-    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-    : themePreference as ThemeMode;
-  
-  const theme = useThemeColors(themeMode);
 
   const handleTabChange = (tab: 'home' | 'accounts') => {
     setActiveTab(tab);
@@ -64,8 +55,8 @@ export default function TabNavigator({ initialTab = 'home' }: TabNavigatorProps)
       <View style={styles.content}>
         {renderContent()}
       </View>
-      <CustomTabBar 
-        activeTab={activeTab} 
+      <CustomTabBar
+        activeTab={activeTab}
         onTabChange={handleTabChange}
         onAddIncome={handleAddIncome}
         onAddExpense={handleAddExpense}

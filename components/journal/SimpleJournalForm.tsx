@@ -1,5 +1,6 @@
-import { AppButton, AppText } from '@/components/core';
-import { AppConfig, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { AppButton, AppInput, AppText } from '@/components/core';
+import { AppConfig, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import Account, { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -7,19 +8,18 @@ import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { preferences } from '@/src/utils/preferences';
 import { sanitizeAmount } from '@/src/utils/validation';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SimpleJournalFormProps {
     accounts: Account[];
-    themeMode: ThemeMode;
     onSuccess: () => void;
     initialType?: 'expense' | 'income' | 'transfer';
 }
 
 type TabType = 'expense' | 'income' | 'transfer';
 
-export default function SimpleJournalForm({ accounts, themeMode, onSuccess, initialType = 'expense' }: SimpleJournalFormProps) {
-    const theme = useThemeColors(themeMode);
+export default function SimpleJournalForm({ accounts, onSuccess, initialType = 'expense' }: SimpleJournalFormProps) {
+    const { theme } = useTheme();
 
     const [type, setType] = useState<TabType>(initialType);
     const [amount, setAmount] = useState('');
@@ -63,13 +63,7 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
 
         setIsSubmitting(true);
         try {
-            const fromAcc = accounts.find(a => a.id === sourceId || (type === 'income' && a.id === sourceId));
-            const toAcc = accounts.find(a => a.id === destinationId || (type === 'expense' && a.id === destinationId));
-
             if (type === 'expense') {
-                // Expense: Source (Asset) Credit -> Destination (Expense) Debit
-                // Wait, simple entries usually think: Debit Expense, Credit Asset. 
-                // Yes.
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: accounts.find(a => a.id === destinationId)?.name || 'Expense',
@@ -81,7 +75,6 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                 });
                 await preferences.setLastUsedSourceAccountId(sourceId);
             } else if (type === 'income') {
-                // Income: Source (Income) Credit -> Destination (Asset) Debit
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: accounts.find(a => a.id === sourceId)?.name || 'Income',
@@ -93,15 +86,11 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                 });
                 await preferences.setLastUsedDestinationAccountId(destinationId);
             } else {
-                // Transfer: Source (Asset) Credit -> Destination (Asset) Debit
                 const fromAcc = accounts.find(a => a.id === sourceId);
                 const toAcc = accounts.find(a => a.id === destinationId);
                 const fromCurrency = fromAcc?.currencyCode || AppConfig.defaultCurrency;
                 const toCurrency = toAcc?.currencyCode || AppConfig.defaultCurrency;
 
-                // We store amounts in account-local currency. 
-                // We need to calculate how much toCredit and how much toDebit.
-                // Normally the user enters the amount they "send" (fromAmount).
                 const fromToUSDRate = await exchangeRateService.getRate(fromCurrency, AppConfig.defaultCurrency);
                 const toToUSDRate = await exchangeRateService.getRate(toCurrency, AppConfig.defaultCurrency);
 
@@ -147,7 +136,7 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
 
     const renderAccountGrid = (title: string, accountList: Account[], selectedId: string, onSelect: (id: string) => void) => (
         <View style={styles.section}>
-            <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>{title}</AppText>
+            <AppText variant="subheading" style={styles.sectionTitle}>{title}</AppText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
                 {accountList.map(account => (
                     <TouchableOpacity
@@ -161,8 +150,7 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                     >
                         <AppText
                             variant="body"
-                            themeMode={themeMode}
-                            style={{ color: selectedId === account.id ? '#fff' : theme.text }}
+                            style={{ color: selectedId === account.id ? theme.pureInverse : theme.text }}
                         >
                             {account.name}
                         </AppText>
@@ -190,11 +178,11 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                         onPress={() => setType(t.key)}
                     >
                         <View style={styles.tabRow}>
-                            {type === t.key && <AppText style={styles.tabIcon}>{t.icon}</AppText>}
+                            {type === t.key && <AppText variant="caption" weight="bold" style={[styles.tabIcon, { color: theme.pureInverse }]}>{t.icon}</AppText>}
                             <AppText
                                 variant="caption"
-                                themeMode={themeMode}
-                                style={[styles.typeButtonText, { color: type === t.key ? '#fff' : theme.textSecondary }]}
+                                weight="bold"
+                                style={{ color: type === t.key ? theme.pureInverse : theme.textSecondary }}
                             >
                                 {t.label}
                             </AppText>
@@ -206,11 +194,11 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
             {/* Amount Input Section: Hero Style */}
             <View style={styles.amountContainer}>
                 <View style={[styles.amountRow, { borderBottomColor: theme.border }]}>
-                    <AppText variant="subheading" color="secondary" themeMode={themeMode} style={styles.currencySymbol}>
+                    <AppText variant="heading" color="secondary" style={styles.currencySymbol}>
                         {accounts.find(a => a.id === (type === 'income' ? destinationId : sourceId))?.currencyCode || AppConfig.defaultCurrency}
                     </AppText>
-                    <TextInput
-                        style={[styles.amountInput, { color: theme.text }]}
+                    <AppInput
+                        style={styles.amountInput}
                         value={amount}
                         onChangeText={setAmount}
                         placeholder="0.00"
@@ -248,7 +236,6 @@ export default function SimpleJournalForm({ accounts, themeMode, onSuccess, init
                     variant="primary"
                     onPress={handleSave}
                     disabled={!amount || !sourceId || !destinationId || isSubmitting}
-                    themeMode={themeMode}
                     style={styles.saveButton}
                 >
                     {isSubmitting ? 'Saving...' : `Save ${type}`}
@@ -265,7 +252,6 @@ const styles = StyleSheet.create({
     typeSelector: {
         flexDirection: 'row',
         marginBottom: Spacing.xl,
-        backgroundColor: '#f5f5f5',
         borderRadius: 12,
         padding: 4,
     },
@@ -274,10 +260,6 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         alignItems: 'center',
         borderRadius: 8,
-    },
-    typeButtonText: {
-        fontWeight: 'bold',
-        fontSize: 10,
     },
     amountContainer: {
         alignItems: 'center',
@@ -295,19 +277,18 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     tabIcon: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+        // Color set inline via theme.pureInverse
     },
     currencySymbol: {
         marginRight: Spacing.sm,
-        fontSize: 24,
     },
     amountInput: {
         fontSize: 48,
         fontWeight: 'bold',
         minWidth: 150,
         textAlign: 'center',
+        borderWidth: 0,
+        backgroundColor: 'transparent',
     },
     section: {
         marginBottom: Spacing.xl,

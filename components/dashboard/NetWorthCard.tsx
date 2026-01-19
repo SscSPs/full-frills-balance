@@ -1,5 +1,6 @@
 import { AppCard, AppText } from '@/components/core';
-import { Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -8,7 +9,6 @@ interface NetWorthCardProps {
     netWorth: number;
     totalAssets: number;
     totalLiabilities: number;
-    themeMode: ThemeMode;
     isLoading?: boolean;
 }
 
@@ -16,10 +16,9 @@ export const NetWorthCard = ({
     netWorth,
     totalAssets,
     totalLiabilities,
-    themeMode,
     isLoading = false
 }: NetWorthCardProps) => {
-    const theme = useThemeColors(themeMode);
+    const { theme } = useTheme();
     const [hidden, setHidden] = useState(false);
 
     const formatCurrency = (amount: number) => {
@@ -39,10 +38,9 @@ export const NetWorthCard = ({
             padding="lg"
             radius="r1"
             style={[styles.container, { backgroundColor: theme.surface }]} // Maybe use primary color bg?
-            themeMode={themeMode}
         >
             <View style={styles.header}>
-                <AppText variant="subheading" color="secondary" themeMode={themeMode}>
+                <AppText variant="subheading" color="secondary">
                     Net Worth
                 </AppText>
                 <TouchableOpacity onPress={() => setHidden(!hidden)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -54,7 +52,7 @@ export const NetWorthCard = ({
                 </TouchableOpacity>
             </View>
 
-            <AppText variant="title" themeMode={themeMode} style={styles.netWorthAmount}>
+            <AppText variant="title" style={styles.netWorthAmount}>
                 {formatCurrency(netWorth)}
             </AppText>
 
@@ -62,8 +60,8 @@ export const NetWorthCard = ({
                 <View style={styles.breakdownItem}>
                     <View style={[styles.dot, { backgroundColor: theme.asset }]} />
                     <View>
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>Assets</AppText>
-                        <AppText variant="heading" color="asset" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">Assets</AppText>
+                        <AppText variant="heading" color="asset">
                             {formatCurrency(totalAssets)}
                         </AppText>
                     </View>
@@ -74,8 +72,8 @@ export const NetWorthCard = ({
                 <View style={styles.breakdownItem}>
                     <View style={[styles.dot, { backgroundColor: theme.liability }]} />
                     <View>
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>Liabilities</AppText>
-                        <AppText variant="heading" color="liability" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">Liabilities</AppText>
+                        <AppText variant="heading" color="liability">
                             {formatCurrency(totalLiabilities)}
                         </AppText>
                     </View>

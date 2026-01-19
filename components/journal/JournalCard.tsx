@@ -1,5 +1,6 @@
 import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import Journal from '@/src/data/models/Journal';
 import { JournalDisplayType, JournalPresenter } from '@/src/domain/accounting/JournalPresenter';
 import { formatShortDate } from '@/src/utils/dateUtils';
@@ -8,7 +9,6 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface JournalCardProps {
     journal: Journal;
-    themeMode: ThemeMode;
     onPress: (journal: Journal) => void;
 }
 
@@ -16,8 +16,8 @@ interface JournalCardProps {
  * JournalCard - High-fidelity card for journal entries
  * Inspired by Ivy Wallet's TransactionCard
  */
-export const JournalCard = ({ journal, themeMode, onPress }: JournalCardProps) => {
-    const theme = useThemeColors(themeMode);
+export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
+    const { theme } = useTheme();
     const formattedDate = formatShortDate(journal.journalDate);
 
     // Use denormalized fields
@@ -33,30 +33,29 @@ export const JournalCard = ({ journal, themeMode, onPress }: JournalCardProps) =
         <AppCard
             elevation="sm"
             style={styles.container}
-            themeMode={themeMode}
         >
             <TouchableOpacity onPress={() => onPress(journal)} style={styles.content}>
                 {/* Header: Date & Count */}
                 <View style={styles.header}>
                     <View style={styles.badgeRow}>
                         {journal.currencyCode !== 'USD' && (
-                            <Badge variant="default" size="sm" themeMode={themeMode}>
+                            <Badge variant="default" size="sm">
                                 {journal.currencyCode}
                             </Badge>
                         )}
-                        <Badge variant="default" size="sm" themeMode={themeMode}>
+                        <Badge variant="default" size="sm">
                             {count} {count === 1 ? 'entry' : 'entries'}
                         </Badge>
                     </View>
                     <View style={{ flex: 1 }} />
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                    <AppText variant="caption" color="secondary">
                         {formattedDate}
                     </AppText>
                 </View>
 
                 {/* Title / Description */}
                 <View style={styles.titleSection}>
-                    <AppText variant="heading" themeMode={themeMode} numberOfLines={1}>
+                    <AppText variant="heading" numberOfLines={1}>
                         {journal.description || 'Journal Entry'}
                     </AppText>
                 </View>
@@ -71,9 +70,9 @@ export const JournalCard = ({ journal, themeMode, onPress }: JournalCardProps) =
                     />
 
                     <View style={styles.amountInfo}>
-                        <AppText variant="xl" themeMode={themeMode} style={styles.amountText}>
+                        <AppText variant="xl" style={styles.amountText}>
                             {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            <AppText variant="body" color="secondary" themeMode={themeMode}> {journal.currencyCode}</AppText>
+                            <AppText variant="body" color="secondary"> {journal.currencyCode}</AppText>
                         </AppText>
                     </View>
                 </View>

@@ -1,5 +1,6 @@
 import { AppCard, AppText } from '@/components/core';
-import { Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -7,40 +8,37 @@ interface JournalSummaryProps {
     totalDebits: number;
     totalCredits: number;
     isBalanced: boolean;
-    themeMode: ThemeMode;
 }
 
 export function JournalSummary({
     totalDebits,
     totalCredits,
     isBalanced,
-    themeMode,
 }: JournalSummaryProps) {
-    const theme = useThemeColors(themeMode);
+    const { theme } = useTheme();
     const difference = Math.abs(totalDebits - totalCredits);
 
     return (
-        <AppCard themeMode={themeMode} style={styles.card}>
-            <AppText variant="subheading" themeMode={themeMode} style={styles.title}>
+        <AppCard style={styles.card}>
+            <AppText variant="subheading" style={styles.title}>
                 Summary
             </AppText>
 
             <View style={styles.summaryRow}>
-                <AppText variant="body" themeMode={themeMode}>Total Debits:</AppText>
-                <AppText variant="body" themeMode={themeMode}>${totalDebits.toFixed(2)}</AppText>
+                <AppText variant="body">Total Debits:</AppText>
+                <AppText variant="body">${totalDebits.toFixed(2)}</AppText>
             </View>
 
             <View style={styles.summaryRow}>
-                <AppText variant="body" themeMode={themeMode}>Total Credits:</AppText>
-                <AppText variant="body" themeMode={themeMode}>${totalCredits.toFixed(2)}</AppText>
+                <AppText variant="body">Total Credits:</AppText>
+                <AppText variant="body">${totalCredits.toFixed(2)}</AppText>
             </View>
 
             <View style={styles.summaryRow}>
-                <AppText variant="heading" themeMode={themeMode}>Balance:</AppText>
+                <AppText variant="heading">Balance:</AppText>
                 <AppText
                     variant="heading"
                     color={isBalanced ? "success" : "error"}
-                    themeMode={themeMode}
                 >
                     ${difference.toFixed(2)}
                 </AppText>
@@ -49,7 +47,6 @@ export function JournalSummary({
             <AppText
                 variant="body"
                 color={isBalanced ? "success" : "error"}
-                themeMode={themeMode}
                 style={styles.balanceText}
             >
                 {isBalanced ? '✓ Journal is balanced in USD' : '✗ Journal must be balanced in USD'}

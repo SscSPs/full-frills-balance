@@ -5,6 +5,7 @@
 
 import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { getContrastColor, useThemeColors } from '@/constants/theme-helpers'
+import { useTheme } from '@/hooks/use-theme'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 import { AppText } from './AppText'
 
@@ -30,7 +31,9 @@ export function Badge({
   style,
   ...props
 }: BadgeProps) {
-  const theme = useThemeColors(themeMode)
+  const { theme: globalTheme } = useTheme()
+  const overrideTheme = useThemeColors(themeMode)
+  const theme = themeMode ? overrideTheme : globalTheme
 
   // Get badge styles based on variant
   const getBadgeStyles = () => {

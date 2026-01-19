@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 
 export default function ReportsScreen() {
-    const { theme, themeMode } = useTheme();
+    const { theme } = useTheme();
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExport = async () => {
@@ -56,24 +56,23 @@ export default function ReportsScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <AppCard elevation="sm" padding="lg" themeMode={themeMode} style={styles.section}>
-                <AppText variant="heading" themeMode={themeMode}>Data Export</AppText>
-                <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.description}>
+            <AppCard elevation="sm" padding="lg" style={styles.section}>
+                <AppText variant="heading">Data Export</AppText>
+                <AppText variant="body" color="secondary" style={styles.description}>
                     Export all your accounts, journals, and transactions as a JSON file.
                 </AppText>
                 <AppButton
                     variant="primary"
                     onPress={handleExport}
                     loading={isExporting}
-                    themeMode={themeMode}
                 >
                     {isExporting ? 'Exporting...' : 'Export to JSON'}
                 </AppButton>
             </AppCard>
 
-            <AppCard elevation="none" padding="lg" themeMode={themeMode} style={styles.section}>
-                <AppText variant="heading" themeMode={themeMode}>Reports</AppText>
-                <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.description}>
+            <AppCard elevation="none" padding="lg" style={styles.section}>
+                <AppText variant="heading">Reports</AppText>
+                <AppText variant="body" color="secondary" style={styles.description}>
                     Coming Soon: Net Worth trends, Income vs Expense charts, and account-level analytics.
                 </AppText>
             </AppCard>

@@ -1,5 +1,6 @@
-import { AppButton, AppCard, AppText } from '@/components/core';
-import { AppConfig, Spacing, ThemeMode } from '@/constants';
+import { AppButton, AppCard, AppInput, AppText } from '@/components/core';
+import { AppConfig, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -9,14 +10,12 @@ import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
 import { sanitizeAmount } from '@/src/utils/validation';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { JournalEntryLine, JournalLineItem } from './JournalLineItem';
 import { JournalSummary } from './JournalSummary';
 
 interface AdvancedJournalFormProps {
     accounts: any[];
-    theme: any;
-    themeMode: ThemeMode;
     onSuccess: () => void;
     onSelectAccountRequest: (lineId: string) => void;
     lines: JournalEntryLine[];
@@ -29,8 +28,6 @@ interface AdvancedJournalFormProps {
 
 export const AdvancedJournalForm = ({
     accounts,
-    theme,
-    themeMode,
     onSuccess,
     onSelectAccountRequest,
     lines,
@@ -41,6 +38,7 @@ export const AdvancedJournalForm = ({
     journalId
 }: AdvancedJournalFormProps) => {
     const router = useRouter();
+    const { theme } = useTheme();
     const [description, setDescription] = useState(initialDescription);
     const [journalDate, setJournalDate] = useState(initialDate);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,44 +158,35 @@ export const AdvancedJournalForm = ({
 
     return (
         <View>
-            <AppCard elevation="sm" padding="lg" style={styles.titleCard} themeMode={themeMode}>
-                <AppText variant="title" themeMode={themeMode}>{isEdit ? 'Edit Journal Entry' : 'Create Journal Entry'}</AppText>
+            <AppCard elevation="sm" padding="lg" style={styles.titleCard}>
+                <AppText variant="title">{isEdit ? 'Edit Journal Entry' : 'Create Journal Entry'}</AppText>
             </AppCard>
 
-            <AppCard elevation="sm" padding="lg" style={styles.inputCard} themeMode={themeMode}>
-                <AppText variant="body" themeMode={themeMode} style={styles.label}>Date</AppText>
-                <TextInput
-                    style={[styles.input, {
-                        backgroundColor: theme.surface,
-                        borderColor: theme.border,
-                        color: theme.text
-                    }]}
+            <AppCard elevation="sm" padding="lg" style={styles.inputCard}>
+                <AppInput
+                    label="Date"
                     value={journalDate}
                     onChangeText={setJournalDate}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor={theme.textSecondary}
+                    containerStyle={{ marginBottom: Spacing.md }}
                 />
 
-                <AppText variant="body" themeMode={themeMode} style={styles.label}>Description</AppText>
-                <TextInput
-                    style={[styles.input, styles.textArea, {
-                        backgroundColor: theme.surface,
-                        borderColor: theme.border,
-                        color: theme.text
-                    }]}
+                <AppInput
+                    label="Description"
                     value={description}
                     onChangeText={setDescription}
                     placeholder="Enter description"
-                    placeholderTextColor={theme.textSecondary}
                     multiline
+                    numberOfLines={3}
+                    style={styles.textArea}
                 />
             </AppCard>
 
-            <AppCard elevation="sm" padding="lg" style={styles.linesCard} themeMode={themeMode}>
+            <AppCard elevation="sm" padding="lg" style={styles.linesCard}>
                 <View style={styles.linesHeader}>
-                    <AppText variant="heading" themeMode={themeMode}>Journal Lines</AppText>
+                    <AppText variant="heading">Journal Lines</AppText>
                     <TouchableOpacity onPress={addLine} style={styles.addButton}>
-                        <AppText variant="body" color="primary" themeMode={themeMode}>+ Add Line</AppText>
+                        <AppText variant="body" color="primary">+ Add Line</AppText>
                     </TouchableOpacity>
                 </View>
 
@@ -206,7 +195,6 @@ export const AdvancedJournalForm = ({
                         key={line.id}
                         line={line}
                         index={index}
-                        themeMode={themeMode}
                         canRemove={lines.length > 2}
                         onUpdate={(field, value) => updateLine(line.id, field, value)}
                         onRemove={() => removeLine(line.id)}
@@ -220,7 +208,6 @@ export const AdvancedJournalForm = ({
                 totalDebits={getTotalDebits()}
                 totalCredits={getTotalCredits()}
                 isBalanced={isBalanced}
-                themeMode={themeMode}
             />
 
             <View style={styles.actions}>
@@ -228,7 +215,6 @@ export const AdvancedJournalForm = ({
                     variant="primary"
                     onPress={createJournal}
                     disabled={!isBalanced || isSubmitting}
-                    themeMode={themeMode}
                     style={styles.createButton}
                 >
                     {isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Journal' : 'Create Journal')}
@@ -249,17 +235,6 @@ const styles = StyleSheet.create({
     },
     linesCard: {
         marginHorizontal: Spacing.lg,
-        marginBottom: Spacing.md,
-    },
-    label: {
-        marginBottom: Spacing.xs,
-        fontWeight: '600',
-    },
-    input: {
-        borderWidth: 1,
-        borderRadius: 8,
-        padding: Spacing.md,
-        fontSize: 16,
         marginBottom: Spacing.md,
     },
     textArea: {

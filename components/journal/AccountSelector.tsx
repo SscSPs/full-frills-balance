@@ -1,12 +1,12 @@
 import { AppText } from '@/components/core';
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import React from 'react';
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface AccountSelectorProps {
     visible: boolean;
     accounts: any[]; // Replace with proper Account type when available
-    themeMode: ThemeMode;
     onClose: () => void;
     onSelect: (accountId: string) => void;
 }
@@ -14,11 +14,10 @@ interface AccountSelectorProps {
 export function AccountSelector({
     visible,
     accounts,
-    themeMode,
     onClose,
     onSelect,
 }: AccountSelectorProps) {
-    const theme = useThemeColors(themeMode);
+    const { theme } = useTheme();
 
     return (
         <Modal
@@ -29,10 +28,10 @@ export function AccountSelector({
         >
             <View style={styles.modalOverlay}>
                 <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
-                    <View style={styles.modalHeader}>
-                        <AppText variant="heading" themeMode={themeMode}>Select Account</AppText>
+                    <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                        <AppText variant="heading">Select Account</AppText>
                         <TouchableOpacity onPress={onClose}>
-                            <AppText variant="body" color="secondary" themeMode={themeMode}>✕</AppText>
+                            <AppText variant="body" color="secondary">✕</AppText>
                         </TouchableOpacity>
                     </View>
 
@@ -48,13 +47,14 @@ export function AccountSelector({
                                 onPress={() => onSelect(item.id)}
                             >
                                 <View>
-                                    <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
-                                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                                    <AppText variant="body">{item.name}</AppText>
+                                    <AppText variant="caption" color="secondary">
                                         {item.accountType} • {item.currencyCode}
                                     </AppText>
                                 </View>
                             </TouchableOpacity>
                         )}
+                        contentContainerStyle={styles.accountsListContent}
                         style={styles.accountsList}
                     />
                 </View>
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        borderTopLeftRadius: Shape.radius.r1,
-        borderTopRightRadius: Shape.radius.r1,
+        borderTopLeftRadius: Shape.radius.lg,
+        borderTopRightRadius: Shape.radius.lg,
         maxHeight: '70%',
     },
     modalHeader: {
@@ -92,6 +92,8 @@ const styles = StyleSheet.create({
     },
     accountsList: {
         flex: 1,
+    },
+    accountsListContent: {
         padding: Spacing.md,
     },
 });

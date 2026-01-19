@@ -1,6 +1,7 @@
 import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Shape, Spacing } from '@/constants';
 import { useAccountBalance } from '@/hooks/use-data';
+import { useTheme } from '@/hooks/use-theme';
 import Account from '@/src/data/models/Account';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -9,7 +10,6 @@ import { AccountBalance } from '@/src/data/repositories/AccountRepository';
 
 interface AccountCardProps {
     account: Account;
-    themeMode: ThemeMode;
     onPress: (account: Account) => void;
     initialBalanceData?: AccountBalance;
 }
@@ -18,7 +18,7 @@ interface AccountCardProps {
  * AccountCard - High-fidelity card for accounts
  * Inspired by Ivy Wallet's Account cards
  */
-export const AccountCard = ({ account, themeMode, onPress, initialBalanceData }: AccountCardProps) => {
+export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCardProps) => {
     // Only fetch if initial data is not provided, or better: use useAccountBalance but bypass if we have data?
     // Actually simpler: if initialBalanceData provided, use it. If not, fetch.
     // However, we want updates. useAccountBalance provides updates.
@@ -31,7 +31,7 @@ export const AccountCard = ({ account, themeMode, onPress, initialBalanceData }:
     const balanceData = initialBalanceData || hookData.balanceData;
     const isLoading = initialBalanceData ? false : hookData.isLoading;
 
-    const theme = useThemeColors(themeMode);
+    const { theme } = useTheme();
 
     const balance = balanceData?.balance || 0;
     const transactionCount = balanceData?.transactionCount || 0;
@@ -56,7 +56,6 @@ export const AccountCard = ({ account, themeMode, onPress, initialBalanceData }:
         <AppCard
             elevation="sm"
             style={[styles.container, { backgroundColor: theme.surface }]}
-            themeMode={themeMode}
             padding="none" // Custom padding for layout
         >
             <TouchableOpacity onPress={() => onPress(account)}>
@@ -72,24 +71,24 @@ export const AccountCard = ({ account, themeMode, onPress, initialBalanceData }:
                             size={40}
                         />
                         <View style={styles.titleInfo}>
-                            <AppText variant="heading" themeMode={themeMode} numberOfLines={1}>
+                            <AppText variant="heading" numberOfLines={1}>
                                 {account.name}
                             </AppText>
-                            <AppText variant="caption" color="secondary" themeMode={themeMode} style={styles.txCount}>
+                            <AppText variant="caption" color="secondary" style={styles.txCount}>
                                 {transactionCount} Transactions
                             </AppText>
                         </View>
-                        <Badge variant={typeLower as any} size="sm" themeMode={themeMode}>
+                        <Badge variant={typeLower as any} size="sm">
                             {account.accountType}
                         </Badge>
                     </View>
 
                     {/* Balance */}
                     <View style={styles.amountInfo}>
-                        <AppText variant="title" themeMode={themeMode} style={[styles.amountText, { color: accentColor }]}>
+                        <AppText variant="title" style={[styles.amountText, { color: accentColor }]}>
                             {isLoading ? '...' : balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </AppText>
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">
                             {account.currencyCode}
                         </AppText>
                     </View>

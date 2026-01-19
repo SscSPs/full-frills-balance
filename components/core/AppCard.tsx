@@ -5,6 +5,7 @@
 
 import { Shape, Spacing, ThemeMode } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
+import { useTheme } from '@/hooks/use-theme'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 
 export type AppCardProps = ViewProps & {
@@ -30,7 +31,9 @@ export function AppCard({
   children,
   ...props
 }: AppCardProps) {
-  const theme = useThemeColors(themeMode)
+  const { theme: globalTheme } = useTheme()
+  const overrideTheme = useThemeColors(themeMode)
+  const theme = themeMode ? overrideTheme : globalTheme
 
   // Get elevation styles
   const getElevationStyles = () => {

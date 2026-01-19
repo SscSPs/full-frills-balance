@@ -5,6 +5,7 @@
 
 import { ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
+import { useTheme } from '@/hooks/use-theme'
 import { StyleSheet, Text, type TextProps } from 'react-native'
 
 export type AppTextProps = TextProps & {
@@ -32,7 +33,9 @@ export function AppText({
   style,
   ...props
 }: AppTextProps) {
-  const theme = useThemeColors(themeMode)
+  const { theme: globalTheme } = useTheme()
+  const overrideTheme = useThemeColors(themeMode)
+  const theme = themeMode ? overrideTheme : globalTheme
 
   // Get typography styles based on variant
   const getTypographyStyles = () => {

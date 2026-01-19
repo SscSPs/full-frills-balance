@@ -1,5 +1,6 @@
 import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { TransactionWithAccountInfo } from '@/src/types/readModels';
 import { formatDate } from '@/src/utils/dateUtils';
@@ -8,15 +9,14 @@ import { StyleSheet, View } from 'react-native';
 
 interface TransactionItemProps {
     transaction: TransactionWithAccountInfo;
-    themeMode: ThemeMode;
 }
 
 /**
  * TransactionItem - Premium row component for individual transactions
  * Inspired by Ivy Wallet's list items
  */
-export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps) => {
-    const theme = useThemeColors(themeMode);
+export const TransactionItem = ({ transaction }: TransactionItemProps) => {
+    const { theme } = useTheme();
 
     const formattedDate = formatDate(transaction.transactionDate, { includeTime: true });
     const formattedAmount = transaction.amount ? Math.abs(transaction.amount).toFixed(2) : '0.00';
@@ -33,7 +33,6 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
         <AppCard
             elevation="none"
             style={[styles.container, { backgroundColor: theme.surface }]}
-            themeMode={themeMode}
         >
             <View style={styles.row}>
                 {/* Status Icon */}
@@ -46,15 +45,15 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
 
                 <View style={styles.content}>
                     <View style={styles.headerRow}>
-                        <AppText variant="body" themeMode={themeMode} style={styles.accountName}>
+                        <AppText variant="body" style={styles.accountName}>
                             {transaction.accountName}
                         </AppText>
-                        <Badge variant={isDebit ? 'expense' : 'income'} size="sm" themeMode={themeMode}>
+                        <Badge variant={isDebit ? 'expense' : 'income'} size="sm">
                             {transaction.accountType}
                         </Badge>
                     </View>
 
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                    <AppText variant="caption" color="secondary">
                         {formattedDate}
                     </AppText>
                 </View>
@@ -62,13 +61,12 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
                 <View style={styles.amountInfo}>
                     <AppText
                         variant="body"
-                        themeMode={themeMode}
                         style={[styles.amountText, { color: typeColor }]}
                     >
                         {isDebit ? '−' : '+'} {formattedAmount}
                     </AppText>
                     {formattedRunningBalance && (
-                        <AppText variant="caption" color="tertiary" themeMode={themeMode}>
+                        <AppText variant="caption" color="tertiary">
                             Bal: {formattedRunningBalance}
                         </AppText>
                     )}
@@ -77,7 +75,7 @@ export const TransactionItem = ({ transaction, themeMode }: TransactionItemProps
 
             {transaction.notes && (
                 <View style={styles.notesSection}>
-                    <AppText variant="caption" color="secondary" italic themeMode={themeMode}>
+                    <AppText variant="caption" color="secondary" italic>
                         {transaction.notes}
                     </AppText>
                 </View>

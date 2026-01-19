@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 export default function AccountDetailsScreen() {
     const router = useRouter()
     const params = useLocalSearchParams()
-    const { theme, themeMode } = useTheme()
+    const { theme } = useTheme()
     const accountId = params.accountId as string
 
     const { account, isLoading: accountLoading } = useAccount(accountId)
@@ -42,10 +42,10 @@ export default function AccountDetailsScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
                 <View style={styles.errorContainer}>
-                    <AppText variant="body" color="error" themeMode={themeMode}>
+                    <AppText variant="body" color="error">
                         Account not found
                     </AppText>
-                    <AppButton variant="outline" onPress={() => router.back()} themeMode={themeMode}>
+                    <AppButton variant="outline" onPress={() => router.back()}>
                         Go Back
                     </AppButton>
                 </View>
@@ -60,14 +60,14 @@ export default function AccountDetailsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={[styles.circularButton, { backgroundColor: theme.surface }]}>
                     <Ionicons name="close" size={24} color={theme.text} />
                 </TouchableOpacity>
-                <AppText variant="subheading" themeMode={themeMode} style={styles.headerTitle}>
+                <AppText variant="subheading" style={styles.headerTitle}>
                     Account Details
                 </AppText>
                 <View style={styles.placeholder} />
             </View>
 
             {/* Account Info Card */}
-            <AppCard elevation="sm" style={styles.accountInfoCard} themeMode={themeMode}>
+            <AppCard elevation="sm" style={styles.accountInfoCard}>
                 <View style={styles.accountHeader}>
                     <IvyIcon
                         label={account.name}
@@ -75,10 +75,10 @@ export default function AccountDetailsScreen() {
                         size={48}
                     />
                     <View style={styles.titleInfo}>
-                        <AppText variant="title" themeMode={themeMode}>
+                        <AppText variant="title">
                             {account.name}
                         </AppText>
-                        <Badge variant={account.accountType.toLowerCase() as any} themeMode={themeMode}>
+                        <Badge variant={account.accountType.toLowerCase() as any}>
                             {account.accountType}
                         </Badge>
                     </View>
@@ -86,30 +86,30 @@ export default function AccountDetailsScreen() {
 
                 <View style={styles.accountStats}>
                     <View style={styles.statItem}>
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">
                             Current Balance
                         </AppText>
-                        <AppText variant="heading" themeMode={themeMode}>
+                        <AppText variant="heading">
                             {balanceLoading ? '...' : `${balance.toFixed(2)} ${account.currencyCode}`}
                         </AppText>
                     </View>
 
                     <View style={styles.statItem}>
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">
                             Transactions
                         </AppText>
-                        <AppText variant="subheading" themeMode={themeMode}>
+                        <AppText variant="subheading">
                             {balanceLoading ? '...' : transactionCount}
                         </AppText>
                     </View>
                 </View>
 
                 <View style={styles.accountMeta}>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                    <AppText variant="caption" color="secondary">
                         Created: {new Date(account.createdAt).toLocaleDateString()}
                     </AppText>
                     {account.description && (
-                        <AppText variant="body" themeMode={themeMode} style={styles.description}>
+                        <AppText variant="body" style={styles.description}>
                             {account.description}
                         </AppText>
                     )}
@@ -118,15 +118,15 @@ export default function AccountDetailsScreen() {
 
             {/* Transaction History */}
             <View style={styles.transactionsSection}>
-                <AppText variant="heading" themeMode={themeMode} style={styles.sectionTitle}>
+                <AppText variant="heading" style={styles.sectionTitle}>
                     Transaction History
                 </AppText>
 
                 {transactionsLoading ? (
                     <ActivityIndicator size="small" color={theme.primary} />
                 ) : transactions.length === 0 ? (
-                    <AppCard elevation="sm" padding="lg" themeMode={themeMode}>
-                        <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.emptyText}>
+                    <AppCard elevation="sm" padding="lg">
+                        <AppText variant="body" color="secondary" style={styles.emptyText}>
                             No transactions yet
                         </AppText>
                     </AppCard>
@@ -137,7 +137,6 @@ export default function AccountDetailsScreen() {
                         renderItem={({ item }) => (
                             <TransactionItem
                                 transaction={item as any}
-                                themeMode={themeMode}
                             />
                         )}
                         contentContainerStyle={{ paddingBottom: Spacing.xl }}

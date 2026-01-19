@@ -6,7 +6,7 @@ import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-    const { theme, themeMode } = useTheme();
+    const { theme } = useTheme();
     const insets = useSafeAreaInsets();
 
     // Dynamic tab bar height: base height + bottom safe area

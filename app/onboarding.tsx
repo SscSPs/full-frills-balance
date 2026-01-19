@@ -1,11 +1,12 @@
-import { AppButton, AppCard, AppText } from '@/components/core'
-import { Shape, Spacing, useThemeColors } from '@/constants'
+import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
+import { Spacing, withOpacity } from '@/constants'
+import { useTheme } from '@/hooks/use-theme'
 import Currency from '@/src/data/models/Currency'
 import { currencyInitService } from '@/src/services/currency-init-service'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { useUI } from '../contexts/UIContext'
 
 export default function OnboardingScreen() {
@@ -14,8 +15,7 @@ export default function OnboardingScreen() {
   const [selectedCurrency, setSelectedCurrency] = useState('USD')
   const [currencies, setCurrencies] = useState<Currency[]>([])
   const [isCompleting, setIsCompleting] = useState(false)
-  const { themePreference, themeMode } = useUI()
-  const theme = useThemeColors(themeMode)
+  const { theme } = useTheme()
   const { completeOnboarding } = useUI()
 
   useEffect(() => {
@@ -48,25 +48,16 @@ export default function OnboardingScreen() {
 
   const renderNameStep = () => (
     <>
-      <AppText variant="title" themeMode={themeMode} style={styles.title}>
+      <AppText variant="title" style={styles.title}>
         Welcome to Balance
       </AppText>
-      <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.subtitle}>
+      <AppText variant="body" color="secondary" style={styles.subtitle}>
         Let's start with your name to personalize your experience.
       </AppText>
 
-      <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              borderColor: theme.border,
-              color: theme.text,
-              backgroundColor: theme.surface
-            }
-          ]}
+      <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+        <AppInput
           placeholder="Enter your name"
-          placeholderTextColor={theme.textSecondary}
           value={name}
           onChangeText={setName}
           autoFocus
@@ -78,7 +69,6 @@ export default function OnboardingScreen() {
         size="lg"
         onPress={handleContinue}
         disabled={!name.trim() || isCompleting}
-        themeMode={themeMode}
         style={styles.continueButton}
       >
         Continue
@@ -88,14 +78,14 @@ export default function OnboardingScreen() {
 
   const renderCurrencyStep = () => (
     <>
-      <AppText variant="title" themeMode={themeMode} style={styles.title}>
+      <AppText variant="title" style={styles.title}>
         Default Currency
       </AppText>
-      <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.subtitle}>
+      <AppText variant="body" color="secondary" style={styles.subtitle}>
         Choose the default currency for your accounts and transactions. You can change this later for individual accounts.
       </AppText>
 
-      <AppCard elevation="sm" padding="none" style={styles.currencyListContainer} themeMode={themeMode}>
+      <AppCard elevation="sm" padding="none" style={styles.currencyListContainer}>
         <FlatList
           data={currencies}
           keyExtractor={(item) => item.code}
@@ -105,16 +95,16 @@ export default function OnboardingScreen() {
               style={[
                 styles.currencyItem,
                 { borderBottomColor: theme.border },
-                selectedCurrency === item.code && { backgroundColor: theme.primary + '11' }
+                selectedCurrency === item.code && { backgroundColor: withOpacity(theme.primary, 0.07) }
               ]}
               onPress={() => setSelectedCurrency(item.code)}
             >
               <View style={styles.currencyInfo}>
-                <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
-                <AppText variant="caption" color="secondary" themeMode={themeMode}>{item.code}</AppText>
+                <AppText variant="body">{item.name}</AppText>
+                <AppText variant="caption" color="secondary">{item.code}</AppText>
               </View>
               <View style={styles.currencyRight}>
-                <AppText variant="subheading" themeMode={themeMode}>{item.symbol}</AppText>
+                <AppText variant="subheading">{item.symbol}</AppText>
                 {selectedCurrency === item.code && (
                   <Ionicons name="checkmark-circle" size={20} color={theme.primary} style={{ marginLeft: 8 }} />
                 )}
@@ -130,7 +120,6 @@ export default function OnboardingScreen() {
           size="lg"
           onPress={handleContinue}
           disabled={isCompleting}
-          themeMode={themeMode}
           style={styles.continueButton}
         >
           {isCompleting ? 'Setting up...' : 'Get Started'}
@@ -140,7 +129,6 @@ export default function OnboardingScreen() {
           size="lg"
           onPress={() => setStep(1)}
           disabled={isCompleting}
-          themeMode={themeMode}
         >
           Back
         </AppButton>
@@ -178,12 +166,6 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: Spacing.xl,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Shape.radius.r3,
-    padding: Spacing.md,
-    fontSize: 16,
   },
   currencyListContainer: {
     height: 300,

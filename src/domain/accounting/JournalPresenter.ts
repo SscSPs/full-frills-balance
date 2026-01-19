@@ -47,14 +47,14 @@ export class JournalPresenter {
     static getPresentation(type: JournalDisplayType, theme: any): JournalPresentation {
         switch (type) {
             case JournalDisplayType.INCOME:
-                return { type, label: 'Income', colorHex: theme.success || '#4CAF50' };
+                return { type, label: 'Income', colorHex: theme.success };
             case JournalDisplayType.EXPENSE:
-                return { type, label: 'Expense', colorHex: theme.error || '#f44336' };
+                return { type, label: 'Expense', colorHex: theme.error };
             case JournalDisplayType.TRANSFER:
-                return { type, label: 'Transfer', colorHex: theme.primary || '#2196F3' };
+                return { type, label: 'Transfer', colorHex: theme.primary };
             case JournalDisplayType.MIXED:
             default:
-                return { type, label: 'Journal', colorHex: theme.textSecondary || '#757575' };
+                return { type, label: 'Journal', colorHex: theme.textSecondary };
         }
     }
 

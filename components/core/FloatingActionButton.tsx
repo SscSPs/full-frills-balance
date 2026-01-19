@@ -1,4 +1,5 @@
-import { Palette, Spacing } from '@/constants';
+import { Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
@@ -9,13 +10,22 @@ interface FABProps {
 }
 
 export const FloatingActionButton = ({ onPress, style }: FABProps) => {
+    const { theme } = useTheme();
+
     return (
         <TouchableOpacity
-            style={[styles.fab, style]}
+            style={[
+                styles.fab,
+                {
+                    backgroundColor: theme.primary,
+                    shadowColor: theme.pure,
+                },
+                style
+            ]}
             onPress={onPress}
             activeOpacity={0.8}
         >
-            <Ionicons name="add" size={32} color="#FFFFFF" />
+            <Ionicons name="add" size={32} color={theme.pureInverse} />
         </TouchableOpacity>
     );
 };
@@ -28,11 +38,9 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: Palette.ivy,
         alignItems: 'center',
         justifyContent: 'center',
         elevation: 8,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 4.65,

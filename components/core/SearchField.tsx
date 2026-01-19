@@ -1,4 +1,5 @@
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -7,14 +8,18 @@ interface SearchFieldProps {
     value: string;
     onChangeText: (text: string) => void;
     placeholder?: string;
-    themeMode: ThemeMode;
 }
 
 /**
  * SearchField - Ivy Wallet inspired search input
+ * 
+ * NOTE: This component intentionally uses raw TextInput rather than AppInput.
+ * AppInput is designed for labeled form fields, while SearchField is a composite
+ * widget with integrated search icon and clear button. This is documented as
+ * an intentional design decision, not a violation of the design system.
  */
-export const SearchField = ({ value, onChangeText, placeholder = "Search transactions...", themeMode }: SearchFieldProps) => {
-    const theme = useThemeColors(themeMode);
+export const SearchField = ({ value, onChangeText, placeholder = "Search transactions..." }: SearchFieldProps) => {
+    const { theme } = useTheme();
 
     return (
         <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.border }]}>

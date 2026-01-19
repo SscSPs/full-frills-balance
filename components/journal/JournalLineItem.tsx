@@ -1,10 +1,11 @@
-import { AppText } from '@/components/core';
-import { AppConfig, Shape, Spacing, ThemeMode, useThemeColors } from '@/constants';
+import { AppInput, AppText } from '@/components/core';
+import { AppConfig, Shape, Spacing } from '@/constants';
+import { useTheme } from '@/hooks/use-theme';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import React from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Reuse the interface for now to minimize friction, eventually move to shared types
 export interface JournalEntryLine {
@@ -23,7 +24,6 @@ export interface JournalEntryLine {
 interface JournalLineItemProps {
     line: JournalEntryLine;
     index: number;
-    themeMode: ThemeMode;
     canRemove: boolean;
     onUpdate: (field: keyof JournalEntryLine, value: any) => void;
     onRemove: () => void;
@@ -34,14 +34,13 @@ interface JournalLineItemProps {
 export function JournalLineItem({
     line,
     index,
-    themeMode,
     canRemove,
     onUpdate,
     onRemove,
     onSelectAccount,
     getLineBaseAmount,
 }: JournalLineItemProps) {
-    const theme = useThemeColors(themeMode);
+    const { theme } = useTheme();
 
     return (
         <View style={[styles.lineContainer, {
@@ -49,10 +48,10 @@ export function JournalLineItem({
             borderColor: theme.border
         }]}>
             <View style={styles.lineHeader}>
-                <AppText variant="subheading" themeMode={themeMode}>Line {index + 1}</AppText>
+                <AppText variant="subheading">Line {index + 1}</AppText>
                 {canRemove && (
                     <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
-                        <AppText variant="body" color="error" themeMode={themeMode}>Remove</AppText>
+                        <AppText variant="body" color="error">Remove</AppText>
                     </TouchableOpacity>
                 )}
             </View>
@@ -64,15 +63,15 @@ export function JournalLineItem({
                 }]}
                 onPress={onSelectAccount}
             >
-                <AppText variant="body" themeMode={themeMode}>
+                <AppText variant="body">
                     {line.accountName || 'Select Account'}
                 </AppText>
-                <AppText variant="body" color="secondary" themeMode={themeMode}>▼</AppText>
+                <AppText variant="body" color="secondary">▼</AppText>
             </TouchableOpacity>
 
             <View style={styles.lineRow}>
                 <View style={styles.halfWidth}>
-                    <AppText variant="body" themeMode={themeMode} style={styles.label}>Type</AppText>
+                    <AppText variant="body" style={styles.label}>Type</AppText>
                     <View style={styles.typeButtons}>
                         <TouchableOpacity
                             style={[
@@ -85,9 +84,8 @@ export function JournalLineItem({
                         >
                             <AppText
                                 variant="body"
-                                themeMode={themeMode}
                                 style={[
-                                    line.transactionType === TransactionType.DEBIT && { color: theme.background }
+                                    line.transactionType === TransactionType.DEBIT && { color: theme.pureInverse }
                                 ]}
                             >
                                 DEBIT
@@ -104,9 +102,8 @@ export function JournalLineItem({
                         >
                             <AppText
                                 variant="body"
-                                themeMode={themeMode}
                                 style={[
-                                    line.transactionType === TransactionType.CREDIT && { color: theme.background }
+                                    line.transactionType === TransactionType.CREDIT && { color: theme.pureInverse }
                                 ]}
                             >
                                 CREDIT
@@ -117,48 +114,37 @@ export function JournalLineItem({
 
                 <View style={styles.halfWidth}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <AppText variant="body" themeMode={themeMode} style={styles.label}>Amount</AppText>
+                        <AppText variant="body" style={styles.label}>Amount</AppText>
                         {line.accountCurrency && (
-                            <AppText variant="caption" color="primary" themeMode={themeMode}>
+                            <AppText variant="caption" color="primary">
                                 {line.accountCurrency}
                             </AppText>
                         )}
                     </View>
-                    <TextInput
-                        style={[styles.input, {
-                            backgroundColor: theme.surface,
-                            borderColor: theme.border,
-                            color: theme.text
-                        }]}
+                    <AppInput
                         value={line.amount}
                         onChangeText={(value) => onUpdate('amount', value)}
                         placeholder="0.00"
-                        placeholderTextColor={theme.textSecondary}
                         keyboardType="numeric"
                     />
                     {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
-                        <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                        <AppText variant="caption" color="secondary">
                             ≈ ${(getLineBaseAmount(line)).toFixed(2)} USD
                         </AppText>
                     )}
                 </View>
             </View>
 
-            <AppText variant="body" themeMode={themeMode} style={styles.label}>Notes</AppText>
-            <TextInput
-                style={[styles.input, {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                    color: theme.text
-                }]}
+            <AppInput
+                label="Notes"
                 value={line.notes}
                 onChangeText={(value) => onUpdate('notes', value)}
                 placeholder="Optional notes"
-                placeholderTextColor={theme.textSecondary}
+                containerStyle={{ marginBottom: Spacing.md }}
             />
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <AppText variant="body" themeMode={themeMode} style={styles.label}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                <AppText variant="body" weight="medium">
                     Exchange Rate (Optional)
                 </AppText>
                 {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
@@ -175,23 +161,17 @@ export function JournalLineItem({
                             }
                         }}
                     >
-                        <AppText variant="caption" color="primary" themeMode={themeMode}>Auto-fetch</AppText>
+                        <AppText variant="caption" color="primary">Auto-fetch</AppText>
                     </TouchableOpacity>
                 )}
             </View>
-            <TextInput
-                style={[styles.input, {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                    color: theme.text
-                }]}
+            <AppInput
                 value={line.exchangeRate || ''}
                 onChangeText={(value) => onUpdate('exchangeRate', value)}
                 placeholder="e.g., 1.1050"
-                placeholderTextColor={theme.textSecondary}
                 keyboardType="decimal-pad"
             />
-            <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginTop: -8, marginBottom: 8 }}>
+            <AppText variant="caption" color="secondary" style={{ marginTop: Spacing.xs, marginBottom: Spacing.md }}>
                 {line.accountCurrency === AppConfig.defaultCurrency
                     ? 'Not needed (same as base currency)'
                     : `Rate to convert ${line.accountCurrency} to ${AppConfig.defaultCurrency}`}
@@ -201,15 +181,6 @@ export function JournalLineItem({
 }
 
 const styles = StyleSheet.create({
-    linesHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: Spacing.md,
-    },
-    addButton: {
-        padding: Spacing.sm,
-    },
     lineContainer: {
         borderWidth: 1,
         borderRadius: Shape.radius.r2,
@@ -238,13 +209,6 @@ const styles = StyleSheet.create({
     label: {
         marginBottom: Spacing.xs,
         fontWeight: '600',
-    },
-    input: {
-        borderWidth: 1,
-        borderRadius: Shape.radius.r3,
-        padding: Spacing.md,
-        fontSize: 16,
-        marginBottom: Spacing.md,
     },
     lineRow: {
         flexDirection: 'row',

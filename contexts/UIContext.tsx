@@ -14,7 +14,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
-import { integrityService } from '../src/services/IntegrityService'
+import { integrityService } from '../src/services/integrity-service'
 import { logger } from '../src/utils/logger'
 import { preferences } from '../src/utils/preferences'
 
@@ -104,7 +104,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         })
 
         // Run integrity check on startup (async, don't block UI)
-        import('../src/services/IntegrityService').then(({ integrityService }) => {
+        import('../src/services/integrity-service').then(({ integrityService }) => {
           integrityService.runStartupCheck().catch(err => {
             console.warn('Failed to run integrity check:', err)
           })

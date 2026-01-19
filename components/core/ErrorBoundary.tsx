@@ -3,8 +3,12 @@
  * 
  * Catches JavaScript errors in child component tree and displays fallback UI.
  * Logs errors via the logger utility.
+ * 
+ * Note: Uses Palette directly since class components can't use hooks.
+ * This is intentional - the error boundary must work even when context fails.
  */
 
+import { Palette, Spacing } from '@/constants';
 import { logger } from '@/src/utils/logger';
 import React, { Component, ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -73,45 +77,45 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 24,
-        backgroundColor: '#1a1a1a',
+        padding: Spacing.xxl,
+        backgroundColor: Palette.black,
     },
     emoji: {
         fontSize: 64,
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
     },
     title: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#ffffff',
-        marginBottom: 8,
+        color: Palette.white,
+        marginBottom: Spacing.sm,
         textAlign: 'center',
     },
     message: {
         fontSize: 16,
-        color: '#a0a0a0',
+        color: Palette.gray,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.xxl,
     },
     errorDetails: {
         fontSize: 12,
-        color: '#ff6b6b',
+        color: Palette.red,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.xxl,
         fontFamily: 'monospace',
-        padding: 12,
-        backgroundColor: '#2a2a2a',
+        padding: Spacing.md,
+        backgroundColor: Palette.mediumBlack,
         borderRadius: 8,
         maxWidth: '100%',
     },
     button: {
-        backgroundColor: '#4CAF50',
-        paddingHorizontal: 32,
-        paddingVertical: 12,
+        backgroundColor: Palette.green,
+        paddingHorizontal: Spacing.xxxl,
+        paddingVertical: Spacing.md,
         borderRadius: 8,
     },
     buttonText: {
-        color: '#ffffff',
+        color: Palette.white,
         fontSize: 16,
         fontWeight: '600',
     },

@@ -61,6 +61,29 @@ Base components (AppText, AppCard, AppButton, ListRow, Badge, Divider):
 If a component needs more than ~5 meaningful props, it's probably wrong.
 
 ## ========================================
+## SCREEN HEADER PATTERNS
+## ========================================
+
+Different screens have different header needs. These variations are intentional:
+
+1. **Tab screens** (Dashboard, Accounts, Reports, Settings)
+   - Use Expo's built-in header via Tabs.Screen options
+   - Consistent across tab navigation
+
+2. **Modal screens** (Account Details, Transaction Details)
+   - Close button (X) on left
+   - Centered title
+   - Surface-colored circular button
+
+3. **Stack screens** (Account Creation, Journal Entry)
+   - Back arrow on left
+   - Centered title
+   - May include action buttons on right
+
+4. **Onboarding screens**
+   - No header (full-screen experience)
+
+## ========================================
 ## MIGRATION STRATEGY
 ## ========================================
 

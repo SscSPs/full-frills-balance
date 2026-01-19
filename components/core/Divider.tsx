@@ -5,6 +5,7 @@
 
 import { Spacing, ThemeMode } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
+import { useTheme } from '@/hooks/use-theme'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 
 export type DividerProps = ViewProps & {
@@ -18,29 +19,31 @@ export type DividerProps = ViewProps & {
   themeMode?: ThemeMode
 }
 
-export function Divider({ 
+export function Divider({
   orientation = 'horizontal',
   thickness = 'thin',
   length = 'full',
   themeMode,
   style,
-  ...props 
+  ...props
 }: DividerProps) {
-  const theme = useThemeColors(themeMode)
-  
+  const { theme: globalTheme } = useTheme()
+  const overrideTheme = useThemeColors(themeMode)
+  const theme = themeMode ? overrideTheme : globalTheme
+
   // Get thickness styles
   const getThicknessStyles = () => {
     switch (thickness) {
       case 'thin':
-        return orientation === 'horizontal' 
+        return orientation === 'horizontal'
           ? { height: 2 }  // Increased from 1 to 2 for better visibility
           : { width: 2 }   // Increased from 1 to 2 for better visibility
       case 'medium':
-        return orientation === 'horizontal' 
+        return orientation === 'horizontal'
           ? { height: 4 }  // Increased from 2 to 4 for better visibility
           : { width: 4 }   // Increased from 2 to 4 for better visibility
       default:
-        return orientation === 'horizontal' 
+        return orientation === 'horizontal'
           ? { height: 2 }  // Increased from 1 to 2 for better visibility
           : { width: 2 }   // Increased from 1 to 2 for better visibility
     }
@@ -49,8 +52,8 @@ export function Divider({
   // Get length styles
   const getLengthStyles = () => {
     if (typeof length === 'number') {
-      return orientation === 'horizontal' 
-        ? { width: length } 
+      return orientation === 'horizontal'
+        ? { width: length }
         : { height: length }
     }
 
@@ -58,8 +61,8 @@ export function Divider({
       case 'full':
         return { flex: 1 }
       case 'content':
-        return orientation === 'horizontal' 
-          ? { alignSelf: 'stretch' } 
+        return orientation === 'horizontal'
+          ? { alignSelf: 'stretch' }
           : { alignSelf: 'stretch' }
       default:
         return { flex: 1 }

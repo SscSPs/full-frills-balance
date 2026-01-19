@@ -21,21 +21,22 @@
  *    - If something feels annoying to use, that's a signal to simplify the API, not bypass it
  * 
  * ========================================
- * THEME CONSUMPTION RULE (LOCKED)
+ * THEME CONSUMPTION BEST PRACTICE
  * ========================================
  * 
- * ALL core components require explicit themeMode prop:
+ * Use the `useTheme()` hook from `@/hooks/use-theme` for theme access:
  * 
  * ```tsx
- * <AppText themeMode={themeMode}>Text</AppText>
- * <AppCard themeMode={themeMode}>Content</AppCard>
+ * import { useTheme } from '@/hooks/use-theme';
  * 
- * // useThemeColors must receive themeMode explicitly
- * const theme = useThemeColors(themeMode)
+ * const MyComponent = () => {
+ *   const { theme } = useTheme();
+ *   return <View style={{ backgroundColor: theme.background }} />;
+ * };
  * ```
  * 
- * This is not optional. This is the API contract.
- * The design preview demonstrates this exact usage pattern.
+ * Note: Core components accept an optional `themeMode` prop for the design
+ * preview screen only. Normal app code should NOT pass themeMode explicitly.
  * 
  * ========================================
  * DESIGN PREVIEW SCREEN RULES
@@ -356,9 +357,21 @@ export const Colors = {
   },
 } as const
 
-// === APP CONSTANTS ===
-// NOTE: Behavior constants moved to app-config.ts
-// This file now contains only visual design tokens
+// === UTILITIES ===
+/**
+ * Apply opacity to a hex color
+ * @param color - Hex color string (e.g., '#6B4DFF')
+ * @param opacity - Opacity value from 0 to 1
+ * @returns RGBA color string
+ */
+export function withOpacity(color: string, opacity: number): string {
+  // Handle both 3 and 6 character hex codes
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.substring(0, 2), 16);
+  const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.substring(2, 4), 16);
+  const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 // === TYPE DEFINITIONS ===
 export type ThemeMode = 'light' | 'dark'

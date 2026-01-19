@@ -1,4 +1,4 @@
-import { AppButton, AppCard, AppText } from '@/components/core'
+import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
 import { AppConfig, Shape, Spacing } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
@@ -11,13 +11,13 @@ import { sanitizeInput, validateAccountName } from '@/src/utils/validation'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { FlatList, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
+import { FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useUI } from '../contexts/UIContext'
 
 export default function AccountCreationScreen() {
   const router = useRouter()
-  const { theme, themeMode } = useTheme()
+  const { theme } = useTheme()
   const { defaultCurrency } = useUI()
 
   const [accountName, setAccountName] = useState('')
@@ -112,43 +112,34 @@ export default function AccountCreationScreen() {
             color={theme.text}
           />
         </TouchableOpacity>
-        <AppText variant="heading" themeMode={themeMode}>
+        <AppText variant="heading">
           New Account
         </AppText>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content}>
-        <AppText variant="heading" themeMode={themeMode} style={styles.title}>
+        <AppText variant="heading" style={styles.title}>
           Create Your First Account
         </AppText>
-        <AppText variant="body" color="secondary" themeMode={themeMode} style={styles.subtitle}>
+        <AppText variant="body" color="secondary" style={styles.subtitle}>
           Start tracking your finances
         </AppText>
 
-        <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
-          <AppText variant="body" themeMode={themeMode} style={styles.label}>Account Name</AppText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: theme.border,
-                color: theme.text,
-                backgroundColor: theme.surface
-              }
-            ]}
+        <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+          <AppInput
+            label="Account Name"
             value={accountName}
             onChangeText={setAccountName}
             placeholder="e.g., Checking Account"
-            placeholderTextColor={theme.textSecondary}
             autoFocus
             maxLength={100}
             returnKeyType="next"
           />
         </AppCard>
 
-        <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
-          <AppText variant="body" themeMode={themeMode} style={styles.label}>Account Type</AppText>
+        <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+          <AppText variant="body" style={styles.label}>Account Type</AppText>
           <View style={styles.accountTypeContainer}>
             {accountTypes.map((type) => (
               <TouchableOpacity
@@ -167,13 +158,12 @@ export default function AccountCreationScreen() {
               >
                 <AppText
                   variant="body"
-                  themeMode={themeMode}
                   style={[
                     styles.accountTypeText,
                     accountType === type.key && styles.accountTypeTextSelected,
                     {
                       color: accountType === type.key
-                        ? '#fff'
+                        ? theme.pureInverse
                         : theme.text
                     }
                   ]}
@@ -186,8 +176,8 @@ export default function AccountCreationScreen() {
         </AppCard>
 
         {/* Currency Selector */}
-        <AppCard elevation="sm" padding="lg" style={styles.inputContainer} themeMode={themeMode}>
-          <AppText variant="body" themeMode={themeMode} style={styles.label}>Currency</AppText>
+        <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+          <AppText variant="body" style={styles.label}>Currency</AppText>
           <TouchableOpacity
             style={[
               styles.input,
@@ -201,10 +191,10 @@ export default function AccountCreationScreen() {
             ]}
             onPress={() => setShowCurrencyModal(true)}
           >
-            <AppText variant="body" themeMode={themeMode}>
+            <AppText variant="body">
               {currencies.find(c => c.code === selectedCurrency)?.name || selectedCurrency}
             </AppText>
-            <AppText variant="body" color="secondary" themeMode={themeMode}>
+            <AppText variant="body" color="secondary">
               {selectedCurrency} {currencies.find(c => c.code === selectedCurrency)?.symbol}
             </AppText>
           </TouchableOpacity>
@@ -215,7 +205,6 @@ export default function AccountCreationScreen() {
           size="lg"
           onPress={handleCreateAccount}
           disabled={!accountName.trim() || isCreating}
-          themeMode={themeMode}
           style={styles.createButton}
         >
           {isCreating ? 'Creating...' : 'Create Account'}
@@ -232,7 +221,7 @@ export default function AccountCreationScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
             <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <AppText variant="heading" themeMode={themeMode}>Select Currency</AppText>
+              <AppText variant="heading">Select Currency</AppText>
               <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
@@ -253,12 +242,12 @@ export default function AccountCreationScreen() {
                   }}
                 >
                   <View>
-                    <AppText variant="body" themeMode={themeMode}>{item.name}</AppText>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                    <AppText variant="body">{item.name}</AppText>
+                    <AppText variant="caption" color="secondary">
                       {item.code}
                     </AppText>
                   </View>
-                  <AppText variant="subheading" themeMode={themeMode}>{item.symbol}</AppText>
+                  <AppText variant="subheading">{item.symbol}</AppText>
                 </TouchableOpacity>
               )}
             />
@@ -315,6 +304,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     fontSize: 16,
+    minHeight: 48,
   },
   accountTypeContainer: {
     flexDirection: 'row',

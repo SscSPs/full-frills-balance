@@ -49,7 +49,6 @@ export default function AccountsScreen() {
           variant="primary"
           size="sm"
           onPress={handleCreateAccount}
-          themeMode={themeMode}
           style={{ flex: 1 }}
         >
           + Account
@@ -58,7 +57,6 @@ export default function AccountsScreen() {
           variant="secondary"
           size="sm"
           onPress={handleCreateJournal}
-          themeMode={themeMode}
           style={{ flex: 1 }}
         >
           + Journal
@@ -67,7 +65,6 @@ export default function AccountsScreen() {
           variant="outline"
           size="sm"
           onPress={handleViewJournals}
-          themeMode={themeMode}
         >
           📋
         </AppButton>
@@ -77,7 +74,6 @@ export default function AccountsScreen() {
         netWorth={netWorth}
         totalAssets={totalAssets}
         totalLiabilities={totalLiabilities}
-        themeMode={themeMode}
         isLoading={worthLoading}
       />
     </View>
@@ -93,7 +89,6 @@ export default function AccountsScreen() {
         renderItem={({ item }) => (
           <AccountCard
             account={item}
-            themeMode={themeMode}
             onPress={handleAccountPress}
             initialBalanceData={balances.find(b => b.accountId === item.id)}
           />
@@ -102,7 +97,6 @@ export default function AccountsScreen() {
           <AppText
             variant="subheading"
             color="secondary"
-            themeMode={themeMode}
             style={styles.sectionHeader}
           >
             {title}
@@ -111,7 +105,7 @@ export default function AccountsScreen() {
         ListHeaderComponent={renderHeader()}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <AppText variant="body" color="secondary" themeMode={themeMode}>
+            <AppText variant="body" color="secondary">
               No accounts yet. Create your first account to get started!
             </AppText>
           </View>

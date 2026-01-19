@@ -1,5 +1,6 @@
 import { AppCard, AppText, Badge } from '@/components/core'
-import { Spacing, ThemeMode, useThemeColors } from '@/constants'
+import { Spacing } from '@/constants'
+import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { TransactionWithAccountInfo } from '@/src/types/readModels'
@@ -9,21 +10,19 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useUI } from '../contexts/UIContext'
 
 // Reusable info row component
-const InfoRow = ({ label, value, themeMode }: { label: string, value: string, themeMode: ThemeMode }) => (
+const InfoRow = ({ label, value }: { label: string, value: string }) => (
   <View style={styles.infoRow}>
-    <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ width: 100 }}>{label}</AppText>
-    <AppText variant="body" themeMode={themeMode} style={{ flex: 1, textAlign: 'right' }}>{value}</AppText>
+    <AppText variant="caption" color="secondary" style={{ width: 100 }}>{label}</AppText>
+    <AppText variant="body" style={{ flex: 1, textAlign: 'right' }}>{value}</AppText>
   </View>
 );
 
 export default function TransactionDetailsScreen() {
   const router = useRouter()
   const { journalId } = useLocalSearchParams<{ journalId: string }>()
-  const { themeMode } = useUI()
-  const theme = useThemeColors(themeMode)
+  const { theme, themeMode } = useTheme()
 
   const [transactions, setTransactions] = useState<TransactionWithAccountInfo[]>([]);
   const [journalInfo, setJournalInfo] = useState<{ description?: string; date: number; status: string; currency: string; displayType?: string } | null>(null);
@@ -73,7 +72,7 @@ export default function TransactionDetailsScreen() {
 
   if (isLoading) return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.center}><AppText variant="body" themeMode={themeMode}>Loading...</AppText></View>
+      <View style={styles.center}><AppText variant="body">Loading...</AppText></View>
     </SafeAreaView>
   );
 
@@ -84,7 +83,7 @@ export default function TransactionDetailsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.navButton}>
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
-        <AppText variant="subheading" themeMode={themeMode}>Transaction Details</AppText>
+        <AppText variant="subheading">Transaction Details</AppText>
         <TouchableOpacity
           onPress={() => router.push({ pathname: '/journal-entry', params: { journalId } })}
           style={styles.navButton}
@@ -96,7 +95,7 @@ export default function TransactionDetailsScreen() {
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Receipt Card */}
-          <AppCard elevation="md" radius="r2" padding="lg" themeMode={themeMode} style={styles.receiptCard}>
+          <AppCard elevation="md" radius="r2" padding="lg" style={styles.receiptCard}>
 
             {/* Big Icon */}
             <View style={styles.iconContainer}>
@@ -107,18 +106,18 @@ export default function TransactionDetailsScreen() {
 
             {/* Amount & Title */}
             <View style={styles.headerSection}>
-              <AppText variant="title" themeMode={themeMode} style={{ fontSize: 32, marginBottom: 8 }}>
+              <AppText variant="title" style={{ fontSize: 32, marginBottom: 8 }}>
                 {totalAmount.toLocaleString(undefined, { style: 'currency', currency: journalInfo?.currency || 'USD' })}
               </AppText>
-              <AppText variant="body" color="secondary" themeMode={themeMode}>
+              <AppText variant="body" color="secondary">
                 {journalInfo?.description || 'No description'}
               </AppText>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm" themeMode={themeMode}>
+                <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm">
                   {journalInfo?.status}
                 </Badge>
                 {journalInfo?.displayType && (
-                  <Badge variant="default" size="sm" themeMode={themeMode}>
+                  <Badge variant="default" size="sm">
                     {journalInfo.displayType}
                   </Badge>
                 )}
@@ -129,24 +128,24 @@ export default function TransactionDetailsScreen() {
 
             {/* Metadata List */}
             <View style={styles.infoSection}>
-              <InfoRow label="Date" value={formattedDate} themeMode={themeMode} />
-              <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} themeMode={themeMode} />
+              <InfoRow label="Date" value={formattedDate} />
+              <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} />
             </View>
 
             <View style={styles.divider} />
 
             {/* Splits / Breakdown */}
-            <AppText variant="caption" color="secondary" themeMode={themeMode} style={{ marginBottom: 12 }}>
+            <AppText variant="caption" color="secondary" style={{ marginBottom: 12 }}>
               BREAKDOWN
             </AppText>
 
             {transactions.map(item => (
               <View key={item.id} style={styles.splitRow}>
                 <View style={styles.splitInfo}>
-                  <AppText variant="body" themeMode={themeMode}>{item.accountName}</AppText>
-                  <AppText variant="caption" color="secondary" themeMode={themeMode}>{item.transactionType}</AppText>
+                  <AppText variant="body">{item.accountName}</AppText>
+                  <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
                 </View>
-                <AppText variant="subheading" themeMode={themeMode}>
+                <AppText variant="subheading">
                   {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </AppText>
               </View>

@@ -2,8 +2,8 @@ import { AppButton, AppCard, AppText } from '@/components/core';
 import { Spacing } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useTheme } from '@/hooks/use-theme';
-import { integrityService } from '@/src/services/IntegrityService';
 import { exportService } from '@/src/services/export-service';
+import { integrityService } from '@/src/services/integrity-service';
 import { logger } from '@/src/utils/logger';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function SettingsScreen() {
-    const { theme, themeMode } = useTheme();
+    const { theme } = useTheme();
     const {
         themePreference,
         setThemePreference,
@@ -141,17 +141,16 @@ export default function SettingsScreen() {
         <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.inner}>
                 {/* Appearance Section */}
-                <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                <AppText variant="subheading" style={styles.sectionTitle}>
                     Appearance
                 </AppText>
-                <AppCard elevation="sm" padding="md" themeMode={themeMode} style={styles.card}>
+                <AppCard elevation="sm" padding="md" style={styles.card}>
                     <View style={styles.themeOptions}>
                         {(['system', 'light', 'dark'] as const).map((pref) => (
                             <AppButton
                                 key={pref}
                                 variant={themePreference === pref ? 'primary' : 'outline'}
                                 size="sm"
-                                themeMode={themeMode}
                                 onPress={() => setThemePreference(pref)}
                                 style={styles.themeButton}
                             >
@@ -162,16 +161,15 @@ export default function SettingsScreen() {
                 </AppCard>
 
                 {/* Data Section */}
-                <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                <AppText variant="subheading" style={styles.sectionTitle}>
                     Data Management
                 </AppText>
-                <AppCard elevation="sm" padding="md" themeMode={themeMode} style={styles.card}>
-                    <AppText variant="body" themeMode={themeMode} style={styles.cardDesc}>
+                <AppCard elevation="sm" padding="md" style={styles.card}>
+                    <AppText variant="body" style={styles.cardDesc}>
                         Export your data as a JSON file for backup or external use.
                     </AppText>
                     <AppButton
                         variant="outline"
-                        themeMode={themeMode}
                         onPress={handleExport}
                         loading={isExporting}
                     >
@@ -180,16 +178,15 @@ export default function SettingsScreen() {
                 </AppCard>
 
                 {/* Maintenance Section */}
-                <AppText variant="subheading" themeMode={themeMode} style={styles.sectionTitle}>
+                <AppText variant="subheading" style={styles.sectionTitle}>
                     Maintenance
                 </AppText>
-                <AppCard elevation="sm" padding="md" themeMode={themeMode} style={styles.card}>
-                    <AppText variant="body" themeMode={themeMode} style={styles.cardDesc}>
+                <AppCard elevation="sm" padding="md" style={styles.card}>
+                    <AppText variant="body" style={styles.cardDesc}>
                         Verify and repair account balance inconsistencies if needed.
                     </AppText>
                     <AppButton
                         variant="secondary"
-                        themeMode={themeMode}
                         onPress={handleFixIntegrity}
                         loading={isMaintenanceMode}
                     >
@@ -198,16 +195,15 @@ export default function SettingsScreen() {
                 </AppCard>
 
                 {/* Danger Zone */}
-                <AppText variant="subheading" themeMode={themeMode} style={[styles.sectionTitle, { color: theme.error }]}>
+                <AppText variant="subheading" style={[styles.sectionTitle, { color: theme.error }]}>
                     Danger Zone
                 </AppText>
-                <AppCard elevation="sm" padding="md" themeMode={themeMode} style={[styles.card, { borderColor: theme.error + '44', borderWidth: 1 }]}>
-                    <AppText variant="body" themeMode={themeMode} style={styles.cardDesc}>
+                <AppCard elevation="sm" padding="md" style={[styles.card, { borderColor: theme.error + '44', borderWidth: 1 }]}>
+                    <AppText variant="body" style={styles.cardDesc}>
                         Permanently delete soft-deleted records to free up space.
                     </AppText>
                     <AppButton
                         variant="outline"
-                        themeMode={themeMode}
                         onPress={handleCleanup}
                         style={{ borderColor: theme.error }}
                         loading={isLoading}
@@ -217,12 +213,11 @@ export default function SettingsScreen() {
 
                     <View style={styles.divider} />
 
-                    <AppText variant="body" themeMode={themeMode} style={styles.cardDesc}>
+                    <AppText variant="body" style={styles.cardDesc}>
                         Wipe all data and reset the app to its original state.
                     </AppText>
                     <AppButton
                         variant="primary"
-                        themeMode={themeMode}
                         onPress={handleFactoryReset}
                         style={{ backgroundColor: theme.error }}
                         loading={isLoading}
@@ -232,7 +227,7 @@ export default function SettingsScreen() {
                 </AppCard>
 
                 <View style={styles.footer}>
-                    <AppText variant="caption" color="secondary" themeMode={themeMode}>
+                    <AppText variant="caption" color="secondary">
                         Balance v1.0.0
                     </AppText>
                 </View>
