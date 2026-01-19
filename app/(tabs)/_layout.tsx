@@ -1,27 +1,31 @@
-import { Palette } from '@/constants';
+import { Typography } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const TAB_BAR_BASE_HEIGHT = 50;
+const MIN_BOTTOM_INSET = 8;
+
 export default function TabLayout() {
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
 
     // Dynamic tab bar height: base height + bottom safe area
-    const tabBarHeight = 50 + Math.max(insets.bottom, 8);
+    const bottomInset = Math.max(insets.bottom, MIN_BOTTOM_INSET);
+    const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
 
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: Palette.ivy,
+                tabBarActiveTintColor: theme.primary,
                 tabBarInactiveTintColor: theme.textSecondary,
                 tabBarStyle: {
                     backgroundColor: theme.background,
                     borderTopColor: theme.border,
                     height: tabBarHeight,
-                    paddingBottom: Math.max(insets.bottom, 8),
+                    paddingBottom: bottomInset,
                 },
                 headerStyle: {
                     backgroundColor: theme.background,
@@ -32,8 +36,8 @@ export default function TabLayout() {
                 },
                 headerTitleStyle: {
                     color: theme.text,
-                    fontFamily: 'SF Pro Display-Bold',
-                    fontSize: 20,
+                    fontFamily: Typography.fonts.bold,
+                    fontSize: Typography.sizes.xl,
                 },
                 headerShown: true,
             }}

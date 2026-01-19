@@ -33,7 +33,7 @@ export interface IntegrityCheckResult {
     results: BalanceVerificationResult[]
 }
 
-class IntegrityService {
+export class IntegrityService {
     /**
      * Computes account balance from scratch by iterating all transactions.
      * This is the source of truth for balance verification.

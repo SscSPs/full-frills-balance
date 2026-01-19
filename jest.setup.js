@@ -19,23 +19,20 @@ jest.mock('expo-router', () => ({
     },
 }));
 
-// Mock WatermelonDB
-jest.mock('@nozbe/watermelondb', () => ({
-    Database: jest.fn(() => ({
-        collections: {
-            get: jest.fn(),
-        },
-        action: jest.fn(),
-    })),
-    Model: class Model { },
-    tableSchema: jest.fn(),
-    appSchema: jest.fn(),
-}));
-
-jest.mock('@nozbe/watermelondb/adapters/sqlite', () => jest.fn());
-
-// Mock UUID
+// Mock UUID with unique values
 jest.mock('react-native-get-random-values', () => ({}));
 jest.mock('uuid', () => ({
-    v4: jest.fn(() => 'test-uuid'),
+    v4: () => `test-uuid-${Math.random().toString(36).substring(2, 9)}`,
+}));
+
+// Mock other platform-specific modules that might fail in Node
+jest.mock('expo-file-system', () => ({
+    documentDirectory: 'test-dir/',
+    writeAsStringAsync: jest.fn(),
+    readAsStringAsync: jest.fn(),
+}));
+
+jest.mock('expo-sharing', () => ({
+    isAvailableAsync: jest.fn().mockResolvedValue(true),
+    shareAsync: jest.fn().mockResolvedValue({}),
 }));

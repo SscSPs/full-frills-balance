@@ -27,10 +27,58 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
     const [destinationId, setDestinationId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Multi-currency state
+    const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+    const [isLoadingRate, setIsLoadingRate] = useState(false);
+    const [rateError, setRateError] = useState<string | null>(null);
+
     // Filter accounts
     const assetAccounts = accounts.filter(a => a.accountType === AccountType.ASSET || a.accountType === AccountType.LIABILITY);
     const expenseAccounts = accounts.filter(a => a.accountType === AccountType.EXPENSE);
     const incomeAccounts = accounts.filter(a => a.accountType === AccountType.INCOME);
+
+    // Detect cross-currency transaction
+    const sourceAccount = accounts.find(a => a.id === sourceId);
+    const destAccount = accounts.find(a => a.id === destinationId);
+    const sourceCurrency = sourceAccount?.currencyCode || AppConfig.defaultCurrency;
+    const destCurrency = destAccount?.currencyCode || AppConfig.defaultCurrency;
+    const isCrossCurrency = sourceCurrency !== destCurrency;
+
+    // Calculate converted amount for preview
+    const numAmount = sanitizeAmount(amount) || 0;
+    const convertedAmount = isCrossCurrency && exchangeRate
+        ? Math.round(numAmount * exchangeRate * 100) / 100
+        : numAmount;
+
+    // Fetch exchange rate when currencies differ
+    useEffect(() => {
+        if (!isCrossCurrency || !sourceId || !destinationId) {
+            setExchangeRate(null);
+            setRateError(null);
+            return;
+        }
+
+        const fetchRate = async () => {
+            setIsLoadingRate(true);
+            setRateError(null);
+            try {
+                const rate = await exchangeRateService.getRate(sourceCurrency, destCurrency);
+                if (rate <= 0) {
+                    setRateError(`No exchange rate available for ${sourceCurrency} → ${destCurrency}`);
+                    setExchangeRate(null);
+                } else {
+                    setExchangeRate(rate);
+                }
+            } catch (error) {
+                setRateError(`Failed to fetch exchange rate`);
+                setExchangeRate(null);
+            } finally {
+                setIsLoadingRate(false);
+            }
+        };
+
+        fetchRate();
+    }, [sourceId, destinationId, sourceCurrency, destCurrency, isCrossCurrency]);
 
     // Smart Defaults
     useEffect(() => {
@@ -53,7 +101,6 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
     }, [type, accounts]);
 
     const handleSave = async () => {
-        const numAmount = sanitizeAmount(amount);
         if (!numAmount || numAmount <= 0) return;
 
         // Validation
@@ -61,63 +108,64 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
         if (type === 'income' && (!sourceId || !destinationId)) return;
         if (type === 'transfer' && (!sourceId || !destinationId || sourceId === destinationId)) return;
 
+        // Cross-currency validation
+        if (isCrossCurrency && !exchangeRate) {
+            return; // Can't save without a valid exchange rate
+        }
+
         setIsSubmitting(true);
         try {
+            // Calculate exchange rates relative to journal currency (AppConfig.defaultCurrency)
+            const getExchangeRateToBase = async (currency: string) => {
+                if (currency === AppConfig.defaultCurrency) return 1;
+                return await exchangeRateService.getRate(currency, AppConfig.defaultCurrency);
+            };
+
+            const sourceRate = await getExchangeRateToBase(sourceCurrency);
+            const destRate = await getExchangeRateToBase(destCurrency);
+
             if (type === 'expense') {
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
-                    description: accounts.find(a => a.id === destinationId)?.name || 'Expense',
+                    description: destAccount?.name || 'Expense',
                     currencyCode: AppConfig.defaultCurrency,
                     transactions: [
-                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: 1 },
-                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: 1 }
+                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: destRate },
+                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: sourceRate }
                     ]
                 });
                 await preferences.setLastUsedSourceAccountId(sourceId);
             } else if (type === 'income') {
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
-                    description: accounts.find(a => a.id === sourceId)?.name || 'Income',
+                    description: sourceAccount?.name || 'Income',
                     currencyCode: AppConfig.defaultCurrency,
                     transactions: [
-                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: 1 },
-                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: 1 }
+                        { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: destRate },
+                        { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: sourceRate }
                     ]
                 });
                 await preferences.setLastUsedDestinationAccountId(destinationId);
             } else {
-                const fromAcc = accounts.find(a => a.id === sourceId);
-                const toAcc = accounts.find(a => a.id === destinationId);
-                const fromCurrency = fromAcc?.currencyCode || AppConfig.defaultCurrency;
-                const toCurrency = toAcc?.currencyCode || AppConfig.defaultCurrency;
-
-                const fromToUSDRate = await exchangeRateService.getRate(fromCurrency, AppConfig.defaultCurrency);
-                const toToUSDRate = await exchangeRateService.getRate(toCurrency, AppConfig.defaultCurrency);
-
-                let fromAmount = numAmount;
-                let toAmount = numAmount;
-
-                if (fromCurrency !== toCurrency) {
-                    const fromToToRate = await exchangeRateService.getRate(fromCurrency, toCurrency);
-                    toAmount = Math.round(numAmount * fromToToRate * 100) / 100;
-                }
-
+                // Transfer - use pre-calculated converted amount
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
-                    description: `Transfer: ${fromCurrency} to ${toCurrency}`,
+                    description: isCrossCurrency
+                        ? `Transfer: ${sourceCurrency} → ${destCurrency}`
+                        : `Transfer`,
                     currencyCode: AppConfig.defaultCurrency,
                     transactions: [
                         {
                             accountId: destinationId,
-                            amount: toAmount,
+                            amount: convertedAmount,
                             transactionType: TransactionType.DEBIT,
-                            exchangeRate: toToUSDRate
+                            exchangeRate: destRate
                         },
                         {
                             accountId: sourceId,
-                            amount: fromAmount,
+                            amount: numAmount,
                             transactionType: TransactionType.CREDIT,
-                            exchangeRate: fromToUSDRate
+                            exchangeRate: sourceRate
                         }
                     ]
                 });
@@ -231,11 +279,33 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
                 </>
             )}
 
+            {/* Cross-currency conversion preview */}
+            {isCrossCurrency && sourceId && destinationId && (
+                <View style={[styles.conversionPreview, { backgroundColor: theme.surfaceSecondary }]}>
+                    {isLoadingRate ? (
+                        <AppText variant="caption" color="secondary">Loading exchange rate...</AppText>
+                    ) : rateError ? (
+                        <AppText variant="caption" color="error">{rateError}</AppText>
+                    ) : exchangeRate ? (
+                        <>
+                            <AppText variant="caption" color="secondary">
+                                1 {sourceCurrency} = {exchangeRate.toFixed(4)} {destCurrency}
+                            </AppText>
+                            {numAmount > 0 && (
+                                <AppText variant="body" weight="semibold">
+                                    {numAmount.toFixed(2)} {sourceCurrency} → {convertedAmount.toFixed(2)} {destCurrency}
+                                </AppText>
+                            )}
+                        </>
+                    ) : null}
+                </View>
+            )}
+
             <View style={styles.footer}>
                 <AppButton
                     variant="primary"
                     onPress={handleSave}
-                    disabled={!amount || !sourceId || !destinationId || isSubmitting}
+                    disabled={!amount || !sourceId || !destinationId || isSubmitting || isLoadingRate || !!rateError || (isCrossCurrency && !exchangeRate)}
                     style={styles.saveButton}
                 >
                     {isSubmitting ? 'Saving...' : `Save ${type}`}
@@ -305,6 +375,13 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.md,
         borderRadius: 12,
         marginRight: Spacing.md,
+    },
+    conversionPreview: {
+        padding: Spacing.lg,
+        borderRadius: 12,
+        marginBottom: Spacing.lg,
+        alignItems: 'center',
+        gap: Spacing.xs,
     },
     footer: {
         marginTop: Spacing.lg,

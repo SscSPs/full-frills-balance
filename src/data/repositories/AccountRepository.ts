@@ -14,12 +14,16 @@ export interface AccountBalance {
 }
 
 export class AccountRepository {
+  private get db() {
+    return database
+  }
+
   private get accounts() {
-    return database.collections.get<Account>('accounts')
+    return this.db.collections.get<Account>('accounts')
   }
 
   private get transactions() {
-    return database.collections.get<Transaction>('transactions')
+    return this.db.collections.get<Transaction>('transactions')
   }
 
   /**
@@ -115,7 +119,7 @@ export class AccountRepository {
    * Creates a new account
    */
   async create(accountData: AccountCreateInput): Promise<Account> {
-    return database.write(async () => {
+    return this.db.write(async () => {
       return this.accounts.create((account) => {
         Object.assign(account, accountData)
       })

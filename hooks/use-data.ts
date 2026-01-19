@@ -256,7 +256,8 @@ export function useAccountBalance(accountId: string | null) {
  * 
  * Optimizations:
  * - Debounced recalculation (300ms) to prevent rapid re-renders
- * - Subscribes to journals (fewer entities) instead of all transactions
+ * - Subscribes to accounts (fewer entities, ~10-50) instead of journals (~10k)
+ * - Also subscribes to transactions to catch balance changes
  */
 export function useNetWorth() {
     const database = useDatabase()
@@ -315,18 +316,27 @@ export function useNetWorth() {
             timeoutRef.current = setTimeout(calculateNetWorth, 300)
         }
 
-        // Subscribe to journal changes (fewer updates than transactions)
-        const collection = database.collections.get<Journal>('journals')
-        const subscription = collection
+        // Subscribe to account changes (account creation/deletion)
+        const accountsCollection = database.collections.get<Account>('accounts')
+        const accountSubscription = accountsCollection
             .query(Q.where('deleted_at', Q.eq(null)))
             .observe()
+            .subscribe(debouncedCalculate)
+
+        // Subscribe to transaction changes (balance updates)
+        // This is more targeted than journals - only fires when transactions change
+        const transactionsCollection = database.collections.get<Transaction>('transactions')
+        const transactionSubscription = transactionsCollection
+            .query(Q.where('deleted_at', Q.eq(null)))
+            .observeCount()
             .subscribe(debouncedCalculate)
 
         // Initial load (immediate, no debounce)
         calculateNetWorth()
 
         return () => {
-            subscription.unsubscribe()
+            accountSubscription.unsubscribe()
+            transactionSubscription.unsubscribe()
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current)
             }

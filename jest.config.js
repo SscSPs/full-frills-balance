@@ -15,4 +15,7 @@ module.exports = {
         '!**/jest.setup.js',
     ],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+    moduleNameMapper: {
+        '^\\./adapter$': '<rootDir>/src/data/database/adapter.ts',
+    },
 };

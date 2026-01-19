@@ -1,14 +1,14 @@
 import { Alert } from 'react-native'
 import { handleError } from '../utils/errors'
+import { logger } from '../utils/logger'
 
 export const showErrorAlert = (error: unknown, customTitle?: string) => {
   const appError = handleError(error)
-  
-  console.error('App Error:', {
+
+  logger.error('App Error', error, {
     message: appError.message,
     code: appError.code,
     statusCode: appError.statusCode,
-    originalError: error
   })
 
   let title = customTitle || 'Error'

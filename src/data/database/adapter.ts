@@ -1,12 +1,18 @@
-// Platform-specific adapter export
-// This file allows TypeScript to resolve the import correctly
+import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs'
 
-// Import both adapters
-import nativeAdapter from './adapter.native';
-import webAdapter from './adapter.web';
+import { migrations } from './migrations'
+import { schema } from './schema'
 
-// Check if we're in a React Native environment
-const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+/**
+ * Default adapter (LokiJS).
+ * used by Jest/Node and Web if adapter.web.ts is not preferred.
+ */
+const adapter = new LokiJSAdapter({
+    schema,
+    migrations,
+    dbName: 'full-frills-balance',
+    useWebWorker: false,
+    useIncrementalIndexedDB: typeof process !== 'undefined' && process.env.NODE_ENV !== 'test',
+})
 
-// Export the appropriate adapter
-export default isReactNative ? nativeAdapter : webAdapter;
+export default adapter

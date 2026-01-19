@@ -229,6 +229,3 @@ export function useUI() {
   }
   return context
 }
-
-// @deprecated Use useUI instead - to be removed in future version
-export const useUser = useUI

@@ -2,6 +2,7 @@ import { Q } from '@nozbe/watermelondb'
 import { BALANCE_EPSILON, MIN_EXCHANGE_RATE } from '../../domain/accounting/AccountingConstants'
 import { JournalPresenter } from '../../domain/accounting/JournalPresenter'
 import { auditService } from '../../services/audit-service'
+import { rebuildQueueService } from '../../services/rebuild-queue-service'
 import { sanitizeAmount } from '../../utils/validation'
 import { database } from '../database/Database'
 import Account, { AccountType } from '../models/Account'
@@ -165,12 +166,9 @@ export class JournalRepository {
       return newJournal
     })
 
-    // Trigger rebuilds
+    // Queue rebuilds for background processing
     if (accountsToRebuild.size > 0) {
-      const rebuildIds = Array.from(accountsToRebuild)
-      for (const accId of rebuildIds) {
-        await transactionRepository.rebuildRunningBalances(accId)
-      }
+      rebuildQueueService.enqueueMany(accountsToRebuild)
     }
 
     return journal
@@ -226,6 +224,144 @@ export class JournalRepository {
     })
   }
 
+  /**
+   * Updates a journal with new transactions
+   * - Soft-deletes old transactions
+   * - Creates new transactions
+   * - Recalculates denormalized fields (totalAmount, transactionCount, displayType)
+   * - Logs to audit trail with before/after state
+   * - Rebuilds running balances for affected accounts
+   */
+  async updateJournalWithTransactions(
+    journalId: string,
+    journalData: CreateJournalData
+  ): Promise<Journal> {
+    const existingJournal = await this.find(journalId)
+    if (!existingJournal) {
+      throw new Error(`Journal ${journalId} not found`)
+    }
+
+    const { transactions: transactionData, ...journalFields } = journalData
+
+    // Validate exchange rates
+    for (const t of transactionData) {
+      if (t.exchangeRate !== undefined && t.exchangeRate <= MIN_EXCHANGE_RATE) {
+        throw new Error(
+          `Invalid exchange rate: ${t.exchangeRate}. Exchange rate must be greater than ${MIN_EXCHANGE_RATE}.`
+        )
+      }
+    }
+
+    // Validate double-entry
+    const getJournalAmount = (t: typeof transactionData[0]) => {
+      const rate = t.exchangeRate || 1
+      return t.amount / rate
+    }
+
+    const totalDebits = transactionData
+      .filter(t => t.transactionType === TransactionType.DEBIT)
+      .reduce((sum, t) => sum + getJournalAmount(t), 0)
+
+    const totalCredits = transactionData
+      .filter(t => t.transactionType === TransactionType.CREDIT)
+      .reduce((sum, t) => sum + getJournalAmount(t), 0)
+
+    const difference = Math.abs(totalDebits - totalCredits)
+    if (difference > BALANCE_EPSILON) {
+      throw new Error(
+        `Double-entry violation: total debits (${totalDebits.toFixed(4)}) must equal total credits (${totalCredits.toFixed(4)}).`
+      )
+    }
+
+    // Collect accounts for balance rebuilding
+    const oldTransactions = await this.transactions
+      .query(Q.where('journal_id', journalId), Q.where('deleted_at', Q.eq(null)))
+      .fetch()
+
+    const oldAccountIds = new Set(oldTransactions.map(t => t.accountId))
+    const newAccountIds = new Set(transactionData.map(t => t.accountId))
+    const allAffectedAccountIds = new Set([...oldAccountIds, ...newAccountIds])
+
+    // Prepare account types for displayType calculation
+    const accountIds = Array.from(allAffectedAccountIds)
+    const accounts = await Promise.all(accountIds.map(id => accountRepository.find(id)))
+    const accountMap = new Map<string, Account>(accounts.filter((a): a is Account => !!a).map(a => [a.id, a]))
+    const accountTypes = new Map<string, AccountType>()
+    accountMap.forEach((acc, id) => accountTypes.set(id, acc.accountType as AccountType))
+
+    // Capture before state for audit
+    const beforeState = {
+      journalDate: existingJournal.journalDate,
+      description: existingJournal.description,
+      totalAmount: existingJournal.totalAmount,
+      transactionCount: existingJournal.transactionCount,
+      displayType: existingJournal.displayType,
+    }
+
+    const updatedJournal = await database.write(async () => {
+      // 1. Soft-delete old transactions
+      for (const tx of oldTransactions) {
+        await tx.update(t => {
+          t.deletedAt = new Date()
+        })
+      }
+
+      // 2. Create new transactions
+      for (const txData of transactionData) {
+        const amount = sanitizeAmount(txData.amount) || 0
+        await this.transactions.create((tx: Transaction) => {
+          tx.accountId = txData.accountId
+          tx.amount = amount
+          tx.transactionType = txData.transactionType
+          tx.journalId = journalId
+          tx.transactionDate = journalFields.journalDate
+          tx.notes = txData.notes
+          tx.exchangeRate = txData.exchangeRate
+          tx.runningBalance = 0 // Will be rebuilt
+        })
+      }
+
+      // 3. Calculate new denormalized fields
+      const newTotalAmount = Math.max(Math.abs(totalDebits), Math.abs(totalCredits))
+      const newTransactionCount = transactionData.length
+      const newDisplayType = JournalPresenter.getJournalType(transactionData as any, accountTypes)
+
+      // 4. Update journal
+      await existingJournal.update((j: Journal) => {
+        j.journalDate = journalFields.journalDate
+        j.description = journalFields.description
+        j.currencyCode = journalFields.currencyCode
+        j.totalAmount = newTotalAmount
+        j.transactionCount = newTransactionCount
+        j.displayType = newDisplayType
+      })
+
+      // 5. Log audit trail with before/after
+      await auditService.log({
+        entityType: 'journal',
+        entityId: journalId,
+        action: AuditAction.UPDATE,
+        changes: {
+          before: beforeState,
+          after: {
+            journalDate: journalFields.journalDate,
+            description: journalFields.description,
+            totalAmount: newTotalAmount,
+            transactionCount: newTransactionCount,
+            displayType: newDisplayType,
+          }
+        },
+      })
+
+      return existingJournal
+    })
+
+    // 6. Queue running balance rebuilds for background processing
+    rebuildQueueService.enqueueMany(allAffectedAccountIds)
+
+    return updatedJournal
+  }
+
   async createReversalJournal(originalJournalId: string, reason?: string): Promise<Journal> {
     const originalJournal = await this.find(originalJournalId)
     if (!originalJournal) throw new Error('Original journal not found')
@@ -241,17 +377,20 @@ export class JournalRepository {
       notes: reason ? `Reversal: ${reason}` : `Reversal of journal ${originalJournalId}`,
     }))
 
-    return database.write(async () => {
+    // Collect affected accounts for rebuild
+    const accountIdsToRebuild = new Set(reversalTransactions.map(tx => tx.accountId))
+
+    const reversalJournal = await database.write(async () => {
       await originalJournal.update(j => { j.status = JournalStatus.REVERSED })
 
-      const reversalJournal = await this.journals.create((j: Journal) => {
+      const newReversalJournal = await this.journals.create((j: Journal) => {
         j.journalDate = originalJournal.journalDate
         j.description = reason || `Reversal of journal ${originalJournalId}`
         j.currencyCode = originalJournal.currencyCode
         j.status = JournalStatus.POSTED
         j.totalAmount = originalJournal.totalAmount
         j.transactionCount = originalJournal.transactionCount
-        j.displayType = originalJournal.displayType // Inherit type
+        j.displayType = originalJournal.displayType
       })
 
       for (const txData of reversalTransactions) {
@@ -259,39 +398,59 @@ export class JournalRepository {
           tx.accountId = txData.accountId
           tx.amount = txData.amount
           tx.transactionType = txData.transactionType
-          tx.journalId = reversalJournal.id
-          tx.transactionDate = reversalJournal.journalDate
+          tx.journalId = newReversalJournal.id
+          tx.transactionDate = newReversalJournal.journalDate
           tx.notes = txData.notes
-          tx.runningBalance = 0 // Will be rebuilt if needed, or we should calc it
+          tx.runningBalance = 0
         })
       }
 
-      await originalJournal.update(j => { j.reversingJournalId = reversalJournal.id })
-      return reversalJournal
+      await originalJournal.update(j => { j.reversingJournalId = newReversalJournal.id })
+
+      // Log audit trail for reversal
+      await auditService.log({
+        entityType: 'journal',
+        entityId: originalJournalId,
+        action: AuditAction.UPDATE,
+        changes: {
+          action: 'REVERSED',
+          reversalJournalId: newReversalJournal.id,
+          reason: reason,
+        }
+      })
+
+      return newReversalJournal
     })
+
+    // Queue rebuild for background processing
+    rebuildQueueService.enqueueMany(accountIdsToRebuild)
+
+    return reversalJournal
   }
 
   async delete(journal: Journal): Promise<void> {
-    return database.write(async () => {
-      // 1. Mark journal as soft-deleted
+    // 1. Find associated transactions BEFORE write block
+    const associatedTransactions = await this.transactions
+      .query(Q.where('journal_id', journal.id), Q.where('deleted_at', Q.eq(null)))
+      .fetch()
+
+    const accountIdsToRebuild = new Set(associatedTransactions.map(tx => tx.accountId))
+
+    // 2. All mutations in single write block (atomic)
+    await database.write(async () => {
+      // Mark journal as soft-deleted
       await journal.update((j) => {
         j.deletedAt = new Date()
       })
 
-      // 2. Find and soft-delete all associated transactions
-      const associatedTransactions = await this.transactions
-        .query(Q.where('journal_id', journal.id), Q.where('deleted_at', Q.eq(null)))
-        .fetch()
-
-      const accountIdsToRebuild = new Set<string>()
+      // Soft-delete all associated transactions
       for (const tx of associatedTransactions) {
-        accountIdsToRebuild.add(tx.accountId)
         await tx.update((t) => {
           t.deletedAt = new Date()
         })
       }
 
-      // 3. Log audit trail
+      // Log audit trail
       await auditService.log({
         entityType: 'journal',
         entityId: journal.id,
@@ -301,15 +460,10 @@ export class JournalRepository {
           totalAmount: journal.totalAmount,
         }
       })
-
-      // 4. Trigger rebuilds for all affected accounts to maintain balance integrity
-      if (accountIdsToRebuild.size > 0) {
-        for (const accId of accountIdsToRebuild) {
-          // Note: This is an async call but we wait for it to ensure integrity
-          await transactionRepository.rebuildRunningBalances(accId)
-        }
-      }
     })
+
+    // 3. Queue rebuild for background processing
+    rebuildQueueService.enqueueMany(accountIdsToRebuild)
   }
 
   /**

@@ -6,12 +6,14 @@ import { exportService } from '@/src/services/export-service';
 import { integrityService } from '@/src/services/integrity-service';
 import { logger } from '@/src/utils/logger';
 import * as FileSystem from 'expo-file-system/legacy';
+import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function SettingsScreen() {
     const { theme } = useTheme();
+    const router = useRouter();
     const {
         themePreference,
         setThemePreference,
@@ -174,6 +176,18 @@ export default function SettingsScreen() {
                         loading={isExporting}
                     >
                         Export to JSON
+                    </AppButton>
+
+                    <View style={styles.divider} />
+
+                    <AppText variant="body" style={styles.cardDesc}>
+                        View all changes made to your data for auditing and debugging.
+                    </AppText>
+                    <AppButton
+                        variant="outline"
+                        onPress={() => router.push('/audit-log')}
+                    >
+                        View Audit Log
                     </AppButton>
                 </AppCard>
 

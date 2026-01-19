@@ -136,12 +136,8 @@ export const AdvancedJournalForm = ({
             };
 
             if (isEdit && journalId) {
-                // For editing, we delete and recreate for simplicity and balance integrity
-                const existingJournal = await journalRepository.find(journalId);
-                if (existingJournal) {
-                    await journalRepository.delete(existingJournal);
-                }
-                await journalRepository.createJournalWithTransactions(journalData);
+                // Use proper update method that recalculates denormalized fields
+                await journalRepository.updateJournalWithTransactions(journalId, journalData);
                 showSuccessAlert('Success', 'Journal entry updated successfully');
             } else {
                 await journalRepository.createJournalWithTransactions(journalData);
