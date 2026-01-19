@@ -66,7 +66,7 @@ export class JournalRepository {
     // Validate double-entry accounting by converting transaction amounts to journal currency
     const getJournalAmount = (t: typeof transactionData[0]) => {
       const rate = t.exchangeRate || 1
-      return t.amount / rate
+      return t.amount * rate
     }
 
     const totalDebits = transactionData
@@ -255,7 +255,7 @@ export class JournalRepository {
     // Validate double-entry
     const getJournalAmount = (t: typeof transactionData[0]) => {
       const rate = t.exchangeRate || 1
-      return t.amount / rate
+      return t.amount * rate
     }
 
     const totalDebits = transactionData
@@ -530,11 +530,11 @@ export class JournalRepository {
         const transactionCount = txs.length
         const totalDebits = txs
           .filter(t => t.transactionType === TransactionType.DEBIT)
-          .reduce((sum, t) => sum + (Number(t.amount) / (t.exchangeRate || 1)), 0)
+          .reduce((sum, t) => sum + (Number(t.amount) * (t.exchangeRate || 1)), 0)
 
         const totalCredits = txs
           .filter(t => t.transactionType === TransactionType.CREDIT)
-          .reduce((sum, t) => sum + (Number(t.amount) / (t.exchangeRate || 1)), 0)
+          .reduce((sum, t) => sum + (Number(t.amount) * (t.exchangeRate || 1)), 0)
 
         const magnitude = Math.max(Math.abs(totalDebits), Math.abs(totalCredits))
 

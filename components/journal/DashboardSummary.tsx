@@ -1,5 +1,6 @@
 import { AppConfig, Spacing } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
+import { preferences } from '@/src/utils/preferences';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -16,7 +17,8 @@ export const DashboardSummary = ({ income, expense, isPrivacyMode }: DashboardSu
 
     const formatValue = (val: number) => {
         if (isPrivacyMode) return '••••';
-        return `${val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${AppConfig.defaultCurrency}`;
+        const currency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+        return `${val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${currency}`;
     };
 
     return (

@@ -40,8 +40,9 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
     // Detect cross-currency transaction
     const sourceAccount = accounts.find(a => a.id === sourceId);
     const destAccount = accounts.find(a => a.id === destinationId);
-    const sourceCurrency = sourceAccount?.currencyCode || AppConfig.defaultCurrency;
-    const destCurrency = destAccount?.currencyCode || AppConfig.defaultCurrency;
+    const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+    const sourceCurrency = sourceAccount?.currencyCode || defaultCurrency;
+    const destCurrency = destAccount?.currencyCode || defaultCurrency;
     const isCrossCurrency = sourceCurrency !== destCurrency;
 
     // Calculate converted amount for preview
@@ -115,10 +116,11 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
 
         setIsSubmitting(true);
         try {
-            // Calculate exchange rates relative to journal currency (AppConfig.defaultCurrency)
+            // Calculate exchange rates relative to journal currency
+            const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
             const getExchangeRateToBase = async (currency: string) => {
-                if (currency === AppConfig.defaultCurrency) return 1;
-                return await exchangeRateService.getRate(currency, AppConfig.defaultCurrency);
+                if (currency === defaultCurrency) return 1;
+                return await exchangeRateService.getRate(currency, defaultCurrency);
             };
 
             const sourceRate = await getExchangeRateToBase(sourceCurrency);
@@ -128,7 +130,7 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: destAccount?.name || 'Expense',
-                    currencyCode: AppConfig.defaultCurrency,
+                    currencyCode: defaultCurrency,
                     transactions: [
                         { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: destRate },
                         { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: sourceRate }
@@ -139,7 +141,7 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
                 await journalRepository.createJournalWithTransactions({
                     journalDate: Date.now(),
                     description: sourceAccount?.name || 'Income',
-                    currencyCode: AppConfig.defaultCurrency,
+                    currencyCode: defaultCurrency,
                     transactions: [
                         { accountId: destinationId, amount: numAmount, transactionType: TransactionType.DEBIT, exchangeRate: destRate },
                         { accountId: sourceId, amount: numAmount, transactionType: TransactionType.CREDIT, exchangeRate: sourceRate }
@@ -153,7 +155,7 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
                     description: isCrossCurrency
                         ? `Transfer: ${sourceCurrency} → ${destCurrency}`
                         : `Transfer`,
-                    currencyCode: AppConfig.defaultCurrency,
+                    currencyCode: defaultCurrency,
                     transactions: [
                         {
                             accountId: destinationId,
@@ -243,7 +245,7 @@ export default function SimpleJournalForm({ accounts, onSuccess, initialType = '
             <View style={styles.amountContainer}>
                 <View style={[styles.amountRow, { borderBottomColor: theme.border }]}>
                     <AppText variant="heading" color="secondary" style={styles.currencySymbol}>
-                        {accounts.find(a => a.id === (type === 'income' ? destinationId : sourceId))?.currencyCode || AppConfig.defaultCurrency}
+                        {accounts.find(a => a.id === (type === 'income' ? destinationId : sourceId))?.currencyCode || (preferences.defaultCurrencyCode || AppConfig.defaultCurrency)}
                     </AppText>
                     <AppInput
                         style={styles.amountInput}

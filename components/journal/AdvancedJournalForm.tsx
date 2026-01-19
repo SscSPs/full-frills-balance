@@ -7,6 +7,7 @@ import { CreateJournalData, journalRepository } from '@/src/data/repositories/Jo
 import { JournalCalculator, JournalLineInput } from '@/src/domain/accounting/JournalCalculator';
 import { JournalValidator } from '@/src/domain/accounting/JournalValidator';
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
+import { preferences } from '@/src/utils/preferences';
 import { sanitizeAmount } from '@/src/utils/validation';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -78,10 +79,12 @@ export const AdvancedJournalForm = ({
     const getLineBaseAmount = (line: JournalEntryLine): number => {
         const amount = sanitizeAmount(line.amount) || 0;
         const rate = line.exchangeRate && parseFloat(line.exchangeRate) ? parseFloat(line.exchangeRate) : 1;
-        if (!line.accountCurrency || line.accountCurrency === AppConfig.defaultCurrency) {
+        const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+
+        if (!line.accountCurrency || line.accountCurrency === defaultCurrency) {
             return amount;
         }
-        const baseAmount = amount / rate;
+        const baseAmount = amount * rate;
         return Math.round(baseAmount * 100) / 100;
     };
 
@@ -123,7 +126,7 @@ export const AdvancedJournalForm = ({
             const journalData: CreateJournalData = {
                 journalDate: new Date(journalDate).getTime(),
                 description: description.trim() || undefined,
-                currencyCode: AppConfig.defaultCurrency,
+                currencyCode: preferences.defaultCurrencyCode || AppConfig.defaultCurrency,
                 transactions: lines.map(line => ({
                     accountId: line.accountId,
                     amount: sanitizeAmount(line.amount) || 0,

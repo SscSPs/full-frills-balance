@@ -3,7 +3,9 @@ import { Shape, Spacing } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import Journal from '@/src/data/models/Journal';
 import { JournalDisplayType, JournalPresenter } from '@/src/domain/accounting/JournalPresenter';
+import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { formatShortDate } from '@/src/utils/dateUtils';
+import { preferences } from '@/src/utils/preferences';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -38,7 +40,7 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
                 {/* Header: Date & Count */}
                 <View style={styles.header}>
                     <View style={styles.badgeRow}>
-                        {journal.currencyCode !== 'USD' && (
+                        {journal.currencyCode !== (preferences.defaultCurrencyCode || 'USD') && (
                             <Badge variant="default" size="sm">
                                 {journal.currencyCode}
                             </Badge>
@@ -56,7 +58,7 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
                 {/* Title / Description */}
                 <View style={styles.titleSection}>
                     <AppText variant="heading" numberOfLines={1}>
-                        {journal.description || 'Journal Entry'}
+                        {journal.description || 'Transaction'}
                     </AppText>
                 </View>
 
@@ -71,8 +73,7 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
 
                     <View style={styles.amountInfo}>
                         <AppText variant="xl" style={styles.amountText}>
-                            {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            <AppText variant="body" color="secondary"> {journal.currencyCode}</AppText>
+                            {CurrencyFormatter.format(totalAmount, journal.currencyCode)}
                         </AppText>
                     </View>
                 </View>

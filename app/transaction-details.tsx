@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { TransactionWithAccountInfo } from '@/src/types/readModels'
+import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
 import { formatDate } from '@/src/utils/dateUtils'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -66,7 +67,7 @@ export default function TransactionDetailsScreen() {
   // Simpler: Just sum all debits.
   const totalAmount = transactions
     .filter(t => t.transactionType === 'DEBIT')
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+    .reduce((sum: number, t: TransactionWithAccountInfo) => sum + (t.amount || 0), 0);
 
   const formattedDate = journalInfo ? formatDate(journalInfo.date, { includeTime: true }) : '';
 
@@ -107,7 +108,7 @@ export default function TransactionDetailsScreen() {
             {/* Amount & Title */}
             <View style={styles.headerSection}>
               <AppText variant="title" style={{ fontSize: 32, marginBottom: 8 }}>
-                {totalAmount.toLocaleString(undefined, { style: 'currency', currency: journalInfo?.currency || 'USD' })}
+                {CurrencyFormatter.format(totalAmount, journalInfo?.currency)}
               </AppText>
               <AppText variant="body" color="secondary">
                 {journalInfo?.description || 'No description'}
@@ -146,7 +147,7 @@ export default function TransactionDetailsScreen() {
                   <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
                 </View>
                 <AppText variant="subheading">
-                  {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {CurrencyFormatter.format(item.amount, journalInfo?.currency)}
                 </AppText>
               </View>
             ))}

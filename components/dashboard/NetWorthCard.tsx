@@ -1,6 +1,7 @@
 import { AppCard, AppText } from '@/components/core';
 import { Spacing } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
+import { preferences } from '@/src/utils/preferences';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -26,7 +27,7 @@ export const NetWorthCard = ({
         if (hidden) return '••••••';
         return amount.toLocaleString(undefined, {
             style: 'currency',
-            currency: 'USD', // TODO: Global currency setting
+            currency: preferences.defaultCurrencyCode || 'USD',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         });

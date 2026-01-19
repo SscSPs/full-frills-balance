@@ -4,6 +4,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { exchangeRateService } from '@/src/services/exchange-rate-service';
+import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
+import { preferences } from '@/src/utils/preferences';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -88,7 +90,7 @@ export function JournalLineItem({
                                     line.transactionType === TransactionType.DEBIT && { color: theme.pureInverse }
                                 ]}
                             >
-                                DEBIT
+                                Debit
                             </AppText>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -106,7 +108,7 @@ export function JournalLineItem({
                                     line.transactionType === TransactionType.CREDIT && { color: theme.pureInverse }
                                 ]}
                             >
-                                CREDIT
+                                Credit
                             </AppText>
                         </TouchableOpacity>
                     </View>
@@ -127,9 +129,9 @@ export function JournalLineItem({
                         placeholder="0.00"
                         keyboardType="numeric"
                     />
-                    {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
+                    {line.accountCurrency && line.accountCurrency !== (preferences.defaultCurrencyCode || AppConfig.defaultCurrency) && (
                         <AppText variant="caption" color="secondary">
-                            ≈ ${(getLineBaseAmount(line)).toFixed(2)} USD
+                            ≈ {CurrencyFormatter.format(getLineBaseAmount(line))}
                         </AppText>
                     )}
                 </View>
@@ -147,13 +149,14 @@ export function JournalLineItem({
                 <AppText variant="body" weight="medium">
                     Exchange Rate (Optional)
                 </AppText>
-                {line.accountCurrency && line.accountCurrency !== AppConfig.defaultCurrency && (
+                {line.accountCurrency && line.accountCurrency !== (preferences.defaultCurrencyCode || AppConfig.defaultCurrency) && (
                     <TouchableOpacity
                         onPress={async () => {
                             try {
+                                const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
                                 const rate = await exchangeRateService.getRate(
                                     line.accountCurrency!,
-                                    AppConfig.defaultCurrency
+                                    defaultCurrency
                                 )
                                 onUpdate('exchangeRate', rate.toString())
                             } catch (error) {
@@ -172,9 +175,9 @@ export function JournalLineItem({
                 keyboardType="decimal-pad"
             />
             <AppText variant="caption" color="secondary" style={{ marginTop: Spacing.xs, marginBottom: Spacing.md }}>
-                {line.accountCurrency === AppConfig.defaultCurrency
+                {line.accountCurrency === (preferences.defaultCurrencyCode || AppConfig.defaultCurrency)
                     ? 'Not needed (same as base currency)'
-                    : `Rate to convert ${line.accountCurrency} to ${AppConfig.defaultCurrency}`}
+                    : `Rate to convert ${line.accountCurrency} to ${preferences.defaultCurrencyCode || AppConfig.defaultCurrency}`}
             </AppText>
         </View>
     );

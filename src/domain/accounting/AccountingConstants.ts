@@ -18,6 +18,7 @@ export const BALANCE_EPSILON = 0.01
 export const MIN_EXCHANGE_RATE = 0.000001
 
 /**
- * Default currency code when none is specified.
+ * Default currency code used as a last-resort fallback.
+ * Applications should prioritize using user preferences.
  */
-export const DEFAULT_CURRENCY = 'USD'
+export const FALLBACK_CURRENCY = 'USD'
