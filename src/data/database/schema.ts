@@ -7,7 +7,7 @@ export const schema = appSchema({
       name: 'accounts',
       columns: [
         { name: 'name', type: 'string' },
-        { name: 'account_type', type: 'string' }, // ASSET, LIABILITY, etc.
+        { name: 'account_type', type: 'string', isIndexed: true }, // ASSET, LIABILITY, etc.
         { name: 'currency_code', type: 'string', isIndexed: true },
         { name: 'parent_account_id', type: 'string', isOptional: true, isIndexed: true },
         { name: 'description', type: 'string', isOptional: true },

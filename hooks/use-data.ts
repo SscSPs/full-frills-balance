@@ -106,11 +106,30 @@ export function useJournals(pageSize: number = 50) {
 }
 
 /**
+ * Enriched transaction data for UI display
+ */
+export interface EnrichedTransaction {
+    id: string
+    amount: number
+    transactionType: string
+    transactionDate: number
+    notes?: string
+    journalDescription?: string
+    accountName?: string
+    accountType?: string
+    counterAccountType?: string
+    runningBalance?: number
+    displayTitle: string
+    isIncrease: boolean
+}
+
+/**
  * Hook to reactively get transactions for an account
+ * Optimized with batch fetching to avoid N+1 queries
  */
 export function useAccountTransactions(accountId: string | null) {
     const database = useDatabase()
-    const [transactions, setTransactions] = useState<any[]>([])
+    const [transactions, setTransactions] = useState<EnrichedTransaction[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -129,21 +148,57 @@ export function useAccountTransactions(accountId: string | null) {
             )
             .observe()
             .subscribe(async (txs) => {
-                const enriched = await Promise.all(txs.map(async (tx) => {
-                    const journal = await tx.journal.fetch()
-                    const account = await tx.account.fetch()
+                if (txs.length === 0) {
+                    setTransactions([])
+                    setIsLoading(false)
+                    return
+                }
 
-                    // Fetch all legs of this journal to find counter-parties
-                    const allJournalTxs = await database.collections.get<Transaction>('transactions')
-                        .query(Q.where('journal_id', tx.journalId), Q.where('deleted_at', Q.eq(null)))
-                        .fetch()
+                // Batch fetch all related data in 3 queries instead of N*3
+                const journalIds = [...new Set(txs.map(tx => tx.journalId))]
+                const journals = await database.collections.get<Journal>('journals')
+                    .query(Q.where('id', Q.oneOf(journalIds)))
+                    .fetch()
+                const journalMap = new Map(journals.map(j => [j.id, j]))
 
-                    const otherLegs = allJournalTxs.filter(l => l.accountId !== tx.accountId)
+                // Get the account for this view 
+                const account = await database.collections.get<Account>('accounts')
+                    .find(accountId)
+
+                // Get all transactions for these journals to find counterparties
+                const allJournalTxs = await database.collections.get<Transaction>('transactions')
+                    .query(
+                        Q.where('journal_id', Q.oneOf(journalIds)),
+                        Q.where('deleted_at', Q.eq(null))
+                    )
+                    .fetch()
+
+                // Get all related accounts for counterparties
+                const allAccountIds = [...new Set(allJournalTxs.map(tx => tx.accountId))]
+                const allAccounts = await database.collections.get<Account>('accounts')
+                    .query(Q.where('id', Q.oneOf(allAccountIds)))
+                    .fetch()
+                const accountMap = new Map(allAccounts.map(a => [a.id, a]))
+
+                // Group transactions by journal for finding counterparties
+                const txsByJournal = new Map<string, Transaction[]>()
+                allJournalTxs.forEach(tx => {
+                    const existing = txsByJournal.get(tx.journalId) || []
+                    existing.push(tx)
+                    txsByJournal.set(tx.journalId, existing)
+                })
+
+                // Build enriched transactions
+                const enriched: EnrichedTransaction[] = txs.map(tx => {
+                    const journal = journalMap.get(tx.journalId)
+                    const journalTxs = txsByJournal.get(tx.journalId) || []
+                    const otherLegs = journalTxs.filter(t => t.accountId !== accountId)
 
                     let displayTitle = journal?.description || ''
-                    let counterAccountType = undefined
+                    let counterAccountType: string | undefined = undefined
+
                     if (otherLegs.length === 1) {
-                        const otherAcc = await otherLegs[0].account.fetch()
+                        const otherAcc = accountMap.get(otherLegs[0].accountId)
                         displayTitle = otherAcc?.name || journal?.description || 'Offset Entry'
                         counterAccountType = otherAcc?.accountType
                     } else if (otherLegs.length > 1 && !journal?.description) {
@@ -170,7 +225,8 @@ export function useAccountTransactions(accountId: string | null) {
                         displayTitle,
                         isIncrease
                     }
-                }))
+                })
+
                 setTransactions(enriched)
                 setIsLoading(false)
             })

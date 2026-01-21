@@ -1,8 +1,11 @@
 import { Q } from '@nozbe/watermelondb'
 import { TransactionWithAccountInfo } from '../../types/readModels'
+import { roundToPrecision } from '../../utils/money'
 import { database } from '../database/Database'
+import { AccountType } from '../models/Account'
 import Transaction, { TransactionType } from '../models/Transaction'
 import { accountRepository } from './AccountRepository'
+import { currencyRepository } from './CurrencyRepository'
 
 export class TransactionRepository {
   private get transactions() {
@@ -84,7 +87,7 @@ export class TransactionRepository {
         accountId: tx.accountId,
         exchangeRate: tx.exchangeRate,
         accountName: account?.name || 'Unknown Account',
-        accountType: account?.accountType || ('ASSET' as any), // Fallback for safety
+        accountType: account?.accountType || AccountType.ASSET, // Fallback for safety
         runningBalance: tx.runningBalance, // Include running balance if available
         createdAt: tx.createdAt,
         updatedAt: tx.updatedAt,
@@ -96,11 +99,11 @@ export class TransactionRepository {
    * Rebuilds running balances for an account
    * Uses journalDate for ordering to maintain accounting correctness
    * @param accountId The account ID to rebuild balances for
-   * @param upToDate Timestamp to rebuild up to (defaults to now)
+   * @param fromDate Optional timestamp to start rebuilding from. If provided, will find the balance just before this date.
    */
   async rebuildRunningBalances(
     accountId: string,
-    upToDate: number = Date.now()
+    fromDate?: number
   ): Promise<void> {
     // 1. Get Account to determine direction
     const account = await accountRepository.find(accountId)
@@ -126,40 +129,63 @@ export class TransactionRepository {
         break
     }
 
-    // 2. Fetch transactions ordered by Date
-    // Note: We need ALL transactions to rebuild chain accurately from start
-    // If we only fetch "upToDate", we might miss the start.
-    // Ideally we assume start is 0. 
-    // But if we want to support "partial rebuild", we'd need the balance at 'fromDate'.
-    // For safety, let's rebuild ALL for now (O(N) per account is okay for 50k total txs, ~5k per account).
-    const transactions = await this.transactions
-      .query(
+    // 2. Fetch precision for rounding
+    const precision = await currencyRepository.getPrecision(account.currencyCode)
+
+    // 3. Determine starting balance and start date
+    let runningBalance = 0
+    let query = this.transactions.query(
+      Q.where('account_id', accountId),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', Q.and(
+        Q.where('status', 'POSTED'),
+        Q.where('deleted_at', Q.eq(null))
+      ))
+    )
+
+    if (fromDate) {
+      // Find the LATEST transaction BEFORE this date to get starting point
+      const previousTx = await this.transactions.query(
         Q.where('account_id', accountId),
         Q.where('deleted_at', Q.eq(null)),
         Q.on('journals', Q.and(
           Q.where('status', 'POSTED'),
           Q.where('deleted_at', Q.eq(null))
-        ))
+        )),
+        Q.where('transaction_date', Q.lt(fromDate))
       )
-      .extend(Q.sortBy('transaction_date', 'asc')) // Primary sort: Transaction Date
-      .extend(Q.sortBy('created_at', 'asc'))   // Secondary sort: Creation Time
-      .fetch()
+        .extend(Q.sortBy('transaction_date', 'desc'))
+        .extend(Q.sortBy('created_at', 'desc'))
+        .extend(Q.take(1))
+        .fetch()
 
-    let runningBalance = 0
+      if (previousTx.length > 0) {
+        runningBalance = previousTx[0].runningBalance || 0
+        // Update query to only find transactions AFTER the previous one
+        // We use >= fromDate to catch everything from the change point
+        query = query.extend(Q.where('transaction_date', Q.gte(fromDate)))
+      } else {
+        // No previous transactions, rebuild from start
+      }
+    }
+
+    const transactions = await query
+      .extend(Q.sortBy('transaction_date', 'asc'))
+      .extend(Q.sortBy('created_at', 'asc'))
+      .fetch()
 
     // Update each transaction with its running balance
     await database.write(async () => {
       for (const tx of transactions) {
         // Calculate effect of this transaction
-        const amount = tx.transactionType === TransactionType.DEBIT
+        const effect = tx.transactionType === TransactionType.DEBIT
           ? tx.amount * debitMult
           : tx.amount * creditMult
 
-        runningBalance += amount
+        runningBalance = roundToPrecision(runningBalance + effect, precision)
 
         // Only update if balance has changed to avoid write churn
-        // Note: Floating point comparison
-        if (Math.abs((tx.runningBalance || 0) - runningBalance) > 0.001) {
+        if (tx.runningBalance !== runningBalance) {
           await tx.update((txToUpdate) => {
             txToUpdate.runningBalance = runningBalance
           })

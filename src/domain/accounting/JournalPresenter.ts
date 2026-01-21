@@ -1,11 +1,18 @@
 import { AccountType } from '../../data/models/Account';
-import Transaction from '../../data/models/Transaction';
 
 export enum JournalDisplayType {
     INCOME = 'INCOME',
     EXPENSE = 'EXPENSE',
     TRANSFER = 'TRANSFER',
     MIXED = 'MIXED',
+}
+
+/**
+ * Minimal interface for transaction data needed for journal type classification.
+ * Allows both WatermelonDB Transaction models and plain DTOs to be used.
+ */
+export interface TransactionLike {
+    accountId: string;
 }
 
 export interface JournalPresentation {
@@ -23,7 +30,7 @@ export class JournalPresenter {
      * - If there are Expense accounts -> Expense
      * - If both Income and Expense -> Mixed (rare)
      */
-    static getJournalType(txs: Transaction[], accountTypes: Map<string, AccountType>): JournalDisplayType {
+    static getJournalType(txs: TransactionLike[], accountTypes: Map<string, AccountType>): JournalDisplayType {
         let hasIncome = false;
         let hasExpense = false;
         let hasAssetLiability = false;

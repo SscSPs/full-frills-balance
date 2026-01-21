@@ -1,11 +1,13 @@
 import { Q } from '@nozbe/watermelondb'
 import { auditService } from '../../services/audit-service'
 import { AccountUpdateInput } from '../../types/Account'
+import { getEpsilon, roundToPrecision } from '../../utils/money'
 import { database } from '../database/Database'
 import Account, { AccountType } from '../models/Account'
 import { AuditAction } from '../models/AuditLog'
 import { JournalStatus } from '../models/Journal'
-import Transaction from '../models/Transaction'
+import Transaction, { TransactionType } from '../models/Transaction'
+import { currencyRepository } from './CurrencyRepository'
 
 export interface AccountCreateInput {
   name: string
@@ -149,6 +151,7 @@ export class AccountRepository {
     })
 
     // 2. Audit account creation
+    const precision = await currencyRepository.getPrecision(newAccount.currencyCode)
     await auditService.log({
       entityType: 'account',
       entityId: newAccount.id,
@@ -157,44 +160,45 @@ export class AccountRepository {
         name: newAccount.name,
         accountType: newAccount.accountType,
         currencyCode: newAccount.currencyCode,
-        description: newAccount.description
+        description: newAccount.description,
+        initialBalance: initialBalance ? roundToPrecision(initialBalance, precision) : undefined
       }
     })
 
     // 3. Handle initial balance if provided and non-zero
-    if (initialBalance && Math.abs(initialBalance) > 0) {
-      const { journalRepository } = require('./JournalRepository')
-      const { TransactionType } = require('../models/Transaction')
+    if (initialBalance) {
+      const precision = await currencyRepository.getPrecision(newAccount.currencyCode)
 
-      // Determine if we need an EQUITY or INCOME account for balancing
-      // For simplicity in v1, we'll use a virtual "Opening Balances" account (EQUITY)
-      // or just assume Equity.
-      let balancingAccountId = await this.getOpeningBalancesAccountId(newAccount.currencyCode)
+      // Use precision-aware epsilon check
+      if (Math.abs(initialBalance) > getEpsilon(precision)) {
+        const { journalRepository } = require('./JournalRepository')
 
-      const isDebitIncrease = [AccountType.ASSET, AccountType.EXPENSE].includes(newAccount.accountType)
+        const roundedAmount = roundToPrecision(Math.abs(initialBalance), precision)
 
-      // If Asset increases with Debit, and we want positive balance -> Debit Account, Credit Equity
-      // If Liability increases with Credit, and we want positive balance -> Credit Account, Debit Equity
-      const accountTxType = isDebitIncrease ? TransactionType.DEBIT : TransactionType.CREDIT
-      const equityTxType = isDebitIncrease ? TransactionType.CREDIT : TransactionType.DEBIT
+        let balancingAccountId = await this.getOpeningBalancesAccountId(newAccount.currencyCode)
+        const isDebitIncrease = [AccountType.ASSET, AccountType.EXPENSE].includes(newAccount.accountType)
 
-      await journalRepository.createJournalWithTransactions({
-        journalDate: Date.now(),
-        description: `Initial Balance: ${newAccount.name}`,
-        currencyCode: newAccount.currencyCode,
-        transactions: [
-          {
-            accountId: newAccount.id,
-            amount: Math.abs(initialBalance),
-            transactionType: accountTxType
-          },
-          {
-            accountId: balancingAccountId,
-            amount: Math.abs(initialBalance),
-            transactionType: equityTxType
-          }
-        ]
-      })
+        const accountTxType = isDebitIncrease ? TransactionType.DEBIT : TransactionType.CREDIT
+        const equityTxType = isDebitIncrease ? TransactionType.CREDIT : TransactionType.DEBIT
+
+        await journalRepository.createJournalWithTransactions({
+          journalDate: Date.now(),
+          description: `Initial Balance: ${newAccount.name}`,
+          currencyCode: newAccount.currencyCode,
+          transactions: [
+            {
+              accountId: newAccount.id,
+              amount: roundedAmount,
+              transactionType: accountTxType
+            },
+            {
+              accountId: balancingAccountId,
+              amount: roundedAmount,
+              transactionType: equityTxType
+            }
+          ]
+        })
+      }
     }
 
     return newAccount

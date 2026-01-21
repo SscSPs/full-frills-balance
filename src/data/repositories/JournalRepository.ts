@@ -1,8 +1,10 @@
 import { Q } from '@nozbe/watermelondb'
-import { BALANCE_EPSILON, MIN_EXCHANGE_RATE } from '../../domain/accounting/AccountingConstants'
+import { MIN_EXCHANGE_RATE } from '../../domain/accounting/AccountingConstants'
 import { JournalPresenter } from '../../domain/accounting/JournalPresenter'
 import { auditService } from '../../services/audit-service'
 import { rebuildQueueService } from '../../services/rebuild-queue-service'
+import { logger } from '../../utils/logger'
+import { amountsAreEqual, roundToPrecision } from '../../utils/money'
 import { sanitizeAmount } from '../../utils/validation'
 import { database } from '../database/Database'
 import Account, { AccountType } from '../models/Account'
@@ -10,6 +12,7 @@ import { AuditAction } from '../models/AuditLog'
 import Journal, { JournalStatus } from '../models/Journal'
 import Transaction, { TransactionType } from '../models/Transaction'
 import { accountRepository } from './AccountRepository'
+import { currencyRepository } from './CurrencyRepository'
 import { transactionRepository } from './TransactionRepository'
 
 export interface CreateJournalData {
@@ -64,9 +67,11 @@ export class JournalRepository {
     }
 
     // Validate double-entry accounting by converting transaction amounts to journal currency
+    const journalPrecision = await currencyRepository.getPrecision(journalFields.currencyCode)
+
     const getJournalAmount = (t: typeof transactionData[0]) => {
       const rate = t.exchangeRate || 1
-      return t.amount * rate
+      return roundToPrecision(t.amount * rate, journalPrecision)
     }
 
     const totalDebits = transactionData
@@ -77,12 +82,10 @@ export class JournalRepository {
       .filter(t => t.transactionType === TransactionType.CREDIT)
       .reduce((sum, t) => sum + getJournalAmount(t), 0)
 
-    // Validate double-entry accounting with epsilon
-    const difference = Math.abs(totalDebits - totalCredits)
-
-    if (difference > BALANCE_EPSILON) {
+    // Validate double-entry accounting with absolute equality after rounding
+    if (!amountsAreEqual(totalDebits, totalCredits, journalPrecision)) {
       throw new Error(
-        `Double-entry violation: total debits (${totalDebits.toFixed(4)}) must equal total credits (${totalCredits.toFixed(4)}).`
+        `Double-entry violation: total debits (${totalDebits.toFixed(journalPrecision)}) must equal total credits (${totalCredits.toFixed(journalPrecision)}) for currency ${journalFields.currencyCode}.`
       )
     }
 
@@ -96,6 +99,8 @@ export class JournalRepository {
 
     for (const tx of transactionData) {
       if (!accountMap.has(tx.accountId)) continue
+      const account = accountMap.get(tx.accountId)!
+      const precision = await currencyRepository.getPrecision(account.currencyCode)
 
       const latestTx = (await transactionRepository.findByAccount(tx.accountId))[0]
       const isBackdated = latestTx && latestTx.transactionDate > journalData.journalDate
@@ -103,7 +108,6 @@ export class JournalRepository {
       if (isBackdated) {
         accountsToRebuild.add(tx.accountId)
       } else {
-        const account = accountMap.get(tx.accountId)!
         let balance = latestTx?.runningBalance || 0
         let multiplier = 0
         if (['ASSET', 'EXPENSE'].includes(account.accountType)) {
@@ -111,7 +115,7 @@ export class JournalRepository {
         } else {
           multiplier = tx.transactionType === TransactionType.CREDIT ? 1 : -1
         }
-        balance += (tx.amount * multiplier)
+        balance = roundToPrecision(balance + (tx.amount * multiplier), precision)
         calculatedBalances.set(tx.accountId, balance)
       }
     }
@@ -128,7 +132,7 @@ export class JournalRepository {
         j.status = JournalStatus.POSTED
         j.totalAmount = Math.max(Math.abs(totalDebits), Math.abs(totalCredits))
         j.transactionCount = transactionData.length
-        j.displayType = JournalPresenter.getJournalType(transactionData as any, accountTypes)
+        j.displayType = JournalPresenter.getJournalType(transactionData, accountTypes)
       })
 
       // Create all transactions
@@ -177,7 +181,7 @@ export class JournalRepository {
 
     // Queue rebuilds for background processing
     if (accountsToRebuild.size > 0) {
-      rebuildQueueService.enqueueMany(accountsToRebuild)
+      rebuildQueueService.enqueueMany(accountsToRebuild, journalData.journalDate)
     }
 
     return journal
@@ -262,9 +266,11 @@ export class JournalRepository {
     }
 
     // Validate double-entry
+    const journalPrecision = await currencyRepository.getPrecision(journalFields.currencyCode)
+
     const getJournalAmount = (t: typeof transactionData[0]) => {
       const rate = t.exchangeRate || 1
-      return t.amount * rate
+      return roundToPrecision(t.amount * rate, journalPrecision)
     }
 
     const totalDebits = transactionData
@@ -275,10 +281,9 @@ export class JournalRepository {
       .filter(t => t.transactionType === TransactionType.CREDIT)
       .reduce((sum, t) => sum + getJournalAmount(t), 0)
 
-    const difference = Math.abs(totalDebits - totalCredits)
-    if (difference > BALANCE_EPSILON) {
+    if (!amountsAreEqual(totalDebits, totalCredits, journalPrecision)) {
       throw new Error(
-        `Double-entry violation: total debits (${totalDebits.toFixed(4)}) must equal total credits (${totalCredits.toFixed(4)}).`
+        `Double-entry violation: total debits (${totalDebits.toFixed(journalPrecision)}) must equal total credits (${totalCredits.toFixed(journalPrecision)}) for currency ${journalFields.currencyCode}.`
       )
     }
 
@@ -307,6 +312,9 @@ export class JournalRepository {
 
       // Optimized check for latest transaction
       const accountId = tx.accountId
+      const account = accountMap.get(accountId)!
+      const precision = await currencyRepository.getPrecision(account.currencyCode)
+
       const latestOtherTxs = await database.collections.get<Transaction>('transactions')
         .query(
           Q.where('account_id', accountId),
@@ -328,7 +336,6 @@ export class JournalRepository {
       if (isBackdated) {
         accountsToRebuild.add(tx.accountId)
       } else {
-        const account = accountMap.get(tx.accountId)!
         let balance = latestOtherTx?.runningBalance || 0
         let multiplier = 0
         if (['ASSET', 'EXPENSE'].includes(account.accountType)) {
@@ -336,7 +343,7 @@ export class JournalRepository {
         } else {
           multiplier = tx.transactionType === TransactionType.CREDIT ? 1 : -1
         }
-        balance += (tx.amount * multiplier)
+        balance = roundToPrecision(balance + (tx.amount * multiplier), precision)
         calculatedBalances.set(tx.accountId, balance)
       }
     }
@@ -381,7 +388,7 @@ export class JournalRepository {
       // 3. Calculate new denormalized fields
       const newTotalAmount = Math.max(Math.abs(totalDebits), Math.abs(totalCredits))
       const newTransactionCount = transactionData.length
-      const newDisplayType = JournalPresenter.getJournalType(transactionData as any, accountTypes)
+      const newDisplayType = JournalPresenter.getJournalType(transactionData, accountTypes)
 
       // 4. Update journal
       await existingJournal.update((j: Journal) => {
@@ -434,7 +441,8 @@ export class JournalRepository {
 
 
     // 6. Queue running balance rebuilds for background processing
-    rebuildQueueService.enqueueMany(allAffectedAccountIds)
+    const earliestChangeDate = Math.min(existingJournal.journalDate, journalData.journalDate)
+    rebuildQueueService.enqueueMany(allAffectedAccountIds, earliestChangeDate)
 
     return updatedJournal
   }
@@ -500,7 +508,7 @@ export class JournalRepository {
     })
 
     // Queue rebuild for background processing
-    rebuildQueueService.enqueueMany(accountIdsToRebuild)
+    rebuildQueueService.enqueueMany(accountIdsToRebuild, originalJournal.journalDate)
 
     return reversalJournal
   }
@@ -540,7 +548,7 @@ export class JournalRepository {
     })
 
     // 3. Queue rebuild for background processing
-    rebuildQueueService.enqueueMany(accountIdsToRebuild)
+    rebuildQueueService.enqueueMany(accountIdsToRebuild, journal.journalDate)
   }
 
   /**
@@ -560,7 +568,7 @@ export class JournalRepository {
         Q.where('transaction_date', Q.lte(endOfMonth)),
         Q.where('deleted_at', Q.eq(null))
       )
-      .fetch() as any[]
+      .fetch()
 
     if (txs.length === 0) return { income: 0, expense: 0 }
 
@@ -569,10 +577,10 @@ export class JournalRepository {
       .query(Q.where('id', Q.oneOf(accountIds)))
       .fetch()
 
-    const accountTypeMap = accounts.reduce((acc: any, a: any) => {
+    const accountTypeMap = accounts.reduce<Record<string, AccountType>>((acc, a) => {
       acc[a.id] = a.accountType
       return acc
-    }, {} as Record<string, AccountType>)
+    }, {})
 
     let totalIncome = 0
     let totalExpense = 0
@@ -592,7 +600,7 @@ export class JournalRepository {
   }
 
   async backfillTotals(): Promise<void> {
-    console.log('Starting Journal Totals Backfill...')
+    logger.info('Starting Journal Totals Backfill...')
     const journals = await this.journals.query(Q.where('deleted_at', Q.eq(null))).fetch()
     let updatedCount = 0
 
@@ -636,7 +644,7 @@ export class JournalRepository {
         }
       }
     })
-    console.log(`Backfill complete. Updated ${updatedCount} journals.`)
+    logger.info(`Backfill complete. Updated ${updatedCount} journals.`)
   }
 }
 

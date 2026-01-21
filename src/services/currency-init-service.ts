@@ -6,6 +6,7 @@
 
 import { database } from '../data/database/Database'
 import Currency from '../data/models/Currency'
+import { logger } from '../utils/logger'
 
 interface CurrencyData {
     code: string
@@ -51,7 +52,7 @@ export class CurrencyInitService {
             return
         }
 
-        console.log('Initializing currencies table with common currencies...')
+        logger.info('Initializing currencies table with common currencies...')
 
         await database.write(async () => {
             for (const currencyData of COMMON_CURRENCIES) {
@@ -64,7 +65,7 @@ export class CurrencyInitService {
             }
         })
 
-        console.log(`Initialized ${COMMON_CURRENCIES.length} currencies`)
+        logger.info(`Initialized ${COMMON_CURRENCIES.length} currencies`)
     }
 
     /**

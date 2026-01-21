@@ -14,12 +14,13 @@ interface RebuildQueueConfig {
 }
 
 const DEFAULT_CONFIG: RebuildQueueConfig = {
-    debounceMs: 500,
+    debounceMs: process.env.NODE_ENV === 'test' ? 0 : 500,
     maxBatchSize: 10,
 }
 
+
 class RebuildQueueService {
-    private queue: Set<string> = new Set()
+    private queue: Map<string, number> = new Map() // accountId -> minFromDate
     private timeoutId: ReturnType<typeof setTimeout> | null = null
     private isProcessing: boolean = false
     private config: RebuildQueueConfig
@@ -30,21 +31,26 @@ class RebuildQueueService {
 
     /**
      * Queue an account for running balance rebuild.
-     * The rebuild will be batched with other pending rebuilds.
+     * @param accountId Account ID
+     * @param fromDate Optional earliest date of change. Defaults to current time.
      */
-    enqueue(accountId: string): void {
-        this.queue.add(accountId)
+    enqueue(accountId: string, fromDate: number = Date.now()): void {
+        const existingDate = this.queue.get(accountId)
+        if (existingDate === undefined || fromDate < existingDate) {
+            this.queue.set(accountId, fromDate)
+        }
         this.scheduleProcessing()
     }
 
     /**
      * Queue multiple accounts for rebuild.
+     * @param accountIds List of account IDs
+     * @param fromDate Optional earliest date of change for all accounts.
      */
-    enqueueMany(accountIds: string[] | Set<string>): void {
+    enqueueMany(accountIds: string[] | Set<string>, fromDate: number = Date.now()): void {
         for (const id of accountIds) {
-            this.queue.add(id)
+            this.enqueue(id, fromDate)
         }
-        this.scheduleProcessing()
     }
 
     /**
@@ -90,24 +96,24 @@ class RebuildQueueService {
         this.isProcessing = true
         try {
             // Take up to maxBatchSize items from the queue
-            const batch: string[] = []
-            for (const accountId of this.queue) {
-                batch.push(accountId)
+            const batch: Array<{ id: string; fromDate: number }> = []
+            for (const [accountId, fromDate] of this.queue.entries()) {
+                batch.push({ id: accountId, fromDate })
                 if (batch.length >= this.config.maxBatchSize) {
                     break
                 }
             }
 
             // Remove processed items from queue
-            for (const accountId of batch) {
-                this.queue.delete(accountId)
+            for (const item of batch) {
+                this.queue.delete(item.id)
             }
 
             logger.debug(`[RebuildQueue] Processing batch of ${batch.length} accounts`)
 
             // Process all accounts in the batch
             const results = await Promise.allSettled(
-                batch.map(accountId => transactionRepository.rebuildRunningBalances(accountId))
+                batch.map(item => transactionRepository.rebuildRunningBalances(item.id, item.fromDate))
             )
 
             // Log any failures

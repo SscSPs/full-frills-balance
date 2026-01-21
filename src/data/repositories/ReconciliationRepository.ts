@@ -1,5 +1,6 @@
 import { Q } from '@nozbe/watermelondb'
 import { database } from '../database/Database'
+import Journal from '../models/Journal'
 import { AccountRepository } from './AccountRepository'
 import { JournalRepository } from './JournalRepository'
 
@@ -35,12 +36,12 @@ export class ReconciliationRepository {
    * @returns Reconciliation result with variance analysis
    */
   async reconcileAccount(
-    accountId: string, 
+    accountId: string,
     expectedBalance?: number
   ): Promise<ReconciliationResult> {
     // Get system balance
     const systemBalanceData = await this.accountRepository.getAccountBalance(accountId)
-    
+
     // Get account details
     const account = await this.accountRepository.find(accountId)
     if (!account) {
@@ -48,7 +49,7 @@ export class ReconciliationRepository {
     }
 
     // Get latest journal date for this account
-    const journals = await database.collections.get('journals')
+    const journals = await database.collections.get<Journal>('journals')
       .query(
         Q.and(
           Q.on('transactions', 'account_id', accountId),
@@ -57,10 +58,10 @@ export class ReconciliationRepository {
         )
       )
       .extend(Q.sortBy('journal_date', 'desc'))
-      .fetch() as any // Type assertion for journalDate access
+      .fetch()
 
-    const variance = expectedBalance !== undefined 
-      ? systemBalanceData.balance - expectedBalance 
+    const variance = expectedBalance !== undefined
+      ? systemBalanceData.balance - expectedBalance
       : 0
 
     return {
@@ -83,12 +84,12 @@ export class ReconciliationRepository {
    * @returns Period reconciliation summary
    */
   async reconcilePeriod(
-    startDate: number, 
+    startDate: number,
     endDate: number
   ): Promise<PeriodReconciliation> {
     // Get all accounts
     const accounts = await this.accountRepository.findAll()
-    
+
     // Reconcile each account
     const reconciliations = await Promise.all(
       accounts.map(account => this.reconcileAccount(account.id))
@@ -116,12 +117,12 @@ export class ReconciliationRepository {
    */
   async getAccountsNeedingAttention(varianceThreshold: number = 0.01): Promise<ReconciliationResult[]> {
     const accounts = await this.accountRepository.findAll()
-    
+
     const reconciliations = await Promise.all(
       accounts.map(account => this.reconcileAccount(account.id))
     )
 
-    return reconciliations.filter(r => 
+    return reconciliations.filter(r =>
       !r.isReconciled || Math.abs(r.variance) > varianceThreshold
     )
   }

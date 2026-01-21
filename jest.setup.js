@@ -36,3 +36,13 @@ jest.mock('expo-sharing', () => ({
     isAvailableAsync: jest.fn().mockResolvedValue(true),
     shareAsync: jest.fn().mockResolvedValue({}),
 }));
+
+// Ensure rebuild queue is flushed after each test to prevent state leakage
+afterEach(async () => {
+    try {
+        const { rebuildQueueService } = require('./src/services/rebuild-queue-service');
+        await rebuildQueueService.flush();
+    } catch (e) {
+        // Service may not be available in all test contexts
+    }
+});
