@@ -110,6 +110,7 @@ export function useJournals(pageSize: number = 50) {
  */
 export interface EnrichedTransaction {
     id: string
+    journalId: string
     amount: number
     transactionType: string
     transactionDate: number
@@ -213,6 +214,7 @@ export function useAccountTransactions(accountId: string | null) {
 
                     return {
                         id: tx.id,
+                        journalId: tx.journalId,
                         amount: tx.amount,
                         transactionType: tx.transactionType,
                         transactionDate: tx.transactionDate,

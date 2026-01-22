@@ -64,7 +64,14 @@ export default function AccountDetailsScreen() {
                 <AppText variant="subheading" style={styles.headerTitle}>
                     Account Details
                 </AppText>
-                <View style={styles.placeholder} />
+                <View style={styles.headerActions}>
+                    <TouchableOpacity
+                        onPress={() => router.push(`/account-creation?accountId=${accountId}` as any)}
+                        style={[styles.circularButton, { backgroundColor: theme.surface }]}
+                    >
+                        <Ionicons name="create-outline" size={22} color={theme.text} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Account Info Card */}
@@ -137,6 +144,7 @@ export default function AccountDetailsScreen() {
                         renderItem={({ item }) => (
                             <TransactionItem
                                 transaction={item as any}
+                                onPress={() => router.push(`/transaction-details?journalId=${item.journalId}` as any)}
                             />
                         )}
                         contentContainerStyle={{ paddingBottom: Spacing.xl }}
@@ -170,6 +178,10 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
     },
     placeholder: {
         width: 40,

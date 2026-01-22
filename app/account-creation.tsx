@@ -2,14 +2,14 @@ import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
 import { AppConfig, Shape, Spacing } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
-import { AccountType } from '@/src/data/models/Account'
+import Account, { AccountType } from '@/src/data/models/Account'
 import Currency from '@/src/data/models/Currency'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { ValidationError } from '@/src/utils/errors'
 import { sanitizeInput, validateAccountName } from '@/src/utils/validation'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { FlatList, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,8 +17,14 @@ import { useUI } from '../contexts/UIContext'
 
 export default function AccountCreationScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams()
   const { theme } = useTheme()
   const { defaultCurrency } = useUI()
+
+  // Edit mode state
+  const accountId = params.accountId as string | undefined
+  const isEditMode = Boolean(accountId)
+  const [existingAccount, setExistingAccount] = useState<Account | null>(null)
 
   const [accountName, setAccountName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>(AccountType.ASSET)
@@ -47,6 +53,28 @@ export default function AccountCreationScreen() {
     loadCurrencies()
   }, [])
 
+  // Load existing account data for edit mode
+  React.useEffect(() => {
+    if (!accountId) return
+
+    const loadAccountData = async () => {
+      try {
+        const account = await accountRepository.find(accountId)
+        if (account) {
+          setExistingAccount(account)
+          setAccountName(account.name)
+          setAccountType(account.accountType)
+          setSelectedCurrency(account.currencyCode)
+          // Don't set initial balance for edits - that would require a journal adjustment
+        }
+      } catch (error) {
+        console.error('Failed to load account:', error)
+        showErrorAlert(error, 'Failed to load account')
+      }
+    }
+    loadAccountData()
+  }, [accountId])
+
   const handleCancel = () => {
     // Go back to previous screen
     if (router.canGoBack()) {
@@ -57,7 +85,7 @@ export default function AccountCreationScreen() {
     }
   }
 
-  const handleCreateAccount = async () => {
+  const handleSaveAccount = async () => {
     // Validate and sanitize input
     const nameValidation = validateAccountName(accountName)
     if (!nameValidation.isValid) {
@@ -69,29 +97,45 @@ export default function AccountCreationScreen() {
     setIsCreating(true)
 
     try {
-      await accountRepository.create({
-        name: sanitizedName,
-        accountType: accountType,
-        currencyCode: selectedCurrency,
-        initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
-      })
+      if (isEditMode && existingAccount) {
+        // Update existing account (only name can be changed)
+        await accountRepository.update(existingAccount, {
+          name: sanitizedName,
+        })
 
-      showSuccessAlert(
-        'Account Created',
-        `"${sanitizedName}" has been created successfully!`
-      )
+        showSuccessAlert(
+          'Account Updated',
+          `"${sanitizedName}" has been updated successfully!`
+        )
 
-      // Reset form
-      setAccountName('')
-      setAccountType(AccountType.ASSET)
-      setSelectedCurrency(defaultCurrency || AppConfig.defaultCurrency)
-      setInitialBalance('')
+        // Navigate back to account details
+        router.back()
+      } else {
+        // Create new account
+        await accountRepository.create({
+          name: sanitizedName,
+          accountType: accountType,
+          currencyCode: selectedCurrency,
+          initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
+        })
 
-      // Navigate to accounts list
-      router.push('/(tabs)/accounts' as any)
+        showSuccessAlert(
+          'Account Created',
+          `"${sanitizedName}" has been created successfully!`
+        )
+
+        // Reset form
+        setAccountName('')
+        setAccountType(AccountType.ASSET)
+        setSelectedCurrency(defaultCurrency || AppConfig.defaultCurrency)
+        setInitialBalance('')
+
+        // Navigate to accounts list
+        router.push('/(tabs)/accounts' as any)
+      }
     } catch (error) {
-      console.error('Error creating account:', error)
-      showErrorAlert(error, 'Failed to Create Account')
+      console.error('Error saving account:', error)
+      showErrorAlert(error, isEditMode ? 'Failed to Update Account' : 'Failed to Create Account')
     } finally {
       setIsCreating(false)
     }
@@ -120,17 +164,17 @@ export default function AccountCreationScreen() {
           />
         </TouchableOpacity>
         <AppText variant="heading">
-          New Account
+          {isEditMode ? 'Edit Account' : 'New Account'}
         </AppText>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content}>
         <AppText variant="heading" style={styles.title}>
-          {hasExistingAccounts ? 'Create New Account' : 'Create Your First Account'}
+          {isEditMode ? 'Edit Account' : (hasExistingAccounts ? 'Create New Account' : 'Create Your First Account')}
         </AppText>
         <AppText variant="body" color="secondary" style={styles.subtitle}>
-          {hasExistingAccounts ? 'Add another source of funds' : 'Start tracking your finances'}
+          {isEditMode ? 'Update your account details' : (hasExistingAccounts ? 'Add another source of funds' : 'Start tracking your finances')}
         </AppText>
 
         <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
@@ -145,19 +189,22 @@ export default function AccountCreationScreen() {
           />
         </AppCard>
 
-        <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-          <AppInput
-            label="Initial Balance"
-            value={initialBalance}
-            onChangeText={setInitialBalance}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-            returnKeyType="next"
-          />
-        </AppCard>
+        {/* Initial Balance - only shown for new accounts */}
+        {!isEditMode && (
+          <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+            <AppInput
+              label="Initial Balance"
+              value={initialBalance}
+              onChangeText={setInitialBalance}
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              returnKeyType="next"
+            />
+          </AppCard>
+        )}
 
         <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-          <AppText variant="body" style={styles.label}>Account Type</AppText>
+          <AppText variant="body" style={styles.label}>Account Type{isEditMode && ' (cannot be changed)'}</AppText>
           <View style={styles.accountTypeContainer}>
             {accountTypes.map((type) => (
               <TouchableOpacity
@@ -221,11 +268,11 @@ export default function AccountCreationScreen() {
         <AppButton
           variant="primary"
           size="lg"
-          onPress={handleCreateAccount}
+          onPress={handleSaveAccount}
           disabled={!accountName.trim() || isCreating}
           style={styles.createButton}
         >
-          {isCreating ? 'Creating...' : 'Create Account'}
+          {isCreating ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Account')}
         </AppButton>
       </ScrollView>
 

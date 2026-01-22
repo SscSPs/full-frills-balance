@@ -4,17 +4,18 @@ import { useTheme } from '@/hooks/use-theme';
 import { TransactionWithAccountInfo } from '@/src/types/readModels';
 import { formatDate } from '@/src/utils/dateUtils';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface TransactionItemProps {
     transaction: TransactionWithAccountInfo;
+    onPress?: (transaction: TransactionWithAccountInfo) => void;
 }
 
 /**
  * TransactionItem - Premium row component for individual transactions
  * Inspired by Ivy Wallet's list items
  */
-export const TransactionItem = ({ transaction }: TransactionItemProps) => {
+export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) => {
     const { theme } = useTheme();
 
     const formattedDate = formatDate(transaction.transactionDate, { includeTime: true });
@@ -28,11 +29,8 @@ export const TransactionItem = ({ transaction }: TransactionItemProps) => {
     const typeLabel = isIncrease ? '+' : '−';
     const statusColor = typeColor; // IvyIcon color
 
-    return (
-        <AppCard
-            elevation="none"
-            style={[styles.container, { backgroundColor: theme.surface }]}
-        >
+    const content = (
+        <>
             <View style={styles.row}>
                 {/* Status Icon */}
                 <IvyIcon
@@ -78,6 +76,21 @@ export const TransactionItem = ({ transaction }: TransactionItemProps) => {
                         {transaction.notes || transaction.journalDescription}
                     </AppText>
                 </View>
+            )}
+        </>
+    );
+
+    return (
+        <AppCard
+            elevation="none"
+            style={[styles.container, { backgroundColor: theme.surface }]}
+        >
+            {onPress ? (
+                <TouchableOpacity onPress={() => onPress(transaction)} activeOpacity={0.7}>
+                    {content}
+                </TouchableOpacity>
+            ) : (
+                content
             )}
         </AppCard>
     );
