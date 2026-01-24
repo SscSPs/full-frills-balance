@@ -1,4 +1,5 @@
-import { AppCard, AppText, Badge } from '@/components/core'
+import { AppCard, AppText, Badge, IconButton } from '@/components/core'
+import { Screen } from '@/components/layout'
 import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
@@ -11,8 +12,7 @@ import { formatDate } from '@/src/utils/dateUtils'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 
 // Reusable info row component
 const InfoRow = ({ label, value }: { label: string, value: string }) => (
@@ -25,7 +25,7 @@ const InfoRow = ({ label, value }: { label: string, value: string }) => (
 export default function TransactionDetailsScreen() {
   const router = useRouter()
   const { journalId } = useLocalSearchParams<{ journalId: string }>()
-  const { theme, themeMode } = useTheme()
+  const { theme } = useTheme()
 
   const [transactions, setTransactions] = useState<TransactionWithAccountInfo[]>([]);
   const [journalInfo, setJournalInfo] = useState<{ description?: string; date: number; status: string; currency: string; displayType?: string } | null>(null);
@@ -42,7 +42,6 @@ export default function TransactionDetailsScreen() {
 
         setTransactions(journalTransactions);
         if (journal) {
-          // Type casting safely
           const j = journal as any;
           setJournalInfo({
             description: j.description,
@@ -62,11 +61,6 @@ export default function TransactionDetailsScreen() {
     loadTransactions();
   }, [journalId]);
 
-  // Calculate total amount for the header (sum of credits or debits?)
-  // Usually header shows the main amount. Let's assume Debits = Credits, split by total magnitude / 2 if needed, 
-  // or just show the largest single transaction amount? 
-  // Ideally: Sum of Top-Level Splits.
-  // Simpler: Just sum all debits.
   const totalAmount = transactions
     .filter(t => t.transactionType === 'DEBIT')
     .reduce((sum: number, t: TransactionWithAccountInfo) => sum + (t.amount || 0), 0);
@@ -97,144 +91,130 @@ export default function TransactionDetailsScreen() {
     );
   };
 
+  const HeaderActions = (
+    <View style={styles.headerActions}>
+      <IconButton
+        name="create-outline"
+        onPress={() => router.push({ pathname: '/journal-entry', params: { journalId } })}
+        variant="clear"
+        size={Typography.sizes.xl}
+        iconColor={theme.text}
+      />
+      <IconButton
+        name="trash-outline"
+        onPress={handleDelete}
+        variant="clear"
+        size={Typography.sizes.xl}
+        iconColor={theme.error}
+      />
+    </View>
+  );
+
   if (isLoading) return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <Screen title="Details">
       <View style={styles.center}><AppText variant="body">Loading...</AppText></View>
-    </SafeAreaView>
+    </Screen>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-      {/* Header / Nav */}
-      <View style={styles.navBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.navButton}>
-          <Ionicons name="close" size={Typography.sizes.xl} color={theme.text} />
-        </TouchableOpacity>
-        <AppText variant="subheading">Transaction Details</AppText>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/journal-entry', params: { journalId } })}
-            style={styles.navButton}
-          >
-            <Ionicons name="create-outline" size={Typography.sizes.xl} color={theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.navButton}>
-            <Ionicons name="trash-outline" size={Typography.sizes.xl} color={theme.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <Screen
+      title="Transaction Details"
+      backIcon="close"
+      headerActions={HeaderActions}
+      scrollable
+      withPadding
+    >
+      <View style={styles.content}>
+        {/* Receipt Card */}
+        <AppCard elevation="md" radius="r2" padding="lg" style={styles.receiptCard}>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Receipt Card */}
-          <AppCard elevation="md" radius="r2" padding="lg" style={styles.receiptCard}>
-
-            {/* Big Icon */}
-            <View style={styles.iconContainer}>
-              <View style={[styles.bigIcon, { backgroundColor: withOpacity(theme.primary, Opacity.soft) }]}>
-                <Ionicons name="receipt" size={32} color={theme.primary} />
-              </View>
+          {/* Big Icon */}
+          <View style={styles.iconContainer}>
+            <View style={[styles.bigIcon, { backgroundColor: withOpacity(theme.primary, Opacity.soft) }]}>
+              <Ionicons name="receipt" size={32} color={theme.primary} />
             </View>
+          </View>
 
-            {/* Amount & Title */}
-            <View style={styles.headerSection}>
-              <AppText variant="title" style={{ fontSize: Typography.sizes.xxxl, marginBottom: Spacing.sm }}>
-                {CurrencyFormatter.format(totalAmount, journalInfo?.currency)}
-              </AppText>
-              <AppText variant="body" color="secondary">
-                {journalInfo?.description || 'No description'}
-              </AppText>
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
-                <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm">
-                  {journalInfo?.status}
-                </Badge>
-                {journalInfo?.displayType && (
-                  <Badge variant="default" size="sm">
-                    {journalInfo.displayType}
-                  </Badge>
-                )}
-              </View>
-            </View>
-
-            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
-
-            {/* Metadata List */}
-            <View style={styles.infoSection}>
-              <InfoRow label="Date" value={formattedDate} />
-              <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} />
-              <TouchableOpacity
-                style={styles.historyLink}
-                onPress={() => router.push(`/audit-log?entityType=journal&entityId=${journalId}` as any)}
-              >
-                <AppText variant="caption" color="secondary" style={styles.infoLabel}>History</AppText>
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.xs }}>
-                  <AppText variant="body" color="primary">View Edit History</AppText>
-                  <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.primary} />
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.divider, { backgroundColor: theme.divider }]} />
-
-            {/* Splits / Breakdown */}
-            <AppText variant="caption" color="secondary" style={{ marginBottom: Spacing.md }}>
-              BREAKDOWN
+          {/* Amount & Title */}
+          <View style={styles.headerSection}>
+            <AppText variant="title" style={{ fontSize: Typography.sizes.xxxl, marginBottom: Spacing.sm }}>
+              {CurrencyFormatter.format(totalAmount, journalInfo?.currency)}
             </AppText>
+            <AppText variant="body" color="secondary">
+              {journalInfo?.description || 'No description'}
+            </AppText>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+              <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm">
+                {journalInfo?.status}
+              </Badge>
+              {journalInfo?.displayType && (
+                <Badge variant="default" size="sm">
+                  {journalInfo.displayType}
+                </Badge>
+              )}
+            </View>
+          </View>
 
-            {transactions.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.splitRow}
-                onPress={() => router.push(`/account-details?accountId=${item.accountId}` as any)}
-              >
-                <View style={styles.splitInfo}>
-                  <AppText variant="body" color="primary">{item.accountName}</AppText>
-                  <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-                  <AppText variant="subheading">
-                    {CurrencyFormatter.format(item.amount, journalInfo?.currency)}
-                  </AppText>
-                  <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.textSecondary} />
-                </View>
-              </TouchableOpacity>
-            ))}
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-          </AppCard>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Metadata List */}
+          <View style={styles.infoSection}>
+            <InfoRow label="Date" value={formattedDate} />
+            <InfoRow label="Journal ID" value={journalId?.substring(0, 8) || '...'} />
+            <TouchableOpacity
+              style={styles.historyLink}
+              onPress={() => router.push(`/audit-log?entityType=journal&entityId=${journalId}` as any)}
+            >
+              <AppText variant="caption" color="secondary" style={styles.infoLabel}>History</AppText>
+              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.xs }}>
+                <AppText variant="body" color="primary">View Edit History</AppText>
+                <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+
+          {/* Splits / Breakdown */}
+          <AppText variant="caption" color="secondary" style={{ marginBottom: Spacing.md }}>
+            BREAKDOWN
+          </AppText>
+
+          {transactions.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.splitRow}
+              onPress={() => router.push(`/account-details?accountId=${item.accountId}` as any)}
+            >
+              <View style={styles.splitInfo}>
+                <AppText variant="body" color="primary">{item.accountName}</AppText>
+                <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <AppText variant="subheading">
+                  {CurrencyFormatter.format(item.amount, journalInfo?.currency)}
+                </AppText>
+                <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          ))}
+
+        </AppCard>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  navButton: {
-    padding: Spacing.xs,
-  },
-  scrollContent: {
-    flex: 1,
-  },
   content: {
-    padding: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
   receiptCard: {
-    // Flex 1 not needed, let it grow with content? Or maybe fill screen?
-    // Ivy usually has a card overlay or modal.
     width: '100%',
   },
   iconContainer: {
@@ -255,7 +235,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    // backgroundColor: 'rgba(0,0,0,0.05)',
     marginVertical: Spacing.lg,
   },
   infoSection: {
@@ -267,7 +246,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   infoLabel: {
-    width: 110, // Fixed width for alignment of values
+    width: 110,
   },
   historyLink: {
     flexDirection: 'row',

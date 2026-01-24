@@ -1,5 +1,6 @@
 import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
-import { AppConfig, Opacity, Shape, Size, Spacing, Typography } from '@/constants'
+import { Screen } from '@/components/layout'
+import { AppConfig, Opacity, Shape, Spacing, Typography } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import Account, { AccountType } from '@/src/data/models/Account'
@@ -12,7 +13,6 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { FlatList, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useUI } from '../contexts/UIContext'
 
 export default function AccountCreationScreen() {
@@ -77,7 +77,6 @@ export default function AccountCreationScreen() {
           setAccountName(account.name)
           setAccountType(account.accountType)
           setSelectedCurrency(account.currencyCode)
-          // Don't set initial balance for edits - that would require a journal adjustment
         }
       } catch (error) {
         console.error('Failed to load account:', error)
@@ -88,17 +87,14 @@ export default function AccountCreationScreen() {
   }, [accountId])
 
   const handleCancel = () => {
-    // Go back to previous screen
     if (router.canGoBack()) {
       router.back()
     } else {
-      // If no previous screen, go to accounts
       router.push('/accounts' as any)
     }
   }
 
   const handleSaveAccount = async () => {
-    // Validate and sanitize input
     const nameValidation = validateAccountName(accountName)
     if (!nameValidation.isValid) {
       showErrorAlert(new ValidationError(nameValidation.error!))
@@ -110,7 +106,6 @@ export default function AccountCreationScreen() {
 
     try {
       if (isEditMode && existingAccount) {
-        // Update existing account (only name can be changed)
         await accountRepository.update(existingAccount, {
           name: sanitizedName,
         })
@@ -119,11 +114,8 @@ export default function AccountCreationScreen() {
           'Account Updated',
           `"${sanitizedName}" has been updated successfully!`
         )
-
-        // Navigate back to account details
         router.back()
       } else {
-        // Create new account
         await accountRepository.create({
           name: sanitizedName,
           accountType: accountType,
@@ -136,13 +128,12 @@ export default function AccountCreationScreen() {
           `"${sanitizedName}" has been created successfully!`
         )
 
-        // Reset form
+        // Reset and navigate
         setAccountName('')
         setAccountType(AccountType.ASSET)
         setSelectedCurrency(defaultCurrency || AppConfig.defaultCurrency)
         setInitialBalance('')
 
-        // Navigate to accounts list
         router.push('/(tabs)/accounts' as any)
       }
     } catch (error) {
@@ -162,30 +153,15 @@ export default function AccountCreationScreen() {
   ]
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header with back button */}
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <TouchableOpacity
-          onPress={handleCancel}
-          style={styles.backButton}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={Typography.sizes.xxl}
-            color={theme.text}
-          />
-        </TouchableOpacity>
-        <AppText variant="heading" style={styles.headerTitle}>
-          {isEditMode ? 'Edit Account' : 'New Account'}
-        </AppText>
-        <View style={styles.placeholder} />
-      </View>
-
+    <Screen
+      title={isEditMode ? 'Edit Account' : 'New Account'}
+      onBack={handleCancel}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <AppText variant="heading" style={styles.title}>
             {isEditMode ? 'Edit Account' : (hasExistingAccounts ? 'Create New Account' : 'Create Your First Account')}
           </AppText>
@@ -205,7 +181,6 @@ export default function AccountCreationScreen() {
             />
           </AppCard>
 
-          {/* Initial Balance - only shown for new accounts */}
           {!isEditMode && (
             <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
               <AppInput
@@ -258,7 +233,6 @@ export default function AccountCreationScreen() {
             </View>
           </AppCard>
 
-          {/* Currency Selector */}
           <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
             <AppText variant="body" style={styles.label}>Currency{isEditMode && ' (cannot be changed)'}</AppText>
             <TouchableOpacity
@@ -294,9 +268,10 @@ export default function AccountCreationScreen() {
           >
             {isCreating ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Account')}
           </AppButton>
+          <View style={{ height: Spacing.xxxl }} />
         </ScrollView>
       </KeyboardAvoidingView>
-      {/* Currency Selection Modal */}
+
       <Modal
         visible={showCurrencyModal}
         animationType="slide"
@@ -339,29 +314,11 @@ export default function AccountCreationScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: Spacing.sm,
-    borderRadius: Shape.radius.full,
-  },
-  placeholder: {
-    width: Size.xl,
-  },
   content: {
     flex: 1,
     padding: Spacing.lg,
@@ -418,7 +375,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    // backgroundColor handled in component
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -433,11 +389,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: Typography.fonts.bold,
   },
   currencyItem: {
     flexDirection: 'row',

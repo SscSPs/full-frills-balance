@@ -1,4 +1,5 @@
 import { AppButton, AppCard, AppText } from '@/components/core';
+import { Screen } from '@/components/layout';
 import { Opacity, Spacing, Typography, withOpacity } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,7 +10,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
 
 export default function SettingsScreen() {
     const { theme } = useTheme();
@@ -83,8 +84,6 @@ export default function SettingsScreen() {
     };
 
     const handleCleanup = async () => {
-        logger.debug('[Settings] User clicked Cleanup Database');
-
         const proceed = Platform.OS === 'web'
             ? confirm('This will permanently delete all records marked as deleted (journals, transactions, accounts). This action is irreversible. Continue?')
             : await new Promise<boolean>(resolve => {
@@ -92,7 +91,7 @@ export default function SettingsScreen() {
                     'Cleanup Database',
                     'This will permanently delete all records marked as deleted (journals, transactions, accounts). This action is irreversible. Continue?',
                     [
-                        { text: 'Cancel', style: 'cancel', onPress: () => { logger.debug('[Settings] Cleanup cancelled'); resolve(false); } },
+                        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
                         { text: 'Cleanup', style: 'destructive', onPress: () => resolve(true) }
                     ]
                 );
@@ -100,21 +99,16 @@ export default function SettingsScreen() {
 
         if (!proceed) return;
 
-        logger.info('[Settings] Starting database cleanup process...');
         try {
             const result = await cleanupDatabase();
-            logger.info(`[Settings] Cleanup success: ${result.deletedCount} items removed`);
             Alert.alert('Cleanup Complete', `Permanently removed ${result.deletedCount} records.`);
         } catch (error) {
-            logger.error('[Settings] Cleanup action failed', error);
             const msg = error instanceof Error ? error.message : String(error);
             Alert.alert('Error', `Cleanup failed: ${msg}`);
         }
     };
 
     const handleFactoryReset = async () => {
-        logger.warn('[Settings] User clicked FACTORY RESET');
-
         const proceed = Platform.OS === 'web'
             ? confirm('FACTORY RESET: THIS WILL PERMANENTLY ERASE ALL YOUR DATA. THIS CANNOT BE UNDONE. Are you absolutely sure?')
             : await new Promise<boolean>(resolve => {
@@ -122,7 +116,7 @@ export default function SettingsScreen() {
                     'FACTORY RESET',
                     'THIS WILL PERMANENTLY ERASE ALL YOUR DATA, ACCOUNTS, AND SETTINGS. THIS CANNOT BE UNDONE. Are you absolutely sure?',
                     [
-                        { text: 'Cancel', style: 'cancel', onPress: () => { logger.debug('[Settings] Reset cancelled'); resolve(false); } },
+                        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
                         { text: 'RESET EVERYTHING', style: 'destructive', onPress: () => resolve(true) }
                     ]
                 );
@@ -130,19 +124,21 @@ export default function SettingsScreen() {
 
         if (!proceed) return;
 
-        logger.warn('[Settings] Initiating EVERYTHING RESET...');
         try {
             await resetApp();
-            logger.info('[Settings] App reset successful');
         } catch (error) {
-            logger.error('[Settings] Reset action failed', error);
             const msg = error instanceof Error ? error.message : String(error);
             Alert.alert('Error', `Reset failed: ${msg}`);
         }
     };
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+        <Screen
+            title="Settings"
+            showBack={false}
+            scrollable
+            withPadding
+        >
             <View style={styles.inner}>
                 {/* Appearance Section */}
                 <AppText variant="subheading" style={styles.sectionTitle}>
@@ -264,15 +260,12 @@ export default function SettingsScreen() {
                     </AppText>
                 </View>
             </View>
-        </ScrollView>
+        </Screen>
     );
 }
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
     inner: {
-        padding: Spacing.lg,
+        paddingVertical: Spacing.md,
     },
     sectionTitle: {
         marginBottom: Spacing.sm,
@@ -300,7 +293,6 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        // backgroundColor: 'rgba(0,0,0,0.1)',
         marginVertical: Spacing.lg,
     },
     footer: {

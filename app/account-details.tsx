@@ -4,9 +4,10 @@
  * Shows account information and transaction history
  */
 
-import { AppButton, AppCard, AppText, Badge, FloatingActionButton, IvyIcon } from '@/components/core'
+import { AppButton, AppCard, AppText, Badge, FloatingActionButton, IconButton, IvyIcon } from '@/components/core'
 import { TransactionItem } from '@/components/journal/TransactionItem'
-import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants'
+import { Screen } from '@/components/layout'
+import { Shape, Spacing } from '@/constants'
 import { useAccount, useAccountBalance, useAccountTransactions } from '@/hooks/use-data'
 import { useTheme } from '@/hooks/use-theme'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
@@ -16,7 +17,6 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function AccountDetailsScreen() {
     const router = useRouter()
@@ -30,34 +30,7 @@ export default function AccountDetailsScreen() {
 
     const balance = balanceData?.balance || 0
     const transactionCount = balanceData?.transactionCount || 0
-    // WatermelonDB's markAsDeleted sets _raw._status = 'deleted'
     const isDeleted = (account as any)?._raw?._status === 'deleted' || (account as any)?._raw?.deleted_at != null
-
-
-    if (accountLoading) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.primary} />
-                </View>
-            </SafeAreaView>
-        )
-    }
-
-    if (!account) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={styles.errorContainer}>
-                    <AppText variant="body" color="error">
-                        Account not found
-                    </AppText>
-                    <AppButton variant="outline" onPress={() => router.back()}>
-                        Go Back
-                    </AppButton>
-                </View>
-            </SafeAreaView>
-        )
-    }
 
     const handleDelete = () => {
         const hasTransactions = transactionCount > 0;
@@ -70,7 +43,7 @@ export default function AccountDetailsScreen() {
             message,
             async () => {
                 try {
-                    await accountRepository.delete(account);
+                    await accountRepository.delete(account!);
                     showSuccessAlert('Deleted', 'Account has been deleted.');
                     router.push('/(tabs)/accounts' as any);
                 } catch (error) {
@@ -100,8 +73,61 @@ export default function AccountDetailsScreen() {
         );
     };
 
+    const HeaderActions = (
+        <View style={styles.headerActions}>
+            {isDeleted ? (
+                <IconButton
+                    name="refresh-outline"
+                    onPress={handleRecover}
+                    variant="surface"
+                    iconColor={theme.income}
+                />
+            ) : (
+                <>
+                    <IconButton
+                        name="create-outline"
+                        onPress={() => router.push(`/account-creation?accountId=${accountId}` as any)}
+                        variant="surface"
+                        iconColor={theme.text}
+                    />
+                    <IconButton
+                        name="trash-outline"
+                        onPress={handleDelete}
+                        variant="surface"
+                        iconColor={theme.error}
+                    />
+                </>
+            )}
+        </View>
+    );
+
+    if (accountLoading) {
+        return (
+            <Screen title="Details">
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                </View>
+            </Screen>
+        )
+    }
+
+    if (!account) {
+        return (
+            <Screen title="Details">
+                <View style={styles.errorContainer}>
+                    <AppText variant="body" color="error">
+                        Account not found
+                    </AppText>
+                    <AppButton variant="outline" onPress={() => router.back()}>
+                        Go Back
+                    </AppButton>
+                </View>
+            </Screen>
+        )
+    }
+
     const renderHeader = () => (
-        <>
+        <View style={styles.headerListRegion}>
             {/* Account Info Card */}
             <AppCard elevation="sm" style={styles.accountInfoCard}>
                 <View style={styles.accountHeader}>
@@ -162,46 +188,14 @@ export default function AccountDetailsScreen() {
             <AppText variant="heading" style={styles.sectionTitle}>
                 Transaction History
             </AppText>
-        </>
+        </View>
     );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={[styles.circularButton, { backgroundColor: theme.surface }]}>
-                    <Ionicons name="arrow-back" size={24} color={theme.text} />
-                </TouchableOpacity>
-                <AppText variant="subheading" style={styles.headerTitle}>
-                    Account Details
-                </AppText>
-                <View style={styles.headerActions}>
-                    {isDeleted ? (
-                        <TouchableOpacity
-                            onPress={handleRecover}
-                            style={[styles.circularButton, { backgroundColor: withOpacity(theme.income, Opacity.soft) }]}
-                        >
-                            <Ionicons name="refresh-outline" size={22} color={theme.income} />
-                        </TouchableOpacity>
-                    ) : (
-                        <>
-                            <TouchableOpacity
-                                onPress={() => router.push(`/account-creation?accountId=${accountId}` as any)}
-                                style={[styles.circularButton, { backgroundColor: theme.surface }]}
-                            >
-                                <Ionicons name="create-outline" size={22} color={theme.text} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleDelete}
-                                style={[styles.circularButton, { backgroundColor: theme.surface }]}
-                            >
-                                <Ionicons name="trash-outline" size={22} color={theme.error} />
-                            </TouchableOpacity>
-                        </>
-                    )}
-                </View>
-            </View>
-
+        <Screen
+            title="Account Details"
+            headerActions={HeaderActions}
+        >
             <FlatList
                 data={transactions}
                 keyExtractor={(item) => item.id}
@@ -214,7 +208,7 @@ export default function AccountDetailsScreen() {
                 ListHeaderComponent={renderHeader}
                 ListEmptyComponent={
                     transactionsLoading ? (
-                        <ActivityIndicator size="small" color={theme.primary} />
+                        <ActivityIndicator size="small" color={theme.primary} padding={Spacing.lg} />
                     ) : (
                         <AppCard elevation="sm" padding="lg">
                             <AppText variant="body" color="secondary" style={styles.emptyText}>
@@ -224,6 +218,7 @@ export default function AccountDetailsScreen() {
                     )
                 }
                 contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
             />
 
             {!isDeleted && (
@@ -231,41 +226,11 @@ export default function AccountDetailsScreen() {
                     onPress={() => router.push(`/journal-entry?sourceId=${accountId}` as any)}
                 />
             )}
-        </SafeAreaView>
+        </Screen>
     )
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.sm,
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-        fontFamily: Typography.fonts.bold,
-    },
-    circularButton: {
-        width: 40,
-        height: 40,
-        borderRadius: Shape.radius.full,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerActions: {
-        flexDirection: 'row',
-        gap: Spacing.sm,
-    },
-    placeholder: {
-        width: 40,
-    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -278,8 +243,15 @@ const styles = StyleSheet.create({
         gap: Spacing.lg,
         padding: Spacing.lg,
     },
+    headerActions: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+    },
+    headerListRegion: {
+        paddingVertical: Spacing.md,
+    },
     accountInfoCard: {
-        margin: Spacing.lg,
+        marginBottom: Spacing.lg,
         padding: Spacing.lg,
         borderRadius: Shape.radius.xl,
     },
@@ -312,27 +284,8 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
         marginTop: Spacing.sm,
     },
-    description: {
-        marginTop: Spacing.xs,
-    },
-    transactionsSection: {
-        flex: 1,
-        paddingHorizontal: Spacing.lg,
-    },
     sectionTitle: {
         marginBottom: Spacing.md,
-    },
-    transactionCard: {
-        marginBottom: Spacing.sm,
-    },
-    transactionRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    transactionInfo: {
-        flex: 1,
-        gap: Spacing.xs,
     },
     emptyText: {
         textAlign: 'center',

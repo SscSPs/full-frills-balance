@@ -40,6 +40,7 @@ export type { StackProps } from './Stack'
 
 export { ErrorBoundary } from './ErrorBoundary'
 export { FloatingActionButton } from './FloatingActionButton'
+export { IconButton } from './IconButton'
 export { IvyIcon } from './IvyIcon'
 export { SearchField } from './SearchField'
 
