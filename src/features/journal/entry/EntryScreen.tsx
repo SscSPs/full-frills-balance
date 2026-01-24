@@ -99,12 +99,16 @@ export default function EntryScreen() {
             </View>
           )}
 
-          {!editor.isEdit && (
-            <JournalModeToggle
-              isGuidedMode={editor.isGuidedMode}
-              setIsGuidedMode={editor.setIsGuidedMode}
-            />
-          )}
+          <JournalModeToggle
+            isGuidedMode={editor.isGuidedMode}
+            setIsGuidedMode={(mode) => {
+              if (mode && editor.lines.length > 2) {
+                showErrorAlert('Cannot switch to Simple mode with more than 2 transaction lines.');
+                return;
+              }
+              editor.setIsGuidedMode(mode);
+            }}
+          />
 
           {editor.isGuidedMode ? (
             <SimpleForm

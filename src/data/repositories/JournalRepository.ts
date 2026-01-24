@@ -237,11 +237,35 @@ export class JournalRepository {
         return {
           id: tx.accountId,
           name: acc?.name || 'Unknown',
-          accountType: acc?.accountType || 'ASSET'
+          accountType: acc?.accountType || 'ASSET',
+          // Mark roles for the semantic matrix
+          // CREDIT/Source = Money leaving/origin
+          // DEBIT/Destination = Money entering/destination
+          role: tx.transactionType === TransactionType.CREDIT ? 'SOURCE' : 'DESTINATION' as const
         }
       })
 
-      const uniqueAccounts = Array.from(new Map(journalAccounts.map(a => [a.id, a])).values())
+      const uniqueAccounts = Array.from(new Map(journalAccounts.map(a => [a.id, a])).values()) as EnrichedJournal['accounts']
+
+      // Sort accounts: Sources first, then Destinations, then by name
+      uniqueAccounts.sort((a, b) => {
+        if (a.role === 'SOURCE' && b.role !== 'SOURCE') return -1;
+        if (a.role !== 'SOURCE' && b.role === 'SOURCE') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Find primary source and destination types for semantic labeling
+      const sourceAcc = journalAccounts.find(a => a.role === 'SOURCE')
+      const destAcc = journalAccounts.find(a => a.role === 'DESTINATION')
+
+      let semanticType: string | undefined
+      let semanticLabel: string | undefined
+
+      if (sourceAcc && destAcc) {
+        const sType = JournalPresenter.getSemanticType(sourceAcc.accountType as AccountType, destAcc.accountType as AccountType)
+        semanticType = sType
+        semanticLabel = sType // The enum strings are user-friendly
+      }
 
       return {
         id: j.id,
@@ -252,7 +276,9 @@ export class JournalRepository {
         totalAmount: j.totalAmount || 0,
         transactionCount: j.transactionCount || 0,
         displayType: j.displayType || 'MIXED',
-        accounts: uniqueAccounts
+        accounts: uniqueAccounts,
+        semanticType,
+        semanticLabel
       }
     })
   }

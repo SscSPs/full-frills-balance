@@ -66,6 +66,11 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
 
                         const txs = await transactionRepository.findByJournalWithAccountInfo(journalId);
                         if (txs.length > 0) {
+                            // Auto-switch to advanced mode if more than 2 lines
+                            if (txs.length > 2) {
+                                setIsGuidedMode(false);
+                            }
+
                             setLines(txs.map(tx => ({
                                 id: tx.id,
                                 accountId: tx.accountId,

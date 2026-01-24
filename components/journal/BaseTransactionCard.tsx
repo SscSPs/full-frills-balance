@@ -1,7 +1,7 @@
 import { AppCard, AppText, Badge } from '@/components/core';
 import { Spacing, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
-import { JournalDisplayType } from '@/src/domain/accounting/JournalPresenter';
+import { JournalDisplayType, JournalPresenter } from '@/src/domain/accounting/JournalPresenter';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { formatDate } from '@/src/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,10 +14,13 @@ export interface BaseTransactionCardProps {
     currencyCode: string;
     transactionDate: number | Date;
     displayType: JournalDisplayType;
+    semanticLabel?: string;
+    semanticType?: string;
     accounts: Array<{
         id: string;
         name: string;
         accountType: string;
+        role?: 'SOURCE' | 'DESTINATION' | 'NEUTRAL';
     }>;
     notes?: string;
     isIncrease?: boolean;
@@ -34,6 +37,8 @@ export const BaseTransactionCard = ({
     currencyCode,
     transactionDate,
     displayType,
+    semanticLabel,
+    semanticType,
     accounts,
     notes,
     isIncrease,
@@ -44,6 +49,7 @@ export const BaseTransactionCard = ({
     const formattedAmount = CurrencyFormatter.format(amount, currencyCode);
 
     // Determine icon and colors based on display type
+    const presentation = JournalPresenter.getPresentation(displayType, theme, semanticLabel);
     let typeIcon: keyof typeof Ionicons.glyphMap = 'document-text';
     let typeColor: string = theme.textSecondary;
 
@@ -62,16 +68,37 @@ export const BaseTransactionCard = ({
         <View style={styles.cardContent}>
             {/* Header: Badges */}
             <View style={styles.badgeRow}>
-                {accounts.slice(0, 2).map((acc) => (
-                    <Badge
-                        key={acc.id}
-                        variant={acc.accountType.toLowerCase() as any}
-                        size="sm"
-                        icon={acc.accountType === 'EXPENSE' ? 'pricetag' : 'wallet'}
-                    >
-                        {acc.name}
-                    </Badge>
-                ))}
+                {/* Semantic Primary Badge */}
+                <Badge
+                    variant="default"
+                    size="sm"
+                    backgroundColor={withOpacity(typeColor, 0.15)}
+                    textColor={typeColor}
+                    icon={typeIcon}
+                    style={{ borderRightWidth: 1, borderRightColor: withOpacity(theme.border, 0.5), paddingRight: Spacing.sm }}
+                >
+                    {presentation.label}
+                </Badge>
+
+                {/* Account Badges */}
+                {accounts.slice(0, 3).map((acc) => {
+                    const isSource = acc.role === 'SOURCE';
+                    const isDest = acc.role === 'DESTINATION';
+
+                    // Always show From/To for consistency as per user feedback
+                    const showPrefix = isSource ? 'From: ' : (isDest ? 'To: ' : '');
+
+                    return (
+                        <Badge
+                            key={acc.id}
+                            variant={acc.accountType.toLowerCase() as any}
+                            size="sm"
+                            icon={acc.accountType === 'EXPENSE' ? 'pricetag' : 'wallet'}
+                        >
+                            {showPrefix}{acc.name}
+                        </Badge>
+                    );
+                })}
                 {accounts.length > 2 && (
                     <Badge variant="default" size="sm">
                         +{accounts.length - 2} more

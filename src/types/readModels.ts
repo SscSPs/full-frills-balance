@@ -89,7 +89,10 @@ export interface EnrichedJournal {
     id: string
     name: string
     accountType: string
+    role: 'SOURCE' | 'DESTINATION' | 'NEUTRAL'
   }>
+  semanticType?: string
+  semanticLabel?: string
 }
 
 /**
@@ -113,4 +116,6 @@ export interface EnrichedTransaction {
   displayTitle: string
   displayType: JournalDisplayType
   isIncrease: boolean
+  semanticType?: string
+  semanticLabel?: string
 }

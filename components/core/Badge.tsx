@@ -23,6 +23,9 @@ export type BadgeProps = ViewProps & {
   themeMode?: ThemeMode
   // Optional Icon
   icon?: keyof typeof Ionicons.glyphMap
+  // Color overrides
+  backgroundColor?: string
+  textColor?: string
 }
 
 export function Badge({
@@ -31,6 +34,8 @@ export function Badge({
   size = 'md',
   solid = false,
   icon,
+  backgroundColor: customBg,
+  textColor: customText,
   themeMode,
   style,
   ...props
@@ -150,7 +155,10 @@ export function Badge({
       textColor = theme.textSecondary
     }
 
-    return { backgroundColor, textColor }
+    return {
+      backgroundColor: customBg || backgroundColor,
+      textColor: customText || textColor
+    }
   }
 
   const { backgroundColor, textColor } = getColors()

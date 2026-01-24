@@ -20,7 +20,9 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
             currencyCode={journal.currencyCode}
             transactionDate={journal.journalDate}
             displayType={journal.displayType as JournalDisplayType}
-            accounts={journal.accounts}
+            semanticLabel={journal.semanticLabel}
+            semanticType={journal.semanticType}
+            accounts={journal.accounts as any}
             onPress={() => onPress(journal)}
         />
     );
