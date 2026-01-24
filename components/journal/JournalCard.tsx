@@ -1,17 +1,17 @@
-import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
-import { Shape, Spacing } from '@/constants';
+import { AppCard, AppText, Badge } from '@/components/core';
+import { Spacing, withOpacity } from '@/constants';
+import { EnrichedJournal } from '@/hooks/use-data';
 import { useTheme } from '@/hooks/use-theme';
-import Journal from '@/src/data/models/Journal';
 import { JournalDisplayType, JournalPresenter } from '@/src/domain/accounting/JournalPresenter';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { formatShortDate } from '@/src/utils/dateUtils';
-import { preferences } from '@/src/utils/preferences';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface JournalCardProps {
-    journal: Journal;
-    onPress: (journal: Journal) => void;
+    journal: EnrichedJournal;
+    onPress: (journal: EnrichedJournal) => void;
 }
 
 /**
@@ -22,59 +22,79 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
     const { theme } = useTheme();
     const formattedDate = formatShortDate(journal.journalDate);
 
-    // Use denormalized fields
     const totalAmount = journal.totalAmount || 0;
-    const count = journal.transactionCount || 0;
     const displayType = (journal.displayType as JournalDisplayType) || JournalDisplayType.MIXED;
 
     const presentation = JournalPresenter.getPresentation(displayType, theme);
+
+    // Determine icon based on display type
+    let typeIcon: keyof typeof Ionicons.glyphMap = 'document-text';
+    if (displayType === JournalDisplayType.INCOME) typeIcon = 'arrow-up';
+    else if (displayType === JournalDisplayType.EXPENSE) typeIcon = 'arrow-down';
+    else if (displayType === JournalDisplayType.TRANSFER) typeIcon = 'swap-horizontal';
+
     const typeColor = presentation.colorHex;
-    const typeLabel = JournalPresenter.getIconLabel(displayType);
+
+    const content = (
+        <View style={styles.cardContent}>
+            {/* Header: Badges */}
+            <View style={styles.badgeRow}>
+                {journal.accounts.slice(0, 2).map((acc, index) => (
+                    <Badge
+                        key={acc.id}
+                        variant={acc.accountType.toLowerCase() as any}
+                        size="sm"
+                        icon={acc.accountType === 'EXPENSE' ? 'pricetag' : 'wallet'}
+                    >
+                        {acc.name}
+                    </Badge>
+                ))}
+                {journal.accounts.length > 2 && (
+                    <Badge variant="default" size="sm">
+                        +{journal.accounts.length - 2} more
+                    </Badge>
+                )}
+            </View>
+
+            {/* Content: Description */}
+            <View style={styles.textSection}>
+                <AppText variant="body" weight="bold" style={styles.title} numberOfLines={1}>
+                    {journal.description || (displayType === JournalDisplayType.TRANSFER ? 'Transfer' : 'Transaction')}
+                </AppText>
+            </View>
+
+            {/* Footer: Icon + Amount + Date */}
+            <View style={styles.footerRow}>
+                <View style={styles.amountContainer}>
+                    <View style={[styles.iconCircle, { backgroundColor: withOpacity(typeColor, 0.2) }]}>
+                        <Ionicons name={typeIcon} size={16} color={typeColor} />
+                    </View>
+                    <AppText
+                        variant="subheading"
+                        weight="bold"
+                        style={{ color: typeColor }}
+                    >
+                        {displayType === JournalDisplayType.INCOME ? '+ ' : displayType === JournalDisplayType.EXPENSE ? '− ' : ''}
+                        {CurrencyFormatter.format(totalAmount, journal.currencyCode)}
+                    </AppText>
+                </View>
+
+                <AppText variant="caption" color="tertiary" style={styles.date}>
+                    {formattedDate}
+                </AppText>
+            </View>
+        </View>
+    );
 
     return (
         <AppCard
             elevation="sm"
-            style={[styles.container, { backgroundColor: theme.surface }]}
             padding="none"
+            radius="r3"
+            style={[styles.container, { backgroundColor: theme.surface }]}
         >
-            <TouchableOpacity onPress={() => onPress(journal)} style={styles.content}>
-                {/* Left side: Icon */}
-                <View style={styles.iconContainer}>
-                    <IvyIcon
-                        label={typeLabel}
-                        color={typeColor}
-                        size={32}
-                    />
-                </View>
-
-                {/* Right side: Content */}
-                <View style={styles.mainContent}>
-                    <View style={styles.header}>
-                        <AppText variant="body" weight="bold" numberOfLines={1} style={styles.title}>
-                            {journal.description || 'Transaction'}
-                        </AppText>
-                        <AppText variant="body" weight="bold" style={[styles.amountText, { color: typeColor === theme.text ? theme.text : typeColor }]}>
-                            {CurrencyFormatter.format(totalAmount, journal.currencyCode)}
-                        </AppText>
-                    </View>
-
-                    <View style={styles.footer}>
-                        <AppText variant="caption" color="secondary">
-                            {formattedDate}
-                        </AppText>
-                        <View style={styles.spacer} />
-                        <View style={styles.badgeRow}>
-                            {journal.currencyCode !== (preferences.defaultCurrencyCode || 'USD') && (
-                                <Badge variant="default" size="sm">
-                                    <AppText variant="caption" style={{ fontSize: 10 }}>{journal.currencyCode}</AppText>
-                                </Badge>
-                            )}
-                            <Badge variant="default" size="sm">
-                                <AppText variant="caption" style={{ fontSize: 10 }}>{count} {count === 1 ? 'entry' : 'entries'}</AppText>
-                            </Badge>
-                        </View>
-                    </View>
-                </View>
+            <TouchableOpacity onPress={() => onPress(journal)} activeOpacity={0.7}>
+                {content}
             </TouchableOpacity>
         </AppCard>
     );
@@ -82,44 +102,43 @@ export const JournalCard = ({ journal, onPress }: JournalCardProps) => {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: Spacing.sm,
-        borderRadius: Shape.radius.lg,
+        marginBottom: Spacing.md,
         overflow: 'hidden',
     },
-    content: {
-        padding: Spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    iconContainer: {
-        marginRight: Spacing.md,
-    },
-    mainContent: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 2,
-    },
-    title: {
-        flex: 1,
-        marginRight: Spacing.sm,
-    },
-    footer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    spacer: {
-        flex: 1,
+    cardContent: {
+        padding: Spacing.lg,
     },
     badgeRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.xs,
+        flexWrap: 'wrap',
+        marginBottom: Spacing.md,
+        gap: Spacing.sm,
     },
-    amountText: {
-        textAlign: 'right',
+    textSection: {
+        marginBottom: Spacing.lg,
+    },
+    title: {
+        fontSize: 16,
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: Spacing.xs,
+    },
+    amountContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconCircle: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: Spacing.sm,
+    },
+    date: {
+        fontSize: 11,
     },
 });

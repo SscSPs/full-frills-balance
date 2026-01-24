@@ -4,10 +4,9 @@ import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
 import { Spacing } from '@/constants'; // Removed useThemeColors
 import { useUI } from '@/contexts/UIContext'; // Changed useUser to useUI
-import { useJournals, useNetWorth } from '@/hooks/use-data';
+import { EnrichedJournal, useJournals, useNetWorth } from '@/hooks/use-data';
 import { useSummary } from '@/hooks/use-summary';
-import { useTheme } from '@/hooks/use-theme'; // Added useTheme, removed useColorScheme
-import Journal from '@/src/data/models/Journal';
+import { useTheme } from '@/hooks/use-theme';
 import { FlashList } from '@shopify/flash-list';
 import { usePathname, useRouter } from 'expo-router'; // Added usePathname
 import React from 'react';
@@ -32,7 +31,7 @@ export default function JournalListScreen() {
   // We use 'any' here to unblock the build while keeping the core logic intact.
   const TypedFlashList = FlashList as any
 
-  const handleJournalPress = (journal: Journal) => {
+  const handleJournalPress = (journal: EnrichedJournal) => {
     router.push(`/transaction-details?journalId=${journal.id}` as any);
   }
 
@@ -60,13 +59,13 @@ export default function JournalListScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TypedFlashList
         data={filteredJournals}
-        renderItem={({ item }: { item: Journal }) => (
+        renderItem={({ item }: { item: EnrichedJournal }) => (
           <JournalCard
             journal={item}
             onPress={handleJournalPress}
           />
         )}
-        keyExtractor={(item: Journal) => item.id}
+        keyExtractor={(item: EnrichedJournal) => item.id}
         estimatedItemSize={120}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={

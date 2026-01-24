@@ -6,6 +6,7 @@
 import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { getContrastColor, useThemeColors } from '@/constants/theme-helpers'
 import { useTheme } from '@/hooks/use-theme'
+import { Ionicons } from '@expo/vector-icons'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 import { AppText } from './AppText'
 
@@ -20,6 +21,8 @@ export type BadgeProps = ViewProps & {
   solid?: boolean
   // Theme mode override (for design preview)
   themeMode?: ThemeMode
+  // Optional Icon
+  icon?: keyof typeof Ionicons.glyphMap
 }
 
 export function Badge({
@@ -27,6 +30,7 @@ export function Badge({
   variant = 'default',
   size = 'md',
   solid = false,
+  icon,
   themeMode,
   style,
   ...props
@@ -38,7 +42,7 @@ export function Badge({
   // Get badge styles based on variant
   const getBadgeStyles = () => {
     const baseStyles = {
-      borderRadius: Shape.radius.sm,
+      borderRadius: Shape.radius.full,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
       alignSelf: 'flex-start' as const,
@@ -183,15 +187,25 @@ export function Badge({
       ]}
       {...props}
     >
-      <AppText
-        variant="caption"
-        style={[
-          getTextStyles(),
-          { color: textColor }
-        ]}
-      >
-        {children}
-      </AppText>
+      <View style={styles.content}>
+        {icon && (
+          <Ionicons
+            name={icon}
+            size={size === 'sm' ? 12 : 14}
+            color={textColor}
+            style={styles.icon}
+          />
+        )}
+        <AppText
+          variant="caption"
+          style={[
+            getTextStyles(),
+            { color: textColor }
+          ]}
+        >
+          {children}
+        </AppText>
+      </View>
     </View>
   )
 }
@@ -199,5 +213,13 @@ export function Badge({
 const styles = StyleSheet.create({
   badge: {
     // Base badge styles
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    marginRight: 4,
   },
 })

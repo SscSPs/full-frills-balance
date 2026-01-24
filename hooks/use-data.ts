@@ -68,9 +68,31 @@ export function useAccountsByType(accountType: string) {
  * 
  * @param pageSize - Number of journals to load per page (default 50)
  */
+/**
+ * Enriched Journal data for UI display
+ */
+export interface EnrichedJournal {
+    id: string
+    journalDate: number
+    description?: string
+    currencyCode: string
+    status: string
+    totalAmount: number
+    transactionCount: number
+    displayType: string
+    accounts: Array<{
+        id: string
+        name: string
+        accountType: string
+    }>
+}
+
+/**
+ * Hook to reactively get journals with pagination and account enrichment
+ */
 export function useJournals(pageSize: number = 50) {
     const database = useDatabase()
-    const [journals, setJournals] = useState<Journal[]>([])
+    const [journals, setJournals] = useState<EnrichedJournal[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
     const [hasMore, setHasMore] = useState(true)
@@ -85,9 +107,67 @@ export function useJournals(pageSize: number = 50) {
                 Q.take(currentLimit)
             )
             .observe()
-            .subscribe((loadedJournals) => {
-                setJournals(loadedJournals)
-                // If we got fewer than the limit, there are no more
+            .subscribe(async (loadedJournals) => {
+                if (loadedJournals.length === 0) {
+                    setJournals([])
+                    setIsLoading(false)
+                    setIsLoadingMore(false)
+                    return
+                }
+
+                // Collect all journal IDs to fetch transactions in batch
+                const journalIds = loadedJournals.map(j => j.id)
+                const transactions = await database.collections.get<Transaction>('transactions')
+                    .query(
+                        Q.where('journal_id', Q.oneOf(journalIds)),
+                        Q.where('deleted_at', Q.eq(null))
+                    )
+                    .fetch()
+
+                // Collect all account IDs to fetch accounts in batch
+                const accountIds = [...new Set(transactions.map(t => t.accountId))]
+                const accounts = await database.collections.get<Account>('accounts')
+                    .query(Q.where('id', Q.oneOf(accountIds)))
+                    .fetch()
+                const accountMap = new Map(accounts.map(a => [a.id, a]))
+
+                // Group transactions by journal
+                const txsByJournal = new Map<string, Transaction[]>()
+                transactions.forEach(tx => {
+                    const existing = txsByJournal.get(tx.journalId) || []
+                    existing.push(tx)
+                    txsByJournal.set(tx.journalId, existing)
+                })
+
+                // Build enriched journals
+                const enriched: EnrichedJournal[] = loadedJournals.map(j => {
+                    const journalTxs = txsByJournal.get(j.id) || []
+                    const journalAccounts = journalTxs.map(tx => {
+                        const acc = accountMap.get(tx.accountId)
+                        return {
+                            id: tx.accountId,
+                            name: acc?.name || 'Unknown',
+                            accountType: acc?.accountType || 'ASSET'
+                        }
+                    })
+
+                    // De-duplicate accounts for display
+                    const uniqueAccounts = Array.from(new Map(journalAccounts.map(a => [a.id, a])).values())
+
+                    return {
+                        id: j.id,
+                        journalDate: j.journalDate,
+                        description: j.description,
+                        currencyCode: j.currencyCode,
+                        status: j.status,
+                        totalAmount: j.totalAmount,
+                        transactionCount: j.transactionCount,
+                        displayType: j.displayType,
+                        accounts: uniqueAccounts
+                    }
+                })
+
+                setJournals(enriched)
                 setHasMore(loadedJournals.length >= currentLimit)
                 setIsLoading(false)
                 setIsLoadingMore(false)
@@ -118,6 +198,7 @@ export interface EnrichedTransaction {
     journalDescription?: string
     accountName?: string
     accountType?: string
+    counterAccountName?: string
     counterAccountType?: string
     runningBalance?: number
     displayTitle: string
@@ -196,11 +277,13 @@ export function useAccountTransactions(accountId: string | null) {
                     const otherLegs = journalTxs.filter(t => t.accountId !== accountId)
 
                     let displayTitle = journal?.description || ''
+                    let counterAccountName: string | undefined = undefined
                     let counterAccountType: string | undefined = undefined
 
                     if (otherLegs.length === 1) {
                         const otherAcc = accountMap.get(otherLegs[0].accountId)
                         displayTitle = otherAcc?.name || journal?.description || 'Offset Entry'
+                        counterAccountName = otherAcc?.name
                         counterAccountType = otherAcc?.accountType
                     } else if (otherLegs.length > 1 && !journal?.description) {
                         displayTitle = 'Split'
@@ -222,6 +305,7 @@ export function useAccountTransactions(accountId: string | null) {
                         journalDescription: journal?.description,
                         accountName: account?.name,
                         accountType: account?.accountType,
+                        counterAccountName,
                         counterAccountType,
                         runningBalance: tx.runningBalance,
                         displayTitle,
