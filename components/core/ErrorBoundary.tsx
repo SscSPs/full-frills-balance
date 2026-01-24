@@ -8,7 +8,7 @@
  * This is intentional - the error boundary must work even when context fails.
  */
 
-import { Palette, Spacing } from '@/constants';
+import { Palette, Shape, Spacing, Typography } from '@/constants';
 import { logger } from '@/src/utils/logger';
 import React, { Component, ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -78,45 +78,44 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: Spacing.xxl,
-        backgroundColor: Palette.black,
+        backgroundColor: Palette.trueBlack,
     },
     emoji: {
-        fontSize: 64,
+        fontSize: Typography.sizes.hero,
         marginBottom: Spacing.lg,
     },
     title: {
-        fontSize: 24,
-        fontWeight: '700',
+        fontSize: Typography.sizes.xxl,
+        fontFamily: Typography.fonts.heading,
         color: Palette.white,
         marginBottom: Spacing.sm,
         textAlign: 'center',
     },
     message: {
-        fontSize: 16,
+        fontSize: Typography.sizes.base,
         color: Palette.gray,
         textAlign: 'center',
         marginBottom: Spacing.xxl,
     },
     errorDetails: {
-        fontSize: 12,
+        fontSize: Typography.sizes.xs,
         color: Palette.red,
         textAlign: 'center',
         marginBottom: Spacing.xxl,
-        fontFamily: 'monospace',
         padding: Spacing.md,
-        backgroundColor: Palette.mediumBlack,
-        borderRadius: 8,
+        backgroundColor: Palette.extraDarkGray,
+        borderRadius: Shape.radius.sm,
         maxWidth: '100%',
     },
     button: {
         backgroundColor: Palette.green,
         paddingHorizontal: Spacing.xxxl,
         paddingVertical: Spacing.md,
-        borderRadius: 8,
+        borderRadius: Shape.radius.sm,
     },
     buttonText: {
         color: Palette.white,
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: Typography.sizes.base,
+        fontFamily: Typography.fonts.subheading,
     },
 });

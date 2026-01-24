@@ -1,5 +1,5 @@
 import { AppCard, AppText, Badge, IvyIcon } from '@/components/core';
-import { Palette, Shape, Spacing, withOpacity } from '@/constants';
+import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useAccountBalance } from '@/hooks/use-data';
 import { useTheme } from '@/hooks/use-theme';
@@ -43,7 +43,7 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
 
     const contrastColor = getContrastColor(accentColor);
     const textColor = contrastColor === 'white' ? Palette.pureWhite : Palette.trueBlack;
-    const subTextColor = withOpacity(textColor, 0.7);
+    const subTextColor = withOpacity(textColor, Opacity.heavy);
 
     return (
         <AppCard
@@ -69,7 +69,7 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
                             </AppText>
                         </View>
                         <Badge variant="default" size="sm" style={{ backgroundColor: textColor }}>
-                            <AppText variant="caption" weight="bold" style={{ color: accentColor, fontSize: 10 }}>
+                            <AppText variant="caption" weight="bold" style={{ color: accentColor, fontSize: Typography.sizes.xs }}>
                                 {transactionCount}
                             </AppText>
                         </Badge>
@@ -109,13 +109,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.sm,
     },
     balanceText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    footer: {
-        padding: Spacing.md,
-        paddingHorizontal: Spacing.lg,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: 'rgba(128, 128, 128, 0.1)',
+        fontSize: Typography.sizes.xxxl,
+        fontFamily: Typography.fonts.bold,
     },
 });

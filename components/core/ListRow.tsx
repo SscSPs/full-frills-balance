@@ -3,7 +3,7 @@
  * Clean, minimal list design inspired by Ivy Wallet
  */
 
-import { Spacing, ThemeMode } from '@/constants/design-tokens'
+import { Opacity, Spacing, ThemeMode } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
 import {
   StyleSheet,
@@ -115,7 +115,7 @@ export function ListRow({
     return (
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={0.6}
+        activeOpacity={Opacity.heavy}
         {...props}
       >
         {content}
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   subtitle: {
-    marginTop: 2,
+    marginTop: Spacing.xs / 2,
     flexShrink: 1,
   },
   trailing: {

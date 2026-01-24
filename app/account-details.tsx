@@ -6,7 +6,7 @@
 
 import { AppButton, AppCard, AppText, Badge, FloatingActionButton, IvyIcon } from '@/components/core'
 import { TransactionItem } from '@/components/journal/TransactionItem'
-import { Shape, Spacing, withOpacity } from '@/constants'
+import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants'
 import { useAccount, useAccountBalance, useAccountTransactions } from '@/hooks/use-data'
 import { useTheme } from '@/hooks/use-theme'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
@@ -179,7 +179,7 @@ export default function AccountDetailsScreen() {
                     {isDeleted ? (
                         <TouchableOpacity
                             onPress={handleRecover}
-                            style={[styles.circularButton, { backgroundColor: withOpacity(theme.income, 0.15) }]}
+                            style={[styles.circularButton, { backgroundColor: withOpacity(theme.income, Opacity.soft) }]}
                         >
                             <Ionicons name="refresh-outline" size={22} color={theme.income} />
                         </TouchableOpacity>
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         flex: 1,
         textAlign: 'center',
-        fontWeight: 'bold',
+        fontFamily: Typography.fonts.bold,
     },
     circularButton: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: Shape.radius.full,
         alignItems: 'center',
         justifyContent: 'center',
     },

@@ -212,6 +212,7 @@ export const Shape = {
     r2: 24,  // Ivy r2
     r1: 32,  // Ivy r1
     full: 9999, // Circular elements
+    xs: 4,   // Very small components
     sm: 8,   // Backward compatibility
     md: 12,  // Backward compatibility
     lg: 16,  // Backward compatibility

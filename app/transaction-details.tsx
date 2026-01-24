@@ -1,5 +1,5 @@
 import { AppCard, AppText, Badge } from '@/components/core'
-import { Spacing, withOpacity } from '@/constants'
+import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 // Reusable info row component
 const InfoRow = ({ label, value }: { label: string, value: string }) => (
   <View style={styles.infoRow}>
-    <AppText variant="caption" color="secondary" style={{ width: 100 }}>{label}</AppText>
+    <AppText variant="caption" color="secondary" style={styles.infoLabel}>{label}</AppText>
     <AppText variant="body" style={{ flex: 1, textAlign: 'right' }}>{value}</AppText>
   </View>
 );
@@ -108,7 +108,7 @@ export default function TransactionDetailsScreen() {
       {/* Header / Nav */}
       <View style={styles.navBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.navButton}>
-          <Ionicons name="close" size={24} color={theme.text} />
+          <Ionicons name="close" size={Typography.sizes.xl} color={theme.text} />
         </TouchableOpacity>
         <AppText variant="subheading">Transaction Details</AppText>
         <View style={styles.headerActions}>
@@ -116,10 +116,10 @@ export default function TransactionDetailsScreen() {
             onPress={() => router.push({ pathname: '/journal-entry', params: { journalId } })}
             style={styles.navButton}
           >
-            <Ionicons name="create-outline" size={24} color={theme.text} />
+            <Ionicons name="create-outline" size={Typography.sizes.xl} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} style={styles.navButton}>
-            <Ionicons name="trash-outline" size={24} color={theme.error} />
+            <Ionicons name="trash-outline" size={Typography.sizes.xl} color={theme.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -131,20 +131,20 @@ export default function TransactionDetailsScreen() {
 
             {/* Big Icon */}
             <View style={styles.iconContainer}>
-              <View style={[styles.bigIcon, { backgroundColor: withOpacity(theme.primary, 0.12) }]}>
+              <View style={[styles.bigIcon, { backgroundColor: withOpacity(theme.primary, Opacity.soft) }]}>
                 <Ionicons name="receipt" size={32} color={theme.primary} />
               </View>
             </View>
 
             {/* Amount & Title */}
             <View style={styles.headerSection}>
-              <AppText variant="title" style={{ fontSize: 32, marginBottom: 8 }}>
+              <AppText variant="title" style={{ fontSize: Typography.sizes.xxxl, marginBottom: Spacing.sm }}>
                 {CurrencyFormatter.format(totalAmount, journalInfo?.currency)}
               </AppText>
               <AppText variant="body" color="secondary">
                 {journalInfo?.description || 'No description'}
               </AppText>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
                 <Badge variant={journalInfo?.status === 'POSTED' ? 'income' : 'expense'} size="sm">
                   {journalInfo?.status}
                 </Badge>
@@ -166,10 +166,10 @@ export default function TransactionDetailsScreen() {
                 style={styles.historyLink}
                 onPress={() => router.push(`/audit-log?entityType=journal&entityId=${journalId}` as any)}
               >
-                <AppText variant="caption" color="secondary" style={{ width: 100 }}>History</AppText>
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 }}>
+                <AppText variant="caption" color="secondary" style={styles.infoLabel}>History</AppText>
+                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.xs }}>
                   <AppText variant="body" color="primary">View Edit History</AppText>
-                  <Ionicons name="chevron-forward" size={14} color={theme.primary} />
+                  <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.primary} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -177,7 +177,7 @@ export default function TransactionDetailsScreen() {
             <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
             {/* Splits / Breakdown */}
-            <AppText variant="caption" color="secondary" style={{ marginBottom: 12 }}>
+            <AppText variant="caption" color="secondary" style={{ marginBottom: Spacing.md }}>
               BREAKDOWN
             </AppText>
 
@@ -191,11 +191,11 @@ export default function TransactionDetailsScreen() {
                   <AppText variant="body" color="primary">{item.accountName}</AppText>
                   <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
                   <AppText variant="subheading">
                     {CurrencyFormatter.format(item.amount, journalInfo?.currency)}
                   </AppText>
-                  <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} />
+                  <Ionicons name="chevron-forward" size={Typography.sizes.sm} color={theme.textSecondary} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   bigIcon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: Shape.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -264,6 +264,10 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingVertical: Spacing.xs,
+  },
+  infoLabel: {
+    width: 110, // Fixed width for alignment of values
   },
   historyLink: {
     flexDirection: 'row',

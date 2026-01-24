@@ -3,7 +3,7 @@
  * Consistent input design inspired by Ivy Wallet
  */
 
-import { Shape, Spacing, ThemeMode } from '@/constants/design-tokens'
+import { Shape, Size, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
 import { useTheme } from '@/hooks/use-theme'
 import React from 'react'
@@ -85,15 +85,15 @@ const styles = StyleSheet.create({
         borderRadius: Shape.radius.r3,
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
-        fontSize: 16,
-        minHeight: 48,
+        fontSize: Typography.sizes.base,
+        minHeight: 48, // Standard touch target size - fine
     },
     heroInput: {
-        fontSize: 72,
-        fontWeight: '800',
+        fontSize: Typography.sizes.hero,
+        fontFamily: Typography.fonts.bold,
         textAlign: 'center',
         borderWidth: 0,
-        minHeight: 100,
+        minHeight: Size.xxl * 2.5,
     },
     minimalInput: {
         borderWidth: 0,

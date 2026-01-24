@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppText } from '@/components/core';
-import { Spacing, withOpacity } from '@/constants';
+import { Opacity, Spacing, Typography, withOpacity } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useTheme } from '@/hooks/use-theme';
 import { exportService } from '@/src/services/export-service';
@@ -230,7 +230,7 @@ export default function SettingsScreen() {
                 <AppText variant="subheading" style={[styles.sectionTitle, { color: theme.error }]}>
                     Danger Zone
                 </AppText>
-                <AppCard elevation="sm" padding="md" style={[styles.card, { borderColor: withOpacity(theme.error, 0.25), borderWidth: 1 }]}>
+                <AppCard elevation="sm" padding="md" style={[styles.card, { borderColor: withOpacity(theme.error, Opacity.soft), borderWidth: 1 }]}>
                     <AppText variant="body" style={styles.cardDesc}>
                         Permanently delete soft-deleted records to free up space.
                     </AppText>
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         marginBottom: Spacing.sm,
         marginTop: Spacing.md,
-        fontWeight: 'bold',
+        fontFamily: Typography.fonts.bold,
     },
     card: {
         marginBottom: Spacing.md,

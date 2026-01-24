@@ -1,5 +1,5 @@
 import { AppText } from '@/components/core';
-import { Spacing } from '@/constants';
+import { Spacing, Typography } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         flex: 1,
         textAlign: 'center',
+        fontFamily: Typography.fonts.bold,
     },
     listButton: {
         padding: Spacing.sm,

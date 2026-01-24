@@ -2,7 +2,7 @@ import { AppText, FloatingActionButton, SearchField } from '@/components/core';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 import { DashboardSummary } from '@/components/journal/DashboardSummary';
 import { JournalCard } from '@/components/journal/JournalCard';
-import { Spacing } from '@/constants';
+import { Opacity, Spacing, Typography } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useJournals, useNetWorth } from '@/hooks/use-data';
 import { useSummary } from '@/hooks/use-summary';
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
         paddingTop: 100,
     },
     emptyText: {
-        fontSize: 18, // Typography.sizes.lg
-        fontWeight: 'bold',
+        fontSize: Typography.sizes.lg,
+        fontFamily: Typography.fonts.bold,
         marginBottom: Spacing.sm,
     },
     emptySubtext: {
-        fontSize: 14, // Typography.sizes.sm
-        opacity: 0.6,
+        fontSize: Typography.sizes.sm,
+        opacity: Opacity.medium,
         textAlign: 'center',
     },
     loadingMore: {

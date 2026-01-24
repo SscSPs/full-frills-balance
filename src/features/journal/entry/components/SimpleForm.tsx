@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/components/core';
-import { AppConfig, Opacity, Shape, Spacing, withOpacity } from '@/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import Account from '@/src/data/models/Account';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -263,7 +263,7 @@ export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: Sim
 
             {/* Exchange Rate / Conversion */}
             {isCrossCurrency && sourceId && destinationId && (
-                <Box align="center" padding="md" borderRadius={12} backgroundColor={withOpacity(theme.primary, Opacity.soft)} marginVertical="lg">
+                <Box align="center" padding="md" borderRadius={Shape.radius.sm} backgroundColor={withOpacity(theme.primary, Opacity.soft)} marginVertical="lg">
                     {isLoadingRate ? (
                         <AppText variant="caption" color="secondary">Fetching rate...</AppText>
                     ) : rateError ? (
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     accountCard: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
-        borderRadius: 12,
+        borderRadius: Shape.radius.sm,
         borderWidth: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -338,21 +338,21 @@ const styles = StyleSheet.create({
     accountIndicator: {
         width: 4,
         height: 16,
-        borderRadius: 2,
+        borderRadius: Shape.radius.full,
     },
     typeTab: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: Spacing.md,
         alignItems: 'center',
-        borderRadius: 12,
+        borderRadius: Shape.radius.sm,
     },
     mainCard: {
-        borderRadius: 24,
+        borderRadius: Shape.radius.r2,
         padding: Spacing.lg,
         marginVertical: Spacing.xl,
         borderWidth: 1,
         borderColor: 'transparent',
     },
     cardDivider: { height: 1, marginVertical: Spacing.md, opacity: Opacity.muted },
-    verticalDivider: { width: 1, height: 24, marginHorizontal: Spacing.md },
+    verticalDivider: { width: 1, height: Size.md, marginHorizontal: Spacing.md },
 });

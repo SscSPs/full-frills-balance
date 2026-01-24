@@ -39,7 +39,7 @@ export function JournalSummary({
                     </Box>
                 </Stack>
 
-                <Box direction="row" justify="space-between" style={{ paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: theme.border }}>
+                <Box direction="row" justify="space-between" style={{ paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: theme.divider }}>
                     <AppText variant="heading">Balance:</AppText>
                     <AppText
                         variant="heading"

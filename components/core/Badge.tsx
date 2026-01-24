@@ -109,7 +109,7 @@ export function Badge({
         return {
           paddingHorizontal: Spacing.sm,
           paddingVertical: Spacing.xs,
-          minWidth: 20,
+          minWidth: 20, // Keep specific compact size for badge
           minHeight: 20,
         }
       case 'md':
@@ -199,7 +199,7 @@ export function Badge({
         {icon && (
           <Ionicons
             name={icon}
-            size={size === 'sm' ? 12 : 14}
+            size={size === 'sm' ? Typography.sizes.xs : Typography.sizes.sm}
             color={textColor}
             style={styles.icon}
           />
@@ -228,6 +228,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    marginRight: 4,
+    marginRight: Spacing.xs,
   },
 })

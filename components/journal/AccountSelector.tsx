@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        borderTopLeftRadius: Shape.radius.lg,
-        borderTopRightRadius: Shape.radius.lg,
+        borderTopLeftRadius: Shape.radius.r2, // More pronounced Ivy-style rounding
+        borderTopRightRadius: Shape.radius.r2,
         maxHeight: '70%',
     },
     modalHeader: {

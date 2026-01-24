@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
-import { Spacing, withOpacity } from '@/constants'
+import { Opacity, Size, Spacing, withOpacity } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import Currency from '@/src/data/models/Currency'
 import { currencyInitService } from '@/src/services/currency-init-service'
@@ -95,7 +95,7 @@ export default function OnboardingScreen() {
               style={[
                 styles.currencyItem,
                 { borderBottomColor: theme.border },
-                selectedCurrency === item.code && { backgroundColor: withOpacity(theme.primary, 0.07) }
+                selectedCurrency === item.code && { backgroundColor: withOpacity(theme.primary, Opacity.soft / 2) }
               ]}
               onPress={() => setSelectedCurrency(item.code)}
             >
@@ -106,7 +106,7 @@ export default function OnboardingScreen() {
               <View style={styles.currencyRight}>
                 <AppText variant="subheading">{item.symbol}</AppText>
                 {selectedCurrency === item.code && (
-                  <Ionicons name="checkmark-circle" size={20} color={theme.primary} style={{ marginLeft: Spacing.sm }} />
+                  <Ionicons name="checkmark-circle" size={Size.sm} color={theme.primary} style={{ marginLeft: Spacing.sm }} />
                 )}
               </View>
             </TouchableOpacity>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   currencyListContainer: {
-    height: 300,
+    height: Size.xxl * 6,
     marginBottom: Spacing.xl,
     overflow: 'hidden',
   },

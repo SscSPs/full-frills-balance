@@ -1,5 +1,5 @@
 import { AppCard, AppText, Badge } from '@/components/core';
-import { Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { JournalDisplayType, JournalPresenter } from '@/src/domain/accounting/JournalPresenter';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
@@ -72,10 +72,10 @@ export const BaseTransactionCard = ({
                 <Badge
                     variant="default"
                     size="sm"
-                    backgroundColor={withOpacity(typeColor, themeMode === 'dark' ? 0.25 : 0.15)}
+                    backgroundColor={withOpacity(typeColor, themeMode === 'dark' ? Opacity.muted : Opacity.soft)}
                     textColor={typeColor}
                     icon={typeIcon}
-                    style={{ borderRightWidth: 1, borderRightColor: withOpacity(theme.border, 0.5), paddingRight: Spacing.sm }}
+                    style={{ borderRightWidth: 1, borderRightColor: withOpacity(theme.border, Opacity.medium), paddingRight: Spacing.sm }}
                 >
                     {presentation.label}
                 </Badge>
@@ -121,7 +121,7 @@ export const BaseTransactionCard = ({
             {/* Footer: Icon + Amount + Date */}
             <View style={styles.footerRow}>
                 <View style={styles.amountContainer}>
-                    <View style={[styles.iconCircle, { backgroundColor: withOpacity(typeColor, 0.2) }]}>
+                    <View style={[styles.iconCircle, { backgroundColor: withOpacity(typeColor, Opacity.soft) }]}>
                         <Ionicons name={typeIcon} size={16} color={typeColor} />
                     </View>
                     <AppText
@@ -149,7 +149,7 @@ export const BaseTransactionCard = ({
             style={[styles.container, { backgroundColor: theme.surface }]}
         >
             {onPress ? (
-                <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+                <TouchableOpacity onPress={onPress} activeOpacity={Opacity.heavy}>
                     {content}
                 </TouchableOpacity>
             ) : (
@@ -177,12 +177,12 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.lg,
     },
     title: {
-        fontSize: 16,
+        fontSize: Typography.sizes.base,
     },
     notes: {
-        marginTop: 4,
-        fontSize: 13,
-        opacity: 0.8,
+        marginTop: Spacing.xs,
+        fontSize: Typography.sizes.xs,
+        opacity: Opacity.heavy,
     },
     footerRow: {
         flexDirection: 'row',
@@ -197,12 +197,12 @@ const styles = StyleSheet.create({
     iconCircle: {
         width: 28,
         height: 28,
-        borderRadius: 14,
+        borderRadius: Shape.radius.full,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: Spacing.sm,
     },
     date: {
-        fontSize: 11,
+        fontSize: Typography.sizes.xs,
     },
 });

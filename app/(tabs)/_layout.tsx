@@ -1,12 +1,12 @@
-import { Typography } from '@/constants';
+import { Spacing, Typography } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TAB_BAR_BASE_HEIGHT = 50;
-const MIN_BOTTOM_INSET = 8;
+const TAB_BAR_BASE_HEIGHT = 52;
+const MIN_BOTTOM_INSET = Spacing.sm;
 
 export default function TabLayout() {
     const { theme } = useTheme();

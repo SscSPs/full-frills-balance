@@ -1,5 +1,5 @@
 import { AppCard, AppText } from '@/components/core';
-import { Spacing } from '@/constants';
+import { Shape, Size, Spacing, Typography } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useTheme } from '@/hooks/use-theme';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
@@ -63,10 +63,10 @@ export const NetWorthCard = ({
                 <AppText variant="subheading" color="secondary">
                     Net Worth
                 </AppText>
-                <TouchableOpacity onPress={handleToggle} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <TouchableOpacity onPress={handleToggle} hitSlop={{ top: Spacing.sm, bottom: Spacing.sm, left: Spacing.sm, right: Spacing.sm }}>
                     <Ionicons
                         name={isActuallyHidden ? "eye-off" : "eye"}
-                        size={20}
+                        size={Size.sm}
                         color={theme.textTertiary}
                     />
                 </TouchableOpacity>
@@ -114,7 +114,8 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xs,
     },
     netWorthAmount: {
-        fontSize: 32, // Typography.sizes.xxxl
+        fontSize: Typography.sizes.xxxl,
+        fontFamily: Typography.fonts.bold,
         marginBottom: Spacing.xl,
     },
     breakdownContainer: {
@@ -130,8 +131,8 @@ const styles = StyleSheet.create({
     dot: {
         width: Spacing.sm,
         height: Spacing.sm,
-        borderRadius: Spacing.sm / 2,
-        marginTop: 6, // Optical alignment with text
+        borderRadius: Shape.radius.full,
+        marginTop: Spacing.xs + 2, // Optical alignment with text
     },
     divider: {
         width: 1,

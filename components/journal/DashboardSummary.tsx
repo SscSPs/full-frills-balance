@@ -1,4 +1,4 @@
-import { Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/constants';
 import { useUI } from '@/contexts/UIContext';
 import { useTheme } from '@/hooks/use-theme';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
@@ -32,8 +32,8 @@ export const DashboardSummary = ({ income, expense, isHidden: controlledHidden }
             {/* Income Column */}
             <AppCard elevation="sm" padding="md" style={styles.column}>
                 <View style={styles.row}>
-                    <View style={[styles.iconBox, { backgroundColor: withOpacity(theme.income, 0.15) }]}>
-                        <Ionicons name="arrow-down-outline" size={16} color={theme.income} />
+                    <View style={[styles.iconBox, { backgroundColor: withOpacity(theme.income, Opacity.soft) }]}>
+                        <Ionicons name="arrow-down-outline" size={Size.xs} color={theme.income} />
                     </View>
                     <AppText variant="caption" color="secondary">INCOME</AppText>
                 </View>
@@ -45,8 +45,8 @@ export const DashboardSummary = ({ income, expense, isHidden: controlledHidden }
             {/* Expense Column */}
             <AppCard elevation="sm" padding="md" style={styles.column}>
                 <View style={styles.row}>
-                    <View style={[styles.iconBox, { backgroundColor: withOpacity(theme.expense, 0.15) }]}>
-                        <Ionicons name="arrow-up-outline" size={16} color={theme.expense} />
+                    <View style={[styles.iconBox, { backgroundColor: withOpacity(theme.expense, Opacity.soft) }]}>
+                        <Ionicons name="arrow-up-outline" size={Size.xs} color={theme.expense} />
                     </View>
                     <AppText variant="caption" color="secondary">EXPENSE</AppText>
                 </View>
@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.sm,
     },
     iconBox: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: Size.md,
+        height: Size.md,
+        borderRadius: Shape.radius.full,
         alignItems: 'center',
         justifyContent: 'center',
     },
     value: {
-        fontWeight: 'bold',
+        fontFamily: Typography.fonts.bold,
     },
 });

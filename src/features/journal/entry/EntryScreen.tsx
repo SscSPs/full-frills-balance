@@ -1,6 +1,6 @@
 import { AppText, Badge } from '@/components/core';
 import { AccountSelector } from '@/components/journal/AccountSelector';
-import { Shape, Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Spacing, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import Account from '@/src/data/models/Account';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
@@ -92,7 +92,7 @@ export default function EntryScreen() {
       >
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {editor.isEdit && (
-            <View style={[styles.editBanner, { backgroundColor: withOpacity(theme.warning, 0.2) }]}>
+            <View style={[styles.editBanner, { backgroundColor: withOpacity(theme.warning, Opacity.soft) }]}>
               <Badge variant="expense" size="sm">EDITING</Badge>
               <AppText variant="caption" color="secondary" style={{ marginLeft: Spacing.sm }}>
                 You are modifying an existing transaction

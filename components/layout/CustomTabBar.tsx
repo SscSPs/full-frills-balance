@@ -1,5 +1,5 @@
 import { AppText } from '@/components/core';
-import { Shape, Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
@@ -15,7 +15,7 @@ interface CustomTabBarProps {
   onAddAccount?: () => void;
 }
 
-const FAB_SIZE = 40; // Reduced from 56 to 40
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function CustomTabBar({
@@ -91,9 +91,9 @@ export default function CustomTabBar({
   ];
 
   const buttonsShown = buttonsOpacity;
-  const fabX = screenWidth / 2 - FAB_SIZE / 2;
+  const fabX = screenWidth / 2 - Size.xl / 2;
   const buttonLeftX = Spacing.lg;
-  const buttonRightX = screenWidth - Spacing.lg - FAB_SIZE;
+  const buttonRightX = screenWidth - Spacing.lg - Size.xl;
   const buttonY = -100; // Reduced from -120 to -100 for better positioning
 
   return (
@@ -116,7 +116,7 @@ export default function CustomTabBar({
               style={[
                 styles.tab,
                 activeTab === tab.id && {
-                  backgroundColor: withOpacity(theme.primary, 0.12),
+                  backgroundColor: withOpacity(theme.primary, Opacity.soft),
                 },
               ]}
               onPress={() => onTabChange(tab.id)}
@@ -180,15 +180,15 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('income')}
             testID="transaction-button"
           >
-            <Ionicons name="add" size={24} color={theme.pureInverse} />
+            <Ionicons name="add" size={Typography.sizes.xl} color={theme.pureInverse} />
           </TouchableOpacity>
           <AppText
             variant="caption"
             style={[
               styles.transactionLabel,
               {
-                left: buttonLeftX - 8,
-                top: buttonY + FAB_SIZE + 4,
+                left: buttonLeftX - Spacing.sm,
+                top: buttonY + Size.xl + Spacing.xs,
                 color: theme.background,
               }
             ]}
@@ -209,15 +209,15 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('expense')}
             testID="transaction-button"
           >
-            <Ionicons name="remove" size={24} color={theme.pureInverse} />
+            <Ionicons name="remove" size={Typography.sizes.xl} color={theme.pureInverse} />
           </TouchableOpacity>
           <AppText
             variant="caption"
             style={[
               styles.transactionLabel,
               {
-                left: fabX - 8,
-                top: buttonY - 60 + FAB_SIZE + 4,
+                left: fabX - Spacing.sm,
+                top: buttonY - 60 + Size.xl + Spacing.xs,
                 color: theme.background,
               }
             ]}
@@ -238,15 +238,15 @@ export default function CustomTabBar({
             onPress={() => handleTransactionButtonPress('transfer')}
             testID="transaction-button"
           >
-            <Ionicons name="swap-horizontal" size={24} color={theme.pureInverse} />
+            <Ionicons name="swap-horizontal" size={Typography.sizes.xl} color={theme.pureInverse} />
           </TouchableOpacity>
           <AppText
             variant="caption"
             style={[
               styles.transactionLabel,
               {
-                left: buttonRightX - 8,
-                top: buttonY + FAB_SIZE + 4,
+                left: buttonRightX - Spacing.sm,
+                top: buttonY + Size.xl + Spacing.xs,
                 color: theme.background,
               }
             ]}
@@ -265,7 +265,7 @@ export default function CustomTabBar({
               ? (expanded ? theme.surface : theme.primary)
               : theme.success, // Green for accounts tab
             left: fabX,
-            bottom: 80, // Position above tab bar
+            bottom: Spacing.xxxxl * 2, // Position above tab bar
           },
         ]}
         testID="fab-button"
@@ -286,7 +286,7 @@ export default function CustomTabBar({
         >
           <Ionicons
             name={expanded ? 'close' : 'add'}
-            size={24}
+            size={Typography.sizes.xl}
             color={theme.pureInverse}
           />
         </Animated.View>
@@ -308,20 +308,20 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
     marginHorizontal: Spacing.xs,
-    borderRadius: 12,
+    borderRadius: Shape.radius.md,
     alignItems: 'center',
   },
   tabContent: {
     alignItems: 'center',
-    gap: 2,
+    gap: Spacing.xs / 2,
   },
   tabIcon: {
-    fontSize: 20,
+    fontSize: Typography.sizes.xl,
     textAlign: 'center',
   },
   tabTitle: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: Typography.sizes.xs,
+    fontFamily: Typography.fonts.medium,
     textAlign: 'center',
   },
   overlay: {
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   },
   transactionButtons: {
     position: 'absolute',
-    bottom: 150,
+    bottom: Spacing.xxxxl * 3.75, // Scaled layout position
     left: 0,
     right: 0,
     height: 200,
@@ -342,9 +342,9 @@ const styles = StyleSheet.create({
   },
   transactionButton: {
     position: 'absolute',
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
+    width: Size.xl,
+    height: Size.xl,
+    borderRadius: Shape.radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shape.elevation.md,
@@ -352,15 +352,15 @@ const styles = StyleSheet.create({
   transactionLabel: {
     position: 'absolute',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: Typography.fonts.bold,
     textAlign: 'center',
-    width: FAB_SIZE + 16,
+    width: Size.xl + Spacing.lg,
   },
   fab: {
     position: 'absolute',
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
+    width: Size.xl,
+    height: Size.xl,
+    borderRadius: Shape.radius.full,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shape.elevation.md,

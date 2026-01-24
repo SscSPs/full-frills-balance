@@ -1,4 +1,4 @@
-import { Shape, Spacing } from '@/constants';
+import { Shape, Size, Spacing, Typography } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -23,7 +23,7 @@ export const SearchField = ({ value, onChangeText, placeholder = "Search transac
 
     return (
         <View style={[styles.container, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Ionicons name="search" size={20} color={theme.textSecondary} style={styles.icon} />
+            <Ionicons name="search" size={Size.sm} color={theme.textSecondary} style={styles.icon} />
             <TextInput
                 style={[styles.input, { color: theme.text }]}
                 value={value}
@@ -34,7 +34,7 @@ export const SearchField = ({ value, onChangeText, placeholder = "Search transac
             />
             {value.length > 0 && (
                 <TouchableOpacity onPress={() => onChangeText('')} style={styles.clearButton}>
-                    <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
+                    <Ionicons name="close-circle" size={Typography.sizes.lg} color={theme.textTertiary} />
                 </TouchableOpacity>
             )}
         </View>
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: 48,
-        borderRadius: Shape.radius.lg,
+        height: Size.xxl,
+        borderRadius: Shape.radius.r4, // Match Ivy 16px radius
         paddingHorizontal: Spacing.md,
         marginBottom: Spacing.md,
         borderWidth: 1,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        fontSize: 16,
+        fontSize: Typography.sizes.base,
         height: '100%',
     },
     clearButton: {

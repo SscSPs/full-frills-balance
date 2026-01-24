@@ -1,5 +1,5 @@
 import { AppCard, AppText } from '@/components/core';
-import { Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { AuditAction } from '@/src/data/models/AuditLog';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
@@ -167,7 +167,7 @@ export default function AuditLogScreen() {
                                             • {accountName}
                                         </AppText>
                                     )}
-                                    <View style={shouldShowName ? { marginLeft: 12 } : {}}>
+                                    <View style={shouldShowName ? { marginLeft: Spacing.md } : {}}>
                                         <AppText variant="caption" color="secondary">
                                             {CurrencyFormatter.format(item.amount, itemCurrency)} ({item.type})
                                         </AppText>
@@ -278,16 +278,16 @@ export default function AuditLogScreen() {
                                             return (
                                                 <View key={accountId} style={styles.arrayItem}>
                                                     <AppText variant="caption" color="secondary" weight="semibold">• {name}</AppText>
-                                                    <View style={[styles.financialDiffRow, { marginLeft: 12 }]}>
-                                                        <AppText variant="caption" color="secondary" style={{ fontSize: 10, opacity: 0.6 }}>
+                                                    <View style={[styles.financialDiffRow, { marginLeft: Spacing.md }]}>
+                                                        <AppText variant="caption" color="secondary" style={{ fontSize: Typography.sizes.xs, opacity: Opacity.medium }}>
                                                             {CurrencyFormatter.format(beforeAmt, currency)} ({beforeType})
                                                         </AppText>
-                                                        <AppText variant="caption" style={[styles.diffMarker, { fontSize: 10 }]}>→</AppText>
-                                                        <AppText variant="caption" color="secondary" style={{ fontSize: 10, opacity: 0.9 }}>
+                                                        <AppText variant="caption" style={[styles.diffMarker, { fontSize: Typography.sizes.xs }]}>→</AppText>
+                                                        <AppText variant="caption" color="secondary" style={{ fontSize: Typography.sizes.xs, opacity: Opacity.heavy }}>
                                                             {CurrencyFormatter.format(afterAmt, currency)} ({afterType})
                                                         </AppText>
                                                         {typeChanged && (
-                                                            <AppText variant="caption" style={{ color: theme.transfer, fontSize: 10, marginLeft: 4 }}>
+                                                            <AppText variant="caption" style={{ color: theme.transfer, fontSize: Typography.sizes.xs, marginLeft: Spacing.xs }}>
                                                                 (type changed)
                                                             </AppText>
                                                         )}
@@ -343,8 +343,8 @@ export default function AuditLogScreen() {
             <AppCard style={styles.card} padding="md" elevation="sm">
                 <TouchableOpacity onPress={() => toggleExpanded(item.id)}>
                     <View style={styles.row}>
-                        <View style={[styles.iconContainer, { backgroundColor: withOpacity(actionColor, 0.15) }]}>
-                            <Ionicons name={getActionIcon(item.action)} size={20} color={actionColor} />
+                        <View style={[styles.iconContainer, { backgroundColor: withOpacity(actionColor, Opacity.soft) }]}>
+                            <Ionicons name={getActionIcon(item.action)} size={Size.sm} color={actionColor} />
                         </View>
                         <View style={styles.content}>
                             <View style={styles.headerRow}>
@@ -364,7 +364,7 @@ export default function AuditLogScreen() {
                         </View>
                         <Ionicons
                             name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                            size={20}
+                            size={Size.sm}
                             color={theme.textSecondary}
                         />
                     </View>
@@ -382,7 +382,7 @@ export default function AuditLogScreen() {
                     onPress={() => router.back()}
                     style={[styles.circularButton, { backgroundColor: theme.surface }]}
                 >
-                    <Ionicons name="arrow-back" size={24} color={theme.text} />
+                    <Ionicons name="arrow-back" size={Typography.sizes.xl} color={theme.text} />
                 </TouchableOpacity>
                 <AppText variant="subheading" style={styles.headerTitle}>
                     {isFiltered ? 'Edit History' : 'Audit Log'}
@@ -431,12 +431,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         flex: 1,
         textAlign: 'center',
-        fontWeight: 'bold',
+        fontFamily: Typography.fonts.bold,
     },
     circularButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Shape.radius.full,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -473,9 +473,9 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
     },
     iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Shape.radius.full,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     changesContainer: {
         marginTop: Spacing.md,
         padding: Spacing.sm,
-        borderRadius: 8,
+        borderRadius: Shape.radius.sm,
         // backgroundColor: theme.surfaceSecondary ??
         // Let's use a subtle tint of textTertiary simply or theme.surfaceSecondary
         // But theme.surfaceSecondary is for cards usually.
@@ -516,41 +516,40 @@ const styles = StyleSheet.create({
     comparisonRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginTop: 4,
-        gap: 8,
+        marginTop: Spacing.xs,
+        gap: Spacing.sm,
     },
     beforeCol: {
         flex: 1,
-        opacity: 0.6,
+        opacity: Opacity.medium,
     },
     afterCol: {
         flex: 1,
     },
     arrowCol: {
         justifyContent: 'center',
-        paddingTop: 4,
+        paddingTop: Spacing.xs,
     },
     arrayContainer: {
-        marginTop: 4,
+        marginTop: Spacing.xs,
     },
     arrayItem: {
-        marginBottom: 2,
+        marginBottom: Spacing.xs,
     },
     nestedObject: {
-        padding: 4,
-        // backgroundColor: 'rgba(128, 128, 128, 0.05)' -> see above
-        borderRadius: 4,
+        padding: Spacing.xs,
+        borderRadius: Shape.radius.xs,
     },
     financialDiffRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 4,
+        paddingVertical: Spacing.xs,
     },
     diffValue: {
         fontWeight: 'bold',
     },
     diffMarker: {
-        marginHorizontal: 8,
-        opacity: 0.3,
+        marginHorizontal: Spacing.sm,
+        opacity: Opacity.soft,
     },
 });

@@ -3,7 +3,7 @@
  * Clean button design with limited variants inspired by Ivy Wallet
  */
 
-import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
+import { Opacity, Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
 import { useTheme } from '@/hooks/use-theme'
 import {
@@ -165,7 +165,7 @@ export function AppButton({
       ]}
       disabled={disabled || loading}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={Opacity.heavy}
       {...props}
     >
       {loading ? (

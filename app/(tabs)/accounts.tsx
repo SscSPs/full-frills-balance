@@ -100,7 +100,8 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 100, // Space for FAB - fine as layout constant for now or use a large spacing token? 
+    // Actually Ivy uses a bottom padding to avoid FAB overlap. 100 is typical for RN FABs.
   },
   sectionHeader: {
     marginTop: Spacing.md,

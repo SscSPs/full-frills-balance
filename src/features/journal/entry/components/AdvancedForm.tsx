@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/components/core';
-import { AppConfig, Spacing } from '@/constants';
+import { AppConfig, Shape, Spacing } from '@/constants';
 import { useTheme } from '@/hooks/use-theme';
 import { JournalCalculator, JournalLineInput } from '@/src/domain/accounting/JournalCalculator';
 import { JournalValidator } from '@/src/domain/accounting/JournalValidator';
@@ -124,7 +124,7 @@ export const AdvancedForm = ({
                     variant="primary"
                     onPress={editor.submit}
                     disabled={!isBalanced || editor.isSubmitting}
-                    style={{ marginBottom: Spacing.xl, height: 60, borderRadius: 16 }}
+                    style={{ marginBottom: Spacing.xl, height: 60, borderRadius: Shape.radius.r4 }}
                 >
                     {editor.isSubmitting ? (editor.isEdit ? 'Updating...' : 'Creating...') : (editor.isEdit ? 'Update Journal' : 'Create Journal')}
                 </AppButton>

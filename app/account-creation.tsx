@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppInput, AppText } from '@/components/core'
-import { AppConfig, Shape, Spacing } from '@/constants'
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography } from '@/constants'
 import { useTheme } from '@/hooks/use-theme'
 import { database } from '@/src/data/database/Database'
 import Account, { AccountType } from '@/src/data/models/Account'
@@ -171,11 +171,11 @@ export default function AccountCreationScreen() {
         >
           <Ionicons
             name="arrow-back"
-            size={24}
+            size={Typography.sizes.xxl}
             color={theme.text}
           />
         </TouchableOpacity>
-        <AppText variant="heading">
+        <AppText variant="heading" style={styles.headerTitle}>
           {isEditMode ? 'Edit Account' : 'New Account'}
         </AppText>
         <View style={styles.placeholder} />
@@ -233,7 +233,7 @@ export default function AccountCreationScreen() {
                       backgroundColor: accountType === type.key
                         ? theme.primary
                         : theme.surface,
-                      opacity: isEditMode ? 0.6 : 1
+                      opacity: isEditMode ? Opacity.medium : Opacity.solid
                     }
                   ]}
                   onPress={() => !isEditMode && setAccountType(type.key as AccountType)}
@@ -270,7 +270,7 @@ export default function AccountCreationScreen() {
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  opacity: isEditMode ? 0.6 : 1
+                  opacity: isEditMode ? Opacity.medium : Opacity.solid
                 }
               ]}
               onPress={() => !isEditMode && setShowCurrencyModal(true)}
@@ -308,7 +308,7 @@ export default function AccountCreationScreen() {
             <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
               <AppText variant="heading">Select Currency</AppText>
               <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
+                <Ionicons name="close" size={Typography.sizes.xxl} color={theme.text} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -357,18 +357,18 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: Spacing.sm,
-    borderRadius: Shape.radius.full, // Circular back button
+    borderRadius: Shape.radius.full,
   },
   placeholder: {
-    width: 32, // Same width as back button for centering
+    width: Size.xl,
   },
   content: {
     flex: 1,
     padding: Spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: Typography.sizes.xxl,
+    fontFamily: Typography.fonts.bold,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
@@ -381,14 +381,14 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: Spacing.sm,
-    fontWeight: '600',
+    fontFamily: Typography.fonts.semibold,
   },
   input: {
     borderWidth: 1,
     borderRadius: Shape.radius.r3,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    fontSize: 16,
+    fontSize: Typography.sizes.base,
     minHeight: 48,
   },
   accountTypeContainer: {
@@ -401,17 +401,17 @@ const styles = StyleSheet.create({
     borderRadius: Shape.radius.full,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    minWidth: 80,
+    minWidth: 96,
   },
   accountTypeButtonSelected: {
     borderWidth: 2,
   },
   accountTypeText: {
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: Typography.fonts.medium,
   },
   accountTypeTextSelected: {
-    fontWeight: '600',
+    fontFamily: Typography.fonts.bold,
   },
   createButton: {
     marginTop: Spacing.xl,
@@ -433,6 +433,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: Typography.fonts.bold,
   },
   currencyItem: {
     flexDirection: 'row',
