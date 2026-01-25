@@ -1,5 +1,6 @@
 
 import { ErrorBoundary } from '@/src/components/core';
+import { UIProvider } from '@/src/contexts/UIContext';
 import { useColorScheme } from '@/src/hooks/use-color-scheme';
 import {
   Raleway_600SemiBold,
@@ -13,7 +14,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import 'react-native-reanimated';
-import { UIProvider } from '../contexts/UIContext';
 import { database } from '../src/data/database/Database';
 
 export default function RootLayout() {

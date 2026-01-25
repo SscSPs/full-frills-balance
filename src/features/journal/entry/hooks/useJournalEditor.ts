@@ -1,14 +1,9 @@
-import { AppConfig } from '@/constants';
 import { database } from '@/src/data/database/Database';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
-import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
-import { accountingService } from '@/src/domain/AccountingService';
-import { JournalLineInput } from '@/src/domain/accounting/JournalCalculator';
+import { journalEntryService } from '@/src/services/journal-entry-service';
 import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
-import { preferences } from '@/src/utils/preferences';
-import { sanitizeAmount } from '@/src/utils/validation';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -124,63 +119,23 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
     }, []);
 
     const submit = async () => {
-        const domainLines: JournalLineInput[] = lines.map(line => ({
-            amount: sanitizeAmount(line.amount) || 0,
-            type: line.transactionType,
-            exchangeRate: line.exchangeRate ? parseFloat(line.exchangeRate) : 1
-        }));
-
-        const validation = accountingService.validateBalance(domainLines);
-        if (!validation.isValid) {
-            showErrorAlert(`Journal is not balanced. Discrepancy: ${validation.imbalance}`);
-            return;
-        }
-
-        if (!description.trim()) {
-            showErrorAlert('Description is required');
-            return;
-        }
-
-        if (lines.some(l => !l.accountId)) {
-            showErrorAlert('All lines must have an account');
-            return;
-        }
-
-        const distinctValidation = accountingService.validateDistinctAccounts(lines.map(l => l.accountId));
-        if (!distinctValidation.isValid) {
-            showErrorAlert('A journal entry must involve at least 2 distinct accounts');
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            // Merge Date and Time
-            const combinedTimestamp = new Date(`${journalDate}T${journalTime}`).getTime();
+            const result = await journalEntryService.submitCJournalEntry(lines, description, journalDate, journalTime, isEdit ? journalId : undefined);
 
-            const journalData: CreateJournalData = {
-                journalDate: combinedTimestamp,
-                description: description.trim(),
-                currencyCode: preferences.defaultCurrencyCode || AppConfig.defaultCurrency,
-                transactions: lines.map(l => ({
-                    accountId: l.accountId,
-                    amount: sanitizeAmount(l.amount) || 0,
-                    transactionType: l.transactionType,
-                    notes: l.notes.trim() || undefined,
-                    exchangeRate: l.exchangeRate ? parseFloat(l.exchangeRate) : undefined
-                }))
-            };
+            if (!result.success) {
+                showErrorAlert(result.error || 'Unknown error');
+                return;
+            }
 
-            if (isEdit && journalId) {
-                await journalRepository.updateJournalWithTransactions(journalId, journalData);
+            if (result.action === 'updated') {
                 showSuccessAlert('Updated', 'Transaction updated successfully');
             } else {
-                await journalRepository.createJournalWithTransactions(journalData);
                 showSuccessAlert('Created', 'Transaction created successfully');
             }
             router.back();
         } catch (error) {
-            console.error('Failed to submit journal:', error);
-            showErrorAlert('Failed to save transaction');
+            showErrorAlert('Unexpected error occurred');
         } finally {
             setIsSubmitting(false);
         }

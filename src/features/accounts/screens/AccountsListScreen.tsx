@@ -1,11 +1,12 @@
-import { AppText, FloatingActionButton } from '@/src/components/core';
-import { NetWorthCard } from '@/src/features/dashboard/NetWorthCard';
 import { Spacing } from '@/constants';
+import { AppText, FloatingActionButton } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext';
-import { useAccounts, useNetWorth } from '@/src/hooks/use-data';
-import { useTheme } from '@/src/hooks/use-theme'; // Added useTheme
 import Account from '@/src/data/models/Account';
+import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { useNetWorth } from '@/src/features/dashboard';
+import { NetWorthCard } from '@/src/features/dashboard/NetWorthCard';
 import { AccountCard } from '@/src/features/journal/components/AccountCard';
+import { useTheme } from '@/src/hooks/use-theme'; // Added useTheme
 import { getAccountSections } from '@/src/utils/accountUtils';
 import { usePathname, useRouter } from 'expo-router'; // Added usePathname
 import React, { useMemo } from 'react';

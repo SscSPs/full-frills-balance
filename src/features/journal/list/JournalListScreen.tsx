@@ -1,12 +1,13 @@
-import { AppText, FloatingActionButton, SearchField } from '@/src/components/core';
-import { NetWorthCard } from '@/src/features/dashboard/NetWorthCard';
 import { Opacity, Spacing, Typography } from '@/constants';
+import { AppText, FloatingActionButton, SearchField } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext';
-import { useJournals, useNetWorth } from '@/src/hooks/use-data';
-import { useSummary } from '@/src/hooks/use-summary';
-import { useTheme } from '@/src/hooks/use-theme';
+import { useNetWorth } from '@/src/features/dashboard';
+import { NetWorthCard } from '@/src/features/dashboard/NetWorthCard';
+import { useJournals } from '@/src/features/journal';
 import { DashboardSummary } from '@/src/features/journal/components/DashboardSummary';
 import { JournalCard } from '@/src/features/journal/components/JournalCard';
+import { useSummary } from '@/src/hooks/use-summary';
+import { useTheme } from '@/src/hooks/use-theme';
 import { EnrichedJournal } from '@/src/types/readModels';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -76,7 +77,7 @@ export function JournalListScreen() {
                                 Hello, {userName || 'there'}!
                             </AppText>
                             <AppText variant="body" color="secondary">
-                                Here's your financial overview
+                                Here&apos;s your financial overview
                             </AppText>
                         </View>
                         <NetWorthCard

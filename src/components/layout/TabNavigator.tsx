@@ -1,9 +1,9 @@
+import { AccountsListScreen } from '@/src/features/accounts';
+import { JournalListScreen } from '@/src/features/journal';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import AccountsScreen from '../../app/(tabs)/accounts';
-import JournalListScreen from '../../app/(tabs)/index';
 import CustomTabBar from './CustomTabBar';
 
 interface TabNavigatorProps {
@@ -44,7 +44,7 @@ export default function TabNavigator({ initialTab = 'home' }: TabNavigatorProps)
       case 'home':
         return <JournalListScreen />;
       case 'accounts':
-        return <AccountsScreen />;
+        return <AccountsListScreen />;
       default:
         return <JournalListScreen />;
     }

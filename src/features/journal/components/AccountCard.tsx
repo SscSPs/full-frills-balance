@@ -1,9 +1,9 @@
-import { AppCard, AppText, Badge, IvyIcon } from '@/src/components/core';
 import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/constants';
+import { AppCard, AppText, Badge, IvyIcon } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext';
-import { useAccountBalance } from '@/src/hooks/use-data';
-import { useTheme } from '@/src/hooks/use-theme';
 import Account from '@/src/data/models/Account';
+import { useAccountBalance } from '@/src/features/accounts';
+import { useTheme } from '@/src/hooks/use-theme';
 import { getContrastColor } from '@/src/utils/colorUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import React from 'react';

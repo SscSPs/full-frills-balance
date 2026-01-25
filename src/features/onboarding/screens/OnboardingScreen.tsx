@@ -1,13 +1,13 @@
-import { Opacity, Size, Spacing, withOpacity } from '@/constants'
-import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core'
+import { Opacity, Size, Spacing, withOpacity } from '@/constants';
+import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
-import Currency from '@/src/data/models/Currency'
-import { useTheme } from '@/src/hooks/use-theme'
-import { currencyInitService } from '@/src/services/currency-init-service'
-import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
+import Currency from '@/src/data/models/Currency';
+import { useTheme } from '@/src/hooks/use-theme';
+import { currencyInitService } from '@/src/services/currency-init-service';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function OnboardingScreen() {
     const [step, setStep] = useState(1)
@@ -52,7 +52,7 @@ export default function OnboardingScreen() {
                 Welcome to Balance
             </AppText>
             <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Let's start with your name to personalize your experience.
+                Let&apos;s start with your name to personalize your experience.
             </AppText>
 
             <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>

@@ -13,11 +13,11 @@
  */
 
 import { ThemeMode } from '@/constants'
+import { integrityService } from '@/src/services/integrity-service'
+import { logger } from '@/src/utils/logger'
+import { preferences } from '@/src/utils/preferences'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
-import { integrityService } from '../src/services/integrity-service'
-import { logger } from '../src/utils/logger'
-import { preferences } from '../src/utils/preferences'
 
 // Simple UI state only - no domain data
 interface UIState {
@@ -104,14 +104,14 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         })
 
         // Initialize currencies if needed (async, don't block UI)
-        import('../src/services/currency-init-service').then(({ currencyInitService }) => {
+        import('@/src/services/currency-init-service').then(({ currencyInitService }) => {
           currencyInitService.initialize().catch(err => {
             // Silent fail - currencies are optional initialization
           })
         })
 
         // Run integrity check on startup (async, don't block UI)
-        import('../src/services/integrity-service').then(({ integrityService }) => {
+        import('@/src/services/integrity-service').then(({ integrityService }) => {
           integrityService.runStartupCheck().catch(err => {
             console.warn('Failed to run integrity check:', err)
           })

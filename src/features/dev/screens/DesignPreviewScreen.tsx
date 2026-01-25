@@ -50,15 +50,15 @@ const TokenBox = ({ size, radius }: { size: number; radius: number }) => {
 }
 
 export default function DesignPreviewScreen() {
-    // Gate this screen to development only
-    if (!__DEV__) {
-        return <Redirect href="/(tabs)" />
-    }
-
     const systemColorScheme = useColorScheme()
     const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark')
     const themeMode: ThemeMode = isDarkMode ? 'dark' : 'light'
     const theme = useThemeColors(themeMode)
+
+    // Gate this screen to development only
+    if (!__DEV__) {
+        return <Redirect href="/(tabs)" />
+    }
 
     return (
         <ThemeOverride mode={themeMode}>
@@ -259,7 +259,7 @@ export default function DesignPreviewScreen() {
 
                 <View style={styles.footer}>
                     <AppText variant="caption" color="tertiary">
-                        This is your visual truth. If it looks wrong here, it's wrong everywhere.
+                        This is your visual truth. If it looks wrong here, it&apos;s wrong everywhere.
                     </AppText>
                 </View>
             </ScrollView>
