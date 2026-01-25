@@ -5,7 +5,7 @@
 
 import { Spacing, ThemeMode } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 
 export type DividerProps = ViewProps & {

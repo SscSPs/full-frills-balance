@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';

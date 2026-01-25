@@ -1,6 +1,6 @@
 import { Opacity, Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import { ComponentVariant, getVariantColors } from '@/src/utils/style-helpers'
 import { useMemo } from 'react'
 import {

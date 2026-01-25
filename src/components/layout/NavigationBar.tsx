@@ -3,7 +3,7 @@
  * Provides consistent title, back button and actions across screens
  */
 
-import { AppText, IconButton } from '@/components/core'
+import { AppText, IconButton } from '@/src/components/core'
 import { Spacing } from '@/constants/design-tokens'
 import { useRouter } from 'expo-router'
 import React from 'react'

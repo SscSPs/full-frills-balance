@@ -1,10 +1,10 @@
-import { AppText, FloatingActionButton, SearchField } from '@/components/core';
-import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
+import { AppText, FloatingActionButton, SearchField } from '@/src/components/core';
+import { NetWorthCard } from '@/src/features/dashboard/NetWorthCard';
 import { Opacity, Spacing, Typography } from '@/constants';
-import { useUI } from '@/contexts/UIContext';
-import { useJournals, useNetWorth } from '@/hooks/use-data';
-import { useSummary } from '@/hooks/use-summary';
-import { useTheme } from '@/hooks/use-theme';
+import { useUI } from '@/src/contexts/UIContext';
+import { useJournals, useNetWorth } from '@/src/hooks/use-data';
+import { useSummary } from '@/src/hooks/use-summary';
+import { useTheme } from '@/src/hooks/use-theme';
 import { DashboardSummary } from '@/src/features/journal/components/DashboardSummary';
 import { JournalCard } from '@/src/features/journal/components/JournalCard';
 import { EnrichedJournal } from '@/src/types/readModels';

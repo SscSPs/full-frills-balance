@@ -4,7 +4,7 @@
  */
 
 import { Opacity, Shape, Size, Spacing } from '@/constants/design-tokens'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import React from 'react'
 import {

@@ -1,5 +1,5 @@
 import { Spacing, Typography } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';

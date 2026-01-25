@@ -1,6 +1,6 @@
 
-import { ErrorBoundary } from '@/components/core';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ErrorBoundary } from '@/src/components/core';
+import { useColorScheme } from '@/src/hooks/use-color-scheme';
 import {
   Raleway_600SemiBold,
   Raleway_700Bold,

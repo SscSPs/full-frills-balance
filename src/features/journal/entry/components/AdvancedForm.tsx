@@ -1,6 +1,6 @@
-import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/components/core';
+import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/src/components/core';
 import { AppConfig, Shape, Spacing } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { JournalCalculator, JournalLineInput } from '@/src/domain/accounting/JournalCalculator';
 import { JournalValidator } from '@/src/domain/accounting/JournalValidator';
 import { preferences } from '@/src/utils/preferences';

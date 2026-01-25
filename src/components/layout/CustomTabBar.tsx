@@ -1,6 +1,6 @@
-import { AppText } from '@/components/core';
+import { AppText } from '@/src/components/core';
 import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
 import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';

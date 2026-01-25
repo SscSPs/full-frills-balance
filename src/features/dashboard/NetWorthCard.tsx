@@ -1,7 +1,7 @@
-import { AppCard, AppText } from '@/components/core';
+import { AppCard, AppText } from '@/src/components/core';
 import { Shape, Size, Spacing, Typography } from '@/constants';
-import { useUI } from '@/contexts/UIContext';
-import { useTheme } from '@/hooks/use-theme';
+import { useUI } from '@/src/contexts/UIContext';
+import { useTheme } from '@/src/hooks/use-theme';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';

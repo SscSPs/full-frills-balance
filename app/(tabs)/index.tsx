@@ -1,4 +1,4 @@
-import { useUI } from '@/contexts/UIContext';
+import { useUI } from '@/src/contexts/UIContext';
 import { JournalListScreen } from '@/src/features/journal/list/JournalListScreen';
 import { Redirect } from 'expo-router';
 import React from 'react';

@@ -1,6 +1,6 @@
-import { AppButton, AppCard, AppText } from '@/components/core';
+import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Spacing } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';

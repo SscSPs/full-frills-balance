@@ -5,8 +5,8 @@
  */
 
 import { getContextualTokens, ThemeMode, useThemeColors } from '@/constants'
-import { useThemeOverride, useUI } from '@/contexts/UIContext'
-import { useColorScheme } from '@/hooks/use-color-scheme'
+import { useThemeOverride, useUI } from '@/src/contexts/UIContext'
+import { useColorScheme } from '@/src/hooks/use-color-scheme'
 
 export function useTheme() {
     const { themePreference } = useUI()

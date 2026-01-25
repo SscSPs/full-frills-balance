@@ -1,6 +1,6 @@
-import { AppInput, AppText, Box, Stack } from '@/components/core';
+import { AppInput, AppText, Box, Stack } from '@/src/components/core';
 import { AppConfig, Shape, Spacing } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { exchangeRateService } from '@/src/services/exchange-rate-service';

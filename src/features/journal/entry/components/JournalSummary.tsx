@@ -1,6 +1,6 @@
-import { AppCard, AppText, Box, Stack } from '@/components/core';
+import { AppCard, AppText, Box, Stack } from '@/src/components/core';
 import { Spacing } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import { preferences } from '@/src/utils/preferences';
 import React from 'react';
 import { StyleSheet } from 'react-native';

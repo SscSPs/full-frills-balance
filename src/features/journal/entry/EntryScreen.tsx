@@ -1,6 +1,6 @@
-import { AppText, Badge } from '@/components/core';
+import { AppText, Badge } from '@/src/components/core';
 import { Opacity, Shape, Spacing, withOpacity } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import Account from '@/src/data/models/Account';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { AccountSelector } from '@/src/features/journal/components/AccountSelector';

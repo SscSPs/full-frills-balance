@@ -5,7 +5,7 @@
 
 import { Shape, Size, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import React from 'react'
 import { StyleSheet, TextInput, type TextInputProps, View, ViewStyle } from 'react-native'
 import { AppText } from './AppText'

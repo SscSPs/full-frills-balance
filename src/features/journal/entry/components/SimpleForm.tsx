@@ -1,6 +1,6 @@
-import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/components/core';
+import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/src/components/core';
 import { AppConfig, Opacity, Shape, Size, Spacing, withOpacity } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import Account from '@/src/data/models/Account';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { accountingService } from '@/src/domain/AccountingService';

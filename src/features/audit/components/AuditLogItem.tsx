@@ -1,6 +1,6 @@
-import { AppCard, AppText } from '@/components/core'
+import { AppCard, AppText } from '@/src/components/core'
 import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/constants'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import { AuditAction } from '@/src/data/models/AuditLog'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
 import { formatDate } from '@/src/utils/dateUtils'

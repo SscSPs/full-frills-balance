@@ -1,6 +1,6 @@
-import { AppText } from '@/components/core';
+import { AppText } from '@/src/components/core';
 import { Shape, Spacing } from '@/constants';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 

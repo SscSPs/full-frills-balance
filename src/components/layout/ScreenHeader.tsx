@@ -5,7 +5,7 @@
  * NOT part of design system - reduces duplication in app screens only
  */
 
-import { AppText } from '@/components/core'
+import { AppText } from '@/src/components/core'
 import { Spacing } from '@/constants'
 import React from 'react'
 import { View, type ViewProps } from 'react-native'

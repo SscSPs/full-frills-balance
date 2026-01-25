@@ -4,7 +4,7 @@
  */
 
 import { Spacing } from '@/constants'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/src/hooks/use-theme'
 import { StatusBar } from 'expo-status-bar'
 import React from 'react'
 import { ScrollView, StyleSheet, View, type ViewProps } from 'react-native'
