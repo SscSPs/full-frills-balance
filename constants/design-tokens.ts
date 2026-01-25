@@ -136,6 +136,11 @@ export const Size = {
   lg: 32,   // Large icons
   xl: 40,   // Extra large icons
   xxl: 48,  // Extra extra large icons
+  fab: 64,  // Main FAB size
+  buttonSm: 32,
+  buttonMd: 44,
+  buttonLg: 52,
+  inputMd: 48,
 } as const
 
 // === TYPOGRAPHY SCALE ===

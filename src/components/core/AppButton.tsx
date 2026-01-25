@@ -1,4 +1,4 @@
-import { Opacity, Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
+import { Opacity, Shape, Size, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
 import { useThemeColors } from '@/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import { ComponentVariant, getVariantColors } from '@/src/utils/style-helpers'
@@ -84,27 +84,19 @@ export function AppButton({
 
     const sizeStyles = (() => {
       switch (size) {
-        case 'sm':
-          return styles.sizeSm
-        case 'md':
-          return styles.sizeMd
-        case 'lg':
-          return styles.sizeLg
-        default:
-          return styles.sizeMd
+        case 'sm': return styles.sizeSm
+        case 'md': return styles.sizeMd
+        case 'lg': return styles.sizeLg
+        default: return styles.sizeMd
       }
     })()
 
     const textTypography = (() => {
       switch (size) {
-        case 'sm':
-          return styles.textSm
-        case 'md':
-          return styles.textMd
-        case 'lg':
-          return styles.textLg
-        default:
-          return styles.textMd
+        case 'sm': return styles.textSm
+        case 'md': return styles.textMd
+        case 'lg': return styles.textLg
+        default: return styles.textMd
       }
     })()
 
@@ -159,17 +151,17 @@ const styles = StyleSheet.create({
   sizeSm: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    minHeight: 32,
+    minHeight: Size.buttonSm,
   },
   sizeMd: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    minHeight: 44,
+    minHeight: Size.buttonMd,
   },
   sizeLg: {
     paddingHorizontal: Spacing.xxxl,
     paddingVertical: Spacing.lg,
-    minHeight: 52,
+    minHeight: Size.buttonLg,
   },
   textSm: {
     fontSize: Typography.sizes.sm,

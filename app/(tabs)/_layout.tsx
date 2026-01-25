@@ -1,20 +1,11 @@
-import { Spacing, Typography } from '@/constants';
+import { Typography } from '@/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const TAB_BAR_BASE_HEIGHT = 52;
-const MIN_BOTTOM_INSET = Spacing.sm;
 
 export default function TabLayout() {
     const { theme } = useTheme();
-    const insets = useSafeAreaInsets();
-
-    // Dynamic tab bar height: base height + bottom safe area
-    const bottomInset = Math.max(insets.bottom, MIN_BOTTOM_INSET);
-    const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
 
     return (
         <Tabs
@@ -24,8 +15,6 @@ export default function TabLayout() {
                 tabBarStyle: {
                     backgroundColor: theme.background,
                     borderTopColor: theme.border,
-                    height: tabBarHeight,
-                    paddingBottom: bottomInset,
                 },
                 headerStyle: {
                     backgroundColor: theme.background,
@@ -39,7 +28,6 @@ export default function TabLayout() {
                     fontFamily: Typography.fonts.bold,
                     fontSize: Typography.sizes.xl,
                 },
-                headerShown: true,
             }}
         >
             <Tabs.Screen

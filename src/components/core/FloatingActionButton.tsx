@@ -1,4 +1,4 @@
-import { Opacity, Shape, Spacing } from '@/constants';
+import { Opacity, Shape, Size, Spacing } from '@/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -25,7 +25,7 @@ export const FloatingActionButton = ({ onPress, style }: FABProps) => {
             activeOpacity={Opacity.heavy}
             testID="fab-button"
         >
-            <Ionicons name="add" size={32} color={theme.pureInverse} />
+            <Ionicons name="add" size={Size.buttonSm} color={theme.pureInverse} />
         </TouchableOpacity>
     );
 };
@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: Spacing.xl,
         bottom: Spacing.xl,
-        width: 64,
-        height: 64,
+        width: Size.fab,
+        height: Size.fab,
         borderRadius: Shape.radius.full,
         alignItems: 'center',
         justifyContent: 'center',

@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
         fontSize: Typography.sizes.base,
-        minHeight: 48, // Standard touch target size - fine
+        minHeight: Size.inputMd,
     },
     heroInput: {
         fontSize: Typography.sizes.hero,
