@@ -6,6 +6,19 @@
 export interface DateRange {
   startDate: number;
   endDate: number;
+  label?: string;
+}
+
+export type PeriodType = 'MONTH' | 'CUSTOM' | 'LAST_N' | 'ALL_TIME';
+
+export interface PeriodFilter {
+  type: PeriodType;
+  month?: number; // 0-11
+  year?: number;
+  startDate?: number;
+  endDate?: number;
+  lastN?: number;
+  lastNUnit?: 'days' | 'weeks' | 'months';
 }
 
 /**
@@ -241,6 +254,87 @@ export const createDateRange = (
         endDate: getEndOfDay(now)
       };
   }
+};
+
+/**
+ * Gets a date range for a specific month and year
+ */
+export const getMonthRange = (month: number, year: number): DateRange => {
+  const startDate = new Date(year, month, 1, 0, 0, 0, 0).getTime();
+  const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
+  return { startDate, endDate };
+};
+
+/**
+ * Gets a date range for the last N days/weeks/months
+ */
+export const getLastNRange = (n: number, unit: 'days' | 'weeks' | 'months'): DateRange => {
+  const now = Date.now();
+  const startDate = new Date(now);
+
+  if (unit === 'days') {
+    startDate.setDate(startDate.getDate() - n);
+  } else if (unit === 'weeks') {
+    startDate.setDate(startDate.getDate() - (n * 7));
+  } else if (unit === 'months') {
+    startDate.setMonth(startDate.getMonth() - n);
+  }
+
+  return {
+    startDate: getStartOfDay(startDate.getTime()),
+    endDate: getEndOfDay(now)
+  };
+};
+
+/**
+ * Gets the current month range
+ */
+export const getCurrentMonthRange = (): DateRange => {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const range = getMonthRange(month, year);
+  return { ...range, label: getMonthLabel(month, year) };
+};
+
+/**
+ * Gets the previous month range
+ */
+export const getPreviousMonthRange = (currentMonth: number, currentYear: number): { range: DateRange, month: number, year: number } => {
+  let prevMonth = currentMonth - 1;
+  let prevYear = currentYear;
+
+  if (prevMonth < 0) {
+    prevMonth = 11;
+    prevYear -= 1;
+  }
+
+  const range = getMonthRange(prevMonth, prevYear);
+  return { range: { ...range, label: getMonthLabel(prevMonth, prevYear) }, month: prevMonth, year: prevYear };
+};
+
+/**
+ * Gets the next month range
+ */
+export const getNextMonthRange = (currentMonth: number, currentYear: number): { range: DateRange, month: number, year: number } => {
+  let nextMonth = currentMonth + 1;
+  let nextYear = currentYear;
+
+  if (nextMonth > 11) {
+    nextMonth = 0;
+    nextYear += 1;
+  }
+
+  const range = getMonthRange(nextMonth, nextYear);
+  return { range: { ...range, label: getMonthLabel(nextMonth, nextYear) }, month: nextMonth, year: nextYear };
+};
+
+/**
+ * Helper to get a formatted label for a month range (e.g. "Jan 2024")
+ */
+export const getMonthLabel = (month: number, year: number): string => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[month]} ${year}`;
 };
 
 /**

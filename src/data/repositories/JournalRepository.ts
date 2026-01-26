@@ -41,13 +41,20 @@ export class JournalRepository {
    * Reactive Observation Methods
    */
 
-  observeEnrichedJournals(limit: number) {
+  observeEnrichedJournals(limit: number, dateRange?: { startDate: number, endDate: number }) {
+    const clauses = [
+      Q.where('deleted_at', Q.eq(null)),
+      Q.sortBy('journal_date', 'desc'),
+      Q.take(limit)
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('journal_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('journal_date', Q.lte(dateRange.endDate)))
+    }
+
     const journalsObservable = this.journals
-      .query(
-        Q.where('deleted_at', Q.eq(null)),
-        Q.sortBy('journal_date', 'desc'),
-        Q.take(limit)
-      )
+      .query(...clauses)
       .observe()
 
     const transactionsObservable = this.transactions
@@ -57,14 +64,21 @@ export class JournalRepository {
     return { journalsObservable, transactionsObservable }
   }
 
-  observeAccountTransactions(accountId: string, limit: number) {
+  observeAccountTransactions(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }) {
+    const clauses = [
+      Q.where('account_id', accountId),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.sortBy('transaction_date', 'desc'),
+      Q.take(limit)
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('transaction_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('transaction_date', Q.lte(dateRange.endDate)))
+    }
+
     return this.transactions
-      .query(
-        Q.where('account_id', accountId),
-        Q.where('deleted_at', Q.eq(null)),
-        Q.sortBy('transaction_date', 'desc'),
-        Q.take(limit)
-      )
+      .query(...clauses)
       .observe()
   }
 
@@ -205,13 +219,20 @@ export class JournalRepository {
    * Fetches the last N journals with transaction summaries and account names
    * Repository-owned read model for the Dashboard/Journal history
    */
-  async findEnrichedJournals(limit: number): Promise<EnrichedJournal[]> {
+  async findEnrichedJournals(limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedJournal[]> {
+    const clauses = [
+      Q.where('deleted_at', Q.eq(null)),
+      Q.sortBy('journal_date', 'desc'),
+      Q.take(limit)
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('journal_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('journal_date', Q.lte(dateRange.endDate)))
+    }
+
     const loadedJournals = await this.journals
-      .query(
-        Q.where('deleted_at', Q.eq(null)),
-        Q.sortBy('journal_date', 'desc'),
-        Q.take(limit)
-      )
+      .query(...clauses)
       .fetch()
 
     if (loadedJournals.length === 0) return []
@@ -273,14 +294,21 @@ export class JournalRepository {
   /**
    * Fetches enriched transactions for a specific account.
    */
-  async findEnrichedTransactionsForAccount(accountId: string, limit: number): Promise<EnrichedTransaction[]> {
+  async findEnrichedTransactionsForAccount(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedTransaction[]> {
+    const clauses = [
+      Q.where('account_id', accountId),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.sortBy('transaction_date', 'desc'),
+      Q.take(limit)
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('transaction_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('transaction_date', Q.lte(dateRange.endDate)))
+    }
+
     const loadedTransactions = await this.transactions
-      .query(
-        Q.where('account_id', accountId),
-        Q.where('deleted_at', Q.eq(null)),
-        Q.sortBy('transaction_date', 'desc'),
-        Q.take(limit)
-      )
+      .query(...clauses)
       .fetch()
 
     if (loadedTransactions.length === 0) return []

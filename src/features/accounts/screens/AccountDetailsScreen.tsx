@@ -4,6 +4,8 @@
  * Shows account information and transaction history
  */
 
+import { DateRangeFilter } from '@/src/components/common/DateRangeFilter'
+import { DateRangePicker } from '@/src/components/common/DateRangePicker'
 import { AppButton, AppCard, AppText, Badge, FloatingActionButton, IconButton, IvyIcon } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { Shape, Spacing } from '@/src/constants'
@@ -13,6 +15,7 @@ import { TransactionItem, useAccountTransactions } from '@/src/features/journal'
 import { useTheme } from '@/src/hooks/use-theme'
 import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
+import { DateRange, PeriodFilter, getCurrentMonthRange, getNextMonthRange, getPreviousMonthRange } from '@/src/utils/dateUtils'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React from 'react'
@@ -24,13 +27,32 @@ export default function AccountDetailsScreen() {
     const { theme } = useTheme()
     const accountId = params.accountId as string
 
+    // Default to Current Month
+    const [dateRange, setDateRange] = React.useState<DateRange | null>(() => getCurrentMonthRange())
+    const [periodFilter, setPeriodFilter] = React.useState<PeriodFilter>(() => {
+        const now = new Date();
+        return { type: 'MONTH', month: now.getMonth(), year: now.getFullYear() };
+    })
+    const [isDatePickerVisible, setIsDatePickerVisible] = React.useState(false)
+
     const { account, isLoading: accountLoading } = useAccount(accountId)
-    const { transactions, isLoading: transactionsLoading } = useAccountTransactions(accountId)
+    const { transactions, isLoading: transactionsLoading } = useAccountTransactions(accountId, 50, dateRange || undefined)
     const { balanceData, isLoading: balanceLoading } = useAccountBalance(accountId)
 
     const balance = balanceData?.balance || 0
     const transactionCount = balanceData?.transactionCount || 0
     const isDeleted = (account as any)?._raw?._status === 'deleted' || (account as any)?._raw?.deleted_at != null
+
+    const handleMonthNavigation = (direction: 'PREV' | 'NEXT') => {
+        if (periodFilter.type === 'MONTH' && periodFilter.month !== undefined && periodFilter.year !== undefined) {
+            const { range, month, year } = direction === 'PREV'
+                ? getPreviousMonthRange(periodFilter.month, periodFilter.year)
+                : getNextMonthRange(periodFilter.month, periodFilter.year);
+
+            setDateRange(range);
+            setPeriodFilter({ type: 'MONTH', month, year });
+        }
+    };
 
     const handleDelete = () => {
         const hasTransactions = transactionCount > 0;
@@ -185,9 +207,17 @@ export default function AccountDetailsScreen() {
             </AppCard>
 
             {/* Transaction History Header */}
-            <AppText variant="heading" style={styles.sectionTitle}>
-                Transaction History
-            </AppText>
+            <View style={styles.sectionHeader}>
+                <AppText variant="heading">
+                    Transaction History
+                </AppText>
+                <DateRangeFilter
+                    range={dateRange}
+                    onPress={() => setIsDatePickerVisible(true)}
+                    onPrevious={periodFilter.type === 'MONTH' ? () => handleMonthNavigation('PREV') : undefined}
+                    onNext={periodFilter.type === 'MONTH' ? () => handleMonthNavigation('NEXT') : undefined}
+                />
+            </View>
         </View>
     );
 
@@ -228,6 +258,17 @@ export default function AccountDetailsScreen() {
                     onPress={() => router.push(`/journal-entry?sourceId=${accountId}` as any)}
                 />
             )}
+
+            <DateRangePicker
+                visible={isDatePickerVisible}
+                onClose={() => setIsDatePickerVisible(false)}
+                currentFilter={periodFilter}
+                onSelect={(range: DateRange | null, filter: PeriodFilter) => {
+                    setDateRange(range)
+                    setPeriodFilter(filter)
+                    setIsDatePickerVisible(false)
+                }}
+            />
         </Screen>
     )
 }
@@ -286,6 +327,12 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
         marginTop: Spacing.sm,
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.sm,
+    },
     sectionTitle: {
         marginBottom: Spacing.md,
     },
@@ -294,6 +341,6 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         paddingHorizontal: Spacing.lg,
-        paddingBottom: 100, // Space for FAB
+        paddingBottom: Spacing.xxxxl * 2.5, // Space for FAB
     },
 })

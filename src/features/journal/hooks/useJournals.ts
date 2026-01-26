@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 /**
  * Hook to reactively get journals with pagination and account enrichment
  */
-export function useJournals(pageSize: number = 50) {
+export function useJournals(pageSize: number = 50, dateRange?: { startDate: number, endDate: number }) {
     const [journals, setJournals] = useState<EnrichedJournal[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -16,10 +16,11 @@ export function useJournals(pageSize: number = 50) {
     const [currentLimit, setCurrentLimit] = useState(pageSize)
 
     useEffect(() => {
-        const { journalsObservable, transactionsObservable } = journalRepository.observeEnrichedJournals(currentLimit)
+        setIsLoading(true) // Reset loading when date range changes
+        const { journalsObservable, transactionsObservable } = journalRepository.observeEnrichedJournals(currentLimit, dateRange)
 
         const subscription = journalsObservable.subscribe(async (loaded) => {
-            const enriched = await journalRepository.findEnrichedJournals(currentLimit)
+            const enriched = await journalRepository.findEnrichedJournals(currentLimit, dateRange)
             setJournals(enriched)
             setHasMore(loaded.length >= currentLimit)
             setIsLoading(false)
@@ -28,7 +29,7 @@ export function useJournals(pageSize: number = 50) {
 
         const txSubscription = transactionsObservable.subscribe(async () => {
             // Re-fetch enriched journals when any transaction changes
-            const enriched = await journalRepository.findEnrichedJournals(currentLimit)
+            const enriched = await journalRepository.findEnrichedJournals(currentLimit, dateRange)
             setJournals(enriched)
         })
 
@@ -36,7 +37,7 @@ export function useJournals(pageSize: number = 50) {
             subscription.unsubscribe()
             txSubscription.unsubscribe()
         }
-    }, [currentLimit])
+    }, [currentLimit, dateRange?.startDate, dateRange?.endDate])
 
     const loadMore = () => {
         if (isLoadingMore || !hasMore) return
@@ -50,7 +51,7 @@ export function useJournals(pageSize: number = 50) {
 /**
  * Custom hook to get reactively updated transactions for an account
  */
-export function useAccountTransactions(accountId: string, pageSize: number = 50) {
+export function useAccountTransactions(accountId: string, pageSize: number = 50, dateRange?: { startDate: number, endDate: number }) {
     const [transactions, setTransactions] = useState<EnrichedTransaction[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -58,10 +59,11 @@ export function useAccountTransactions(accountId: string, pageSize: number = 50)
     const [currentLimit, setCurrentLimit] = useState(pageSize)
 
     useEffect(() => {
+        setIsLoading(true)
         const subscription = journalRepository
-            .observeAccountTransactions(accountId, currentLimit)
+            .observeAccountTransactions(accountId, currentLimit, dateRange)
             .subscribe(async (loaded) => {
-                const enriched = await journalRepository.findEnrichedTransactionsForAccount(accountId, currentLimit)
+                const enriched = await journalRepository.findEnrichedTransactionsForAccount(accountId, currentLimit, dateRange)
                 setTransactions(enriched)
                 setHasMore(loaded.length >= currentLimit)
                 setIsLoading(false)
@@ -69,7 +71,7 @@ export function useAccountTransactions(accountId: string, pageSize: number = 50)
             })
 
         return () => subscription.unsubscribe()
-    }, [accountId, currentLimit])
+    }, [accountId, currentLimit, dateRange?.startDate, dateRange?.endDate])
 
     const loadMore = () => {
         if (isLoadingMore || !hasMore) return

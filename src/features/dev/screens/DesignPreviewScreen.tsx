@@ -16,7 +16,8 @@
  * - If it looks wrong here, it is wrong everywhere
  * ========================================
  */
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/src/constants'
+import { DateRangeFilter } from '@/src/components/common/DateRangeFilter'
+import { DateRangePicker } from '@/src/components/common/DateRangePicker'
 import {
     AppButton,
     AppCard,
@@ -27,8 +28,10 @@ import {
     ListRow,
     Stack
 } from '@/src/components/core'
+import { Shape, Spacing, ThemeMode, useThemeColors } from '@/src/constants'
 import { ThemeOverride } from '@/src/contexts/UIContext'
 import { useColorScheme } from '@/src/hooks/use-color-scheme'
+import { DateRange, PeriodFilter } from '@/src/utils/dateUtils'
 import { Redirect } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, StyleSheet, Switch, View } from 'react-native'
@@ -52,6 +55,14 @@ const TokenBox = ({ size, radius }: { size: number; radius: number }) => {
 export default function DesignPreviewScreen() {
     const systemColorScheme = useColorScheme()
     const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark')
+    const THIRTY_DAYS_MS = 86400000 * 30
+    const [dateRange, setDateRange] = useState<DateRange | null>({
+        label: 'Recent Transactions',
+        startDate: Date.now() - THIRTY_DAYS_MS,
+        endDate: Date.now()
+    })
+    const [periodFilter, setPeriodFilter] = useState<PeriodFilter>({ type: 'ALL_TIME' })
+    const [isDatePickerVisible, setIsDatePickerVisible] = useState(false)
     const themeMode: ThemeMode = isDarkMode ? 'dark' : 'light'
     const theme = useThemeColors(themeMode)
 
@@ -241,6 +252,23 @@ export default function DesignPreviewScreen() {
                     </View>
                 </AppCard>
 
+                {/* Date Filters Section */}
+                <AppCard elevation="sm" padding="lg" style={styles.section}>
+                    <AppText variant="heading">Date Filters</AppText>
+                    <Divider />
+
+                    <AppText variant="subheading" style={{ marginBottom: Spacing.md }}>Filter Chip</AppText>
+                    <DateRangeFilter
+                        range={dateRange}
+                        onPress={() => setIsDatePickerVisible(true)}
+                    />
+
+                    <AppText variant="subheading" style={{ marginTop: Spacing.md, marginBottom: Spacing.md }}>Try Picker</AppText>
+                    <AppButton variant="outline" onPress={() => setIsDatePickerVisible(true)}>
+                        Open Date Picker
+                    </AppButton>
+                </AppCard>
+
                 {/* Spacing Reference */}
                 <AppCard elevation="sm" padding="lg" style={styles.section}>
                     <AppText variant="heading">Spacing Scale</AppText>
@@ -262,6 +290,17 @@ export default function DesignPreviewScreen() {
                         This is your visual truth. If it looks wrong here, it&apos;s wrong everywhere.
                     </AppText>
                 </View>
+
+                <DateRangePicker
+                    visible={isDatePickerVisible}
+                    onClose={() => setIsDatePickerVisible(false)}
+                    currentFilter={periodFilter}
+                    onSelect={(range, filter) => {
+                        setDateRange(range)
+                        setPeriodFilter(filter)
+                        setIsDatePickerVisible(false)
+                    }}
+                />
             </ScrollView>
         </ThemeOverride>
     )

@@ -1,3 +1,5 @@
+import { DateRangeFilter } from '@/src/components/common/DateRangeFilter';
+import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { AppText, FloatingActionButton, SearchField } from '@/src/components/core';
 import { Opacity, Spacing, Typography } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
@@ -8,6 +10,7 @@ import { useJournals } from '@/src/features/journal/hooks/useJournals';
 import { useSummary } from '@/src/hooks/use-summary';
 import { useTheme } from '@/src/hooks/use-theme';
 import { EnrichedJournal } from '@/src/types/domain';
+import { DateRange, PeriodFilter, getCurrentMonthRange, getNextMonthRange, getPreviousMonthRange } from '@/src/utils/dateUtils';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -17,15 +20,34 @@ export function JournalListScreen() {
     const router = useRouter()
     const { userName } = useUI()
     const { theme } = useTheme();
-    const { journals, isLoading, isLoadingMore, loadMore } = useJournals()
-    const { income, expense, netWorth, totalAssets, totalLiabilities, isPrivacyMode, isLoading: isSummaryLoading } = useSummary()
     const [searchQuery, setSearchQuery] = React.useState('')
+
+    // Default to Current Month
+    const [dateRange, setDateRange] = React.useState<DateRange | null>(() => getCurrentMonthRange())
+    const [periodFilter, setPeriodFilter] = React.useState<PeriodFilter>(() => {
+        const now = new Date();
+        return { type: 'MONTH', month: now.getMonth(), year: now.getFullYear() };
+    })
+    const [isDatePickerVisible, setIsDatePickerVisible] = React.useState(false)
+    const { journals, isLoading, isLoadingMore, hasMore, loadMore } = useJournals(50, dateRange || undefined)
+    const { income, expense, netWorth, totalAssets, totalLiabilities, isPrivacyMode, isLoading: isSummaryLoading } = useSummary()
     const [isDashboardHidden, setIsDashboardHidden] = React.useState(isPrivacyMode)
 
     // Sync with global privacy mode when it changes
     React.useEffect(() => {
         setIsDashboardHidden(isPrivacyMode)
     }, [isPrivacyMode])
+
+    const handleMonthNavigation = (direction: 'PREV' | 'NEXT') => {
+        if (periodFilter.type === 'MONTH' && periodFilter.month !== undefined && periodFilter.year !== undefined) {
+            const { range, month, year } = direction === 'PREV'
+                ? getPreviousMonthRange(periodFilter.month, periodFilter.year)
+                : getNextMonthRange(periodFilter.month, periodFilter.year);
+
+            setDateRange(range);
+            setPeriodFilter({ type: 'MONTH', month, year });
+        }
+    };
 
     // WORKAROUND: FlashList 2.0.2 types are currently incompatible with React 19/RN 0.81 JSX checks.
     // We use 'any' here to unblock the build while keeping the core logic intact.
@@ -95,6 +117,12 @@ export function JournalListScreen() {
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
+                        <DateRangeFilter
+                            range={dateRange}
+                            onPress={() => setIsDatePickerVisible(true)}
+                            onPrevious={periodFilter.type === 'MONTH' ? () => handleMonthNavigation('PREV') : undefined}
+                            onNext={periodFilter.type === 'MONTH' ? () => handleMonthNavigation('NEXT') : undefined}
+                        />
                         <AppText variant="subheading" style={styles.sectionTitle}>
                             {searchQuery ? 'Search Results' : 'Recent Transactions'}
                         </AppText>
@@ -130,6 +158,16 @@ export function JournalListScreen() {
             <FloatingActionButton
                 onPress={() => router.push('/journal-entry' as any)}
             />
+            <DateRangePicker
+                visible={isDatePickerVisible}
+                onClose={() => setIsDatePickerVisible(false)}
+                currentFilter={periodFilter}
+                onSelect={(range, filter) => {
+                    setDateRange(range)
+                    setPeriodFilter(filter)
+                    setIsDatePickerVisible(false)
+                }}
+            />
         </View>
     );
 }
@@ -154,7 +192,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 100,
+        paddingTop: Spacing.xxxxl * 2,
     },
     emptyText: {
         fontSize: Typography.sizes.lg,

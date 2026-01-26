@@ -324,6 +324,7 @@ export interface Theme {
   divider: string
   pure: string
   pureInverse: string
+  onPrimary: string
 }
 
 // === SEMANTIC COLORS ===
@@ -366,6 +367,7 @@ export const Colors: { light: Theme; dark: Theme } = {
     divider: Palette.extraLightGray,
     pure: '#FFFFFF',
     pureInverse: '#000000',
+    onPrimary: '#FFFFFF',
   },
 
   // Dark theme - Matches IvyMaterial3Theme ivyDarkColorScheme
@@ -406,6 +408,7 @@ export const Colors: { light: Theme; dark: Theme } = {
     divider: Palette.darkGray,
     pure: '#000000',
     pureInverse: '#FFFFFF',
+    onPrimary: '#FFFFFF',
   },
 } as const
 
