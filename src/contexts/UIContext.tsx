@@ -43,7 +43,7 @@ interface UIState {
 
   // App Lifecycle
   isRestartRequired: boolean
-  importStats: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: Array<{ id: string; reason: string; description?: string }> } | null
+  importStats: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } | null
 }
 
 interface UIContextType extends UIState {
@@ -55,7 +55,7 @@ interface UIContextType extends UIState {
   cleanupDatabase: () => Promise<{ deletedCount: number }>
   updateUserDetails: (name: string, currency: string) => Promise<void>
   setPrivacyMode: (isPrivacyMode: boolean) => Promise<void>
-  requireRestart: (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: Array<{ id: string; reason: string; description?: string }> }) => void
+  requireRestart: (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] }) => void
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined)
@@ -238,7 +238,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const requireRestart = (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: Array<{ id: string; reason: string; description?: string }> }) => {
+  const requireRestart = (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] }) => {
     setUIState(prev => ({ ...prev, isRestartRequired: true, importStats: stats || null }))
   }
 

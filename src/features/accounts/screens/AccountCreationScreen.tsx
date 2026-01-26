@@ -122,6 +122,7 @@ export default function AccountCreationScreen() {
                 })
 
                 if (Platform.OS !== 'web') {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
                     const { showSuccessAlert } = require('@/src/utils/alerts')
                     showSuccessAlert(
                         'Account Updated',
@@ -140,6 +141,7 @@ export default function AccountCreationScreen() {
                 // On web, window.alert blocks. We use console log for E2E and then navigate.
                 // In a real app, we'd use a Toast or similar.
                 if (Platform.OS !== 'web') {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
                     const { showSuccessAlert } = require('@/src/utils/alerts')
                     showSuccessAlert(
                         'Account Created',

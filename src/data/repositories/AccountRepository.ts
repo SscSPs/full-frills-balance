@@ -172,6 +172,7 @@ export class AccountRepository {
 
       // Use precision-aware epsilon check
       if (Math.abs(initialBalance) > getEpsilon(precision)) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { journalRepository } = require('./JournalRepository')
 
         const roundedAmount = roundToPrecision(Math.abs(initialBalance), precision)

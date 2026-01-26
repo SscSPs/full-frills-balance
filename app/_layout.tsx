@@ -44,10 +44,9 @@ export default function RootLayout() {
 }
 
 function AppContent() {
-  const { isRestartRequired } = useUI();
+  const { isRestartRequired, importStats: stats } = useUI();
 
   if (isRestartRequired) {
-    const stats = useUI().importStats;
 
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', padding: 20 }}>
