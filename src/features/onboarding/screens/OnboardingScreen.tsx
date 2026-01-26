@@ -1,4 +1,4 @@
-import { Opacity, Size, Spacing, withOpacity } from '@/constants';
+import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
 import Currency from '@/src/data/models/Currency';

@@ -5,7 +5,7 @@
  * NOT part of design system - reduces duplication in app screens only
  */
 
-import { Spacing } from '@/constants'
+import { Spacing } from '@/src/constants'
 import React from 'react'
 import { View, type ViewProps } from 'react-native'
 

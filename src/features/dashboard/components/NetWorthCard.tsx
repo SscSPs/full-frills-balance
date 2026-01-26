@@ -1,5 +1,5 @@
 import { AppCard, AppText } from '@/src/components/core';
-import { Shape, Size, Spacing, Typography } from '@/constants';
+import { Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useTheme } from '@/src/hooks/use-theme';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';

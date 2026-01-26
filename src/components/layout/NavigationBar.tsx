@@ -4,7 +4,7 @@
  */
 
 import { AppText, IconButton } from '@/src/components/core'
-import { Spacing } from '@/constants/design-tokens'
+import { Spacing } from '@/src/constants/design-tokens'
 import { useRouter } from 'expo-router'
 import React from 'react'
 import { StyleSheet, View, type ViewStyle } from 'react-native'

@@ -1,4 +1,4 @@
-import { AppConfig, Opacity, Shape, Size, Spacing, withOpacity } from '@/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { AppButton } from '@/src/components/core/AppButton';
 import { AppCard } from '@/src/components/core/AppCard';
 import { AppInput } from '@/src/components/core/AppInput';

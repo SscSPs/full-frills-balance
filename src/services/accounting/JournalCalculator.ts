@@ -1,4 +1,4 @@
-import { AppConfig } from '@/constants';
+import { AppConfig } from '@/src/constants';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { preferences } from '@/src/utils/preferences';
 import { sanitizeAmount } from '@/src/utils/validation';

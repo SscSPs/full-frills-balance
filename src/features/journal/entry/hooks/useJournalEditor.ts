@@ -110,7 +110,7 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
     const submit = async () => {
         setIsSubmitting(true);
         try {
-            const result = await journalEntryService.submitCJournalEntry(lines, description, journalDate, journalTime, isEdit ? journalId : undefined);
+            const result = await journalEntryService.submitJournalEntry(lines, description, journalDate, journalTime, isEdit ? journalId : undefined);
 
             if (!result.success) {
                 showErrorAlert(result.error || 'Unknown error');

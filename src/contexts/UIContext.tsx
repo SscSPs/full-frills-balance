@@ -12,7 +12,7 @@
  * ========================================
  */
 
-import { ThemeMode } from '@/constants'
+import { ThemeMode } from '@/src/constants'
 import { integrityService } from '@/src/services/integrity-service'
 import { logger } from '@/src/utils/logger'
 import { preferences } from '@/src/utils/preferences'

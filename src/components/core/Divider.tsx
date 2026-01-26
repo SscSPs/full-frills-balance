@@ -3,8 +3,8 @@
  * Clean, minimal divider design inspired by Ivy Wallet
  */
 
-import { Spacing, ThemeMode } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Spacing, ThemeMode } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import { StyleSheet, View, type ViewProps } from 'react-native'
 

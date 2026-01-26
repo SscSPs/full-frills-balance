@@ -1,8 +1,8 @@
-import { Shape, Spacing } from '@/constants';
+import { Shape, Spacing } from '@/src/constants';
 import { AppText, Box, FloatingActionButton } from '@/src/components/core';
 import Account from '@/src/data/models/Account';
 import { AccountCard } from '@/src/features/accounts/components/AccountCard';
-import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { useAccounts } from '@/src/features/accounts';
 import { NetWorthCard, useNetWorth } from '@/src/features/dashboard';
 import { useTheme } from '@/src/hooks/use-theme';
 import { getAccountSections } from '@/src/utils/accountUtils';

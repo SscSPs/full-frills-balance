@@ -1,7 +1,7 @@
-import { Opacity, Shape, Spacing, withOpacity } from '@/constants';
+import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import { AppText, Badge } from '@/src/components/core';
 import { useAccounts } from '@/src/features/accounts';
-import { AccountSelector } from '@/src/features/journal/components/AccountSelector';
+import { AccountSelector } from '@/src/features/journal';
 import { useTheme } from '@/src/hooks/use-theme';
 import { showErrorAlert } from '@/src/utils/alerts';
 import { useLocalSearchParams, useRouter } from 'expo-router';

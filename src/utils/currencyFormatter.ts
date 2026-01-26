@@ -1,4 +1,4 @@
-import { AppConfig } from '@/constants';
+import { AppConfig } from '@/src/constants';
 import { preferences } from './preferences';
 
 /**

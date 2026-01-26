@@ -1,4 +1,4 @@
-import { Opacity, Shape, Size, Spacing } from '@/constants';
+import { Opacity, Shape, Size, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';

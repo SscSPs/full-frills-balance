@@ -1,4 +1,4 @@
-import { Spacing, SpacingKey } from '@/constants/design-tokens'
+import { Spacing, SpacingKey } from '@/src/constants/design-tokens'
 import React from 'react'
 import { View, type ViewProps, type ViewStyle } from 'react-native'
 

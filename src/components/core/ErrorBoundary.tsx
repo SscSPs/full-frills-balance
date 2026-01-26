@@ -8,10 +8,11 @@
  * This is intentional - the error boundary must work even when context fails.
  */
 
-import { Palette, Shape, Spacing, Typography } from '@/constants';
+import { Palette, Shape, Spacing, Typography } from '@/src/constants';
 import { logger } from '@/src/utils/logger';
 import React, { Component, ReactNode } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { AppText } from './AppText';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -51,18 +52,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             return (
                 <View style={styles.container}>
-                    <Text style={styles.emoji}>😕</Text>
-                    <Text style={styles.title}>Something went wrong</Text>
-                    <Text style={styles.message}>
+                    <AppText style={styles.emoji}>😕</AppText>
+                    <AppText variant="heading" style={styles.title}>Something went wrong</AppText>
+                    <AppText variant="body" style={styles.message}>
                         An unexpected error occurred. Please try again.
-                    </Text>
+                    </AppText>
                     {__DEV__ && this.state.error && (
-                        <Text style={styles.errorDetails}>
+                        <AppText variant="caption" style={styles.errorDetails}>
                             {this.state.error.message}
-                        </Text>
+                        </AppText>
                     )}
                     <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-                        <Text style={styles.buttonText}>Try Again</Text>
+                        <AppText variant="subheading" style={styles.buttonText}>Try Again</AppText>
                     </TouchableOpacity>
                 </View>
             );

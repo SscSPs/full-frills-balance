@@ -1,2 +1,2 @@
-import TransactionDetailsScreen from '@/src/features/journal/screens/TransactionDetailsScreen';
+import TransactionDetailsScreen from '@/src/features/journal';
 export default TransactionDetailsScreen;

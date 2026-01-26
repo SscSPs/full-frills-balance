@@ -1,4 +1,4 @@
-import { Opacity, Spacing, Typography, withOpacity } from '@/constants';
+import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { useUI } from '@/src/contexts/UIContext';

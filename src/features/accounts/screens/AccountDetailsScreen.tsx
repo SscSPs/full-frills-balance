@@ -4,13 +4,12 @@
  * Shows account information and transaction history
  */
 
-import { Shape, Spacing } from '@/constants'
+import { Shape, Spacing } from '@/src/constants'
 import { AppButton, AppCard, AppText, Badge, FloatingActionButton, IconButton, IvyIcon } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
-import { useAccount, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts'
-import { useAccountTransactions } from '@/src/features/journal'
-import { TransactionItem } from '@/src/features/journal/components/TransactionItem'
+import { useAccount, useAccountBalance } from '@/src/features/accounts'
+import { useAccountTransactions, TransactionItem } from '@/src/features/journal'
 import { useTheme } from '@/src/hooks/use-theme'
 import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'

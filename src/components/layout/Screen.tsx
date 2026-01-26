@@ -3,7 +3,7 @@
  * Provides consistent screen layout with safe area, background, and navigation
  */
 
-import { Spacing } from '@/constants'
+import { Spacing } from '@/src/constants'
 import { useTheme } from '@/src/hooks/use-theme'
 import { StatusBar } from 'expo-status-bar'
 import React from 'react'

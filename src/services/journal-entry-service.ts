@@ -1,4 +1,4 @@
-import { AppConfig } from '@/constants';
+import { AppConfig } from '@/src/constants';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { JournalLineInput } from '@/src/services/accounting/JournalCalculator';
 import { accountingService } from '@/src/services/AccountingService';
@@ -13,7 +13,7 @@ export interface SubmitJournalResult {
 }
 
 export class JournalEntryService {
-    async submitCJournalEntry(
+    async submitJournalEntry(
         lines: JournalEntryLine[],
         description: string,
         journalDate: string,

@@ -1,5 +1,5 @@
-import { Shape, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Shape, Spacing, ThemeMode, Typography } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import { ComponentVariant, getVariantColors } from '@/src/utils/style-helpers'
 import { Ionicons } from '@expo/vector-icons'

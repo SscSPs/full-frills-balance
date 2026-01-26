@@ -3,7 +3,7 @@
  * Encodes visual identity for navigation and action buttons
  */
 
-import { Opacity, Shape, Size, Spacing } from '@/constants/design-tokens'
+import { Opacity, Shape, Size, Spacing } from '@/src/constants/design-tokens'
 import { useTheme } from '@/src/hooks/use-theme'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import React from 'react'

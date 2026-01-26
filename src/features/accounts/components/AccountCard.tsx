@@ -1,8 +1,8 @@
-import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/constants';
+import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/src/constants';
 import { AppCard, AppText, Badge, IvyIcon } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext';
 import Account from '@/src/data/models/Account';
-import { useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
+import { useAccountBalance } from '@/src/features/accounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { getContrastColor } from '@/src/utils/colorUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';

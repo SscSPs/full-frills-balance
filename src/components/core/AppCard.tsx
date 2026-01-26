@@ -1,5 +1,5 @@
-import { Shape, Spacing, ThemeMode } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Shape, Spacing, ThemeMode } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import { useMemo } from 'react'
 import { StyleSheet, View, type ViewProps } from 'react-native'

@@ -1,4 +1,4 @@
-import { AppConfig, Shape, Spacing } from '@/constants';
+import { AppConfig, Shape, Spacing } from '@/src/constants';
 import { AppInput, AppText, Box, Stack } from '@/src/components/core';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';

@@ -4,7 +4,7 @@
  * Consolidates theme logic used across all screens.
  */
 
-import { getContextualTokens, ThemeMode, useThemeColors } from '@/constants'
+import { getContextualTokens, ThemeMode, useThemeColors } from '@/src/constants'
 import { useThemeOverride, useUI } from '@/src/contexts/UIContext'
 import { useColorScheme } from '@/src/hooks/use-color-scheme'
 

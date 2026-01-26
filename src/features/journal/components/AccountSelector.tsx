@@ -1,5 +1,5 @@
 import { AppText } from '@/src/components/core';
-import { Shape, Spacing } from '@/constants';
+import { Shape, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';

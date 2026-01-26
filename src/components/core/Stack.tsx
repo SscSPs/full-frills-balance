@@ -1,4 +1,4 @@
-import { SpacingKey } from '@/constants/design-tokens'
+import { SpacingKey } from '@/src/constants/design-tokens'
 import React from 'react'
 import { Box, type BoxProps } from './Box'
 

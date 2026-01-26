@@ -1,4 +1,4 @@
-import { TransactionType } from '../../data/models/Transaction';
+import { TransactionType } from '@/src/data/models/Transaction';
 import { JournalCalculator } from './JournalCalculator';
 
 describe('JournalCalculator', () => {

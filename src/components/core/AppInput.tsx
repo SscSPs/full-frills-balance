@@ -3,8 +3,8 @@
  * Consistent input design inspired by Ivy Wallet
  */
 
-import { Shape, Size, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Shape, Size, Spacing, ThemeMode, Typography } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import React from 'react'
 import { StyleSheet, TextInput, type TextInputProps, View, ViewStyle } from 'react-native'

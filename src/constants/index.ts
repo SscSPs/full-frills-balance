@@ -8,10 +8,3 @@ export * from './theme-helpers'
 
 // App configuration - Behavior and settings only
 export * from './app-config'
-
-// Shape tokens - Exported for convenience (use via @/constants)
-export { Shape } from './design-tokens'
-
-// Re-export AppConfig for convenience
-export { AppConfig } from './app-config'
-

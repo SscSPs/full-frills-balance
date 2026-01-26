@@ -19,8 +19,8 @@ export const useThemeColors = (mode?: ThemeMode | 'system') => {
   return Colors[resolvedMode as 'light' | 'dark']
 }
 
-// Helper function to get color by semantic name
-export const getSemanticColor = (colorName: string, mode?: ThemeMode) => {
+// Helper hook to get color by semantic name
+export const useSemanticColor = (colorName: string, mode?: ThemeMode) => {
   const colors = useThemeColors(mode)
   return colors[colorName as keyof typeof colors] || colors.text
 }

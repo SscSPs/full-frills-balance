@@ -1,4 +1,4 @@
-import { Spacing } from '@/constants';
+import { Spacing } from '@/src/constants';
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';

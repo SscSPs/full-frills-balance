@@ -1,4 +1,4 @@
-import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/constants';
+import { Opacity, Shape, Spacing, Typography, withOpacity } from '@/src/constants';
 import { AppCard, AppText, Badge } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import { JournalDisplayType, JournalPresenter } from '@/src/services/accounting/JournalPresenter';

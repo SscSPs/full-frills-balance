@@ -3,8 +3,8 @@
  * Clean, minimal list design inspired by Ivy Wallet
  */
 
-import { Opacity, Spacing, ThemeMode } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Opacity, Spacing, ThemeMode } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import {
   StyleSheet,
   TouchableOpacity,

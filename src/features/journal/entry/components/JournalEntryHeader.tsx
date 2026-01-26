@@ -1,5 +1,5 @@
 import { AppText } from '@/src/components/core';
-import { Spacing, Typography } from '@/constants';
+import { Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

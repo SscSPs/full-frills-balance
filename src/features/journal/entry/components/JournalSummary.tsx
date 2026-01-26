@@ -1,4 +1,4 @@
-import { Spacing } from '@/constants';
+import { Spacing } from '@/src/constants';
 import { AppCard, AppText, Box, Stack } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import { preferences } from '@/src/utils/preferences';

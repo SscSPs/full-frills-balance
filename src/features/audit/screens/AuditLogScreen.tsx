@@ -1,4 +1,4 @@
-import { Spacing } from '@/constants'
+import { Spacing } from '@/src/constants'
 import { AppText } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'

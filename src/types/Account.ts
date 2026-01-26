@@ -1,4 +1,4 @@
-import Account, { AccountType } from '../data/models/Account'
+import Account, { AccountType } from '@/src/data/models/Account'
 
 export interface AccountCreateInput {
   name: string

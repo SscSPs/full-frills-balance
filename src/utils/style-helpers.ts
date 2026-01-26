@@ -1,4 +1,4 @@
-import { getContrastColor, Theme } from '@/constants';
+import { getContrastColor, Theme } from '@/src/constants';
 
 export type ComponentVariant =
     | 'default'

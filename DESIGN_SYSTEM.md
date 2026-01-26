@@ -260,7 +260,7 @@ Consistent radius and elevation:
 ## ========================================
 
 ```tsx
-import { Spacing, Typography, Colors, App } from '@/constants'
+import { Spacing, Typography, Colors, App } from '@/src/constants'
 ```
 
 ## ========================================

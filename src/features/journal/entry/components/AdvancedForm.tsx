@@ -1,4 +1,4 @@
-import { Shape, Spacing } from '@/constants';
+import { Shape, Spacing } from '@/src/constants';
 import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/src/components/core';
 import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalEditor';
 import { JournalCalculator, JournalLineInput } from '@/src/services/accounting/JournalCalculator';

@@ -16,7 +16,7 @@
  * - If it looks wrong here, it is wrong everywhere
  * ========================================
  */
-import { Shape, Spacing, ThemeMode, useThemeColors } from '@/constants'
+import { Shape, Spacing, ThemeMode, useThemeColors } from '@/src/constants'
 import {
     AppButton,
     AppCard,

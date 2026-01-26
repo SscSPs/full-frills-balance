@@ -1,4 +1,7 @@
+export { AccountSelector } from './components/AccountSelector'
+export { DashboardSummary } from './components/DashboardSummary'
 export { JournalCard } from './components/JournalCard'
+export { TransactionItem } from './components/TransactionItem'
 export * from './hooks/useJournalActions'
 export * from './hooks/useJournals'
 export * from './hooks/useJournalTransactionsWithAccountInfo'

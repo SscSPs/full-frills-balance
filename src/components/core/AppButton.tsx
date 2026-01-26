@@ -1,15 +1,15 @@
-import { Opacity, Shape, Size, Spacing, ThemeMode, Typography } from '@/constants/design-tokens'
-import { useThemeColors } from '@/constants/theme-helpers'
+import { Opacity, Shape, Size, Spacing, ThemeMode, Typography } from '@/src/constants/design-tokens'
+import { useThemeColors } from '@/src/constants/theme-helpers'
 import { useTheme } from '@/src/hooks/use-theme'
 import { ComponentVariant, getVariantColors } from '@/src/utils/style-helpers'
-import { useMemo } from 'react'
+import React, { memo, useMemo } from 'react'
 import {
   ActivityIndicator,
   StyleSheet,
-  Text,
   TouchableOpacity,
   type TouchableOpacityProps
 } from 'react-native'
+import { AppText } from './AppText'
 
 export type AppButtonProps = TouchableOpacityProps & {
   // Button variants - limited and intentional
@@ -24,7 +24,7 @@ export type AppButtonProps = TouchableOpacityProps & {
   themeMode?: ThemeMode
 }
 
-export function AppButton({
+export function AppButtonComponent({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -130,9 +130,9 @@ export function AppButton({
           color={finalTextColor}
         />
       ) : (
-        <Text style={textCombinedStyle}>
+        <AppText style={textCombinedStyle}>
           {children}
-        </Text>
+        </AppText>
       )}
     </TouchableOpacity>
   )
@@ -176,3 +176,4 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.semibold,
   },
 })
+export const AppButton = memo(AppButtonComponent)
