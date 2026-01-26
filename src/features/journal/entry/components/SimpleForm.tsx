@@ -5,7 +5,7 @@ import { AppInput } from '@/src/components/core/AppInput';
 import { AppText } from '@/src/components/core/AppText';
 import { Box } from '@/src/components/core/Box';
 import { Stack } from '@/src/components/core/Stack';
-import Account from '@/src/data/models/Account';
+import Account, { AccountType } from '@/src/data/models/Account';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { accountingService } from '@/src/domain/AccountingService';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -31,6 +31,14 @@ type TabType = 'expense' | 'income' | 'transfer';
  */
 export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: SimpleFormProps) => {
     const { theme } = useTheme();
+
+    // Filter accounts by type
+    const transactionAccounts = accounts.filter(a =>
+        a.accountType === AccountType.ASSET ||
+        a.accountType === AccountType.LIABILITY
+    );
+    const expenseAccounts = accounts.filter(a => a.accountType === AccountType.EXPENSE);
+    const incomeAccounts = accounts.filter(a => a.accountType === AccountType.INCOME);
 
     const [type, setType] = useState<TabType>(initialType);
     const [amount, setAmount] = useState('');
@@ -90,18 +98,37 @@ export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: Sim
         const lastDestId = preferences.lastUsedDestinationAccountId;
 
         if (type === 'expense') {
-            if (lastSourceId && accounts.some(a => a.id === lastSourceId)) setSourceId(lastSourceId);
-            else if (accounts.length > 0) setSourceId(accounts[0].id);
-            setDestinationId('');
+            // Expenses: Pay FROM (Asset/Liability) -> TO (Expense)
+            if (lastSourceId && transactionAccounts.some(a => a.id === lastSourceId)) setSourceId(lastSourceId);
+            else if (transactionAccounts.length > 0) setSourceId(transactionAccounts[0].id);
+            else setSourceId('');
+
+            // For destination, we don't auto-select last used for expenses usually, or maybe we do?
+            // Existing logic was just clearing it or setting default.
+            // Let's safe default to first expense account if empty
+            if (activeDestAccount && activeDestAccount.accountType !== AccountType.EXPENSE) {
+                setDestinationId('');
+            }
         } else if (type === 'income') {
-            if (lastDestId && accounts.some(a => a.id === lastDestId)) setDestinationId(lastDestId);
-            else if (accounts.length > 0) setDestinationId(accounts[0].id);
-            setSourceId('');
+            // Income: Receive FROM (Income) -> TO (Asset/Liability)
+            if (lastDestId && transactionAccounts.some(a => a.id === lastDestId)) setDestinationId(lastDestId);
+            else if (transactionAccounts.length > 0) setDestinationId(transactionAccounts[0].id);
+            else setDestinationId('');
+
+            // For source (Income category), safe default
+            if (activeSourceAccount && activeSourceAccount.accountType !== AccountType.INCOME) {
+                setSourceId('');
+            }
         } else {
+            // Transfer: Asset/Liability -> Asset/Liability (usually)
+            // But user requested ALL accounts for transfer.
             if (lastSourceId && accounts.some(a => a.id === lastSourceId)) setSourceId(lastSourceId);
             if (lastDestId && accounts.some(a => a.id === lastDestId)) setDestinationId(lastDestId);
         }
     }, [type, accounts]);
+
+    const activeSourceAccount = accounts.find(a => a.id === sourceId);
+    const activeDestAccount = accounts.find(a => a.id === destinationId);
 
     const handleSave = async () => {
         if (!numAmount || numAmount <= 0) return;
@@ -252,17 +279,17 @@ export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: Sim
             <AppCard elevation="none" variant="secondary" style={styles.mainCard}>
                 {type === 'expense' && (
                     <>
-                        {renderAccountSelector("To Category / Account", accounts, destinationId, setDestinationId)}
+                        {renderAccountSelector("To Category / Account", expenseAccounts, destinationId, setDestinationId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("From Account", accounts, sourceId, setSourceId)}
+                        {renderAccountSelector("From Account", transactionAccounts, sourceId, setSourceId)}
                     </>
                 )}
 
                 {type === 'income' && (
                     <>
-                        {renderAccountSelector("From Source / Account", accounts, sourceId, setSourceId)}
+                        {renderAccountSelector("From Source / Account", incomeAccounts, sourceId, setSourceId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("To Account", accounts, destinationId, setDestinationId)}
+                        {renderAccountSelector("To Account", transactionAccounts, destinationId, setDestinationId)}
                     </>
                 )}
 
