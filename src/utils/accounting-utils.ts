@@ -1,6 +1,6 @@
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
-import { roundToPrecision } from './money';
+import { roundToPrecision } from '@/src/utils/money';
 
 /**
  * Validatable transaction partial

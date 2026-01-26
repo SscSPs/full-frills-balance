@@ -1,8 +1,8 @@
+import { AppText } from '@/src/components/core/AppText';
 import { getContrastColor } from '@/src/constants/theme-helpers';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { AppText } from './AppText';
 
 interface IvyIconProps {
     name?: keyof typeof Ionicons.glyphMap;

@@ -6,7 +6,7 @@
 export type RootStackParamList = {
   index: undefined;
   accounts: undefined;
-  'journal-entry': { 
+  'journal-entry': {
     mode?: 'simple' | 'advanced';
     type?: 'income' | 'expense' | 'transfer';
   };
@@ -16,6 +16,7 @@ export type RootStackParamList = {
   onboarding: undefined;
   '_design-preview': undefined;
   modal: undefined;
+  'import-selection': undefined;
 };
 
 export type Routes = keyof RootStackParamList;

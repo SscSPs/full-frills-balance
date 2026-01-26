@@ -1,6 +1,6 @@
-import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
+import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -25,7 +25,7 @@ export default function SettingsScreen() {
         cleanupDatabase,
         isLoading,
     } = useUI();
-    const { handleImport, isImporting: isImportingData } = useImport();
+    const { isImporting: isImportingData } = useImport();
     const [isExporting, setIsExporting] = useState(false);
     const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
@@ -197,7 +197,7 @@ export default function SettingsScreen() {
 
                     <AppButton
                         variant="outline"
-                        onPress={handleImport}
+                        onPress={() => router.push('/import-selection')}
                         loading={isImportingData}
                         style={{ marginTop: Spacing.sm }}
                     >

@@ -57,20 +57,24 @@ const decodeUTF16Bytes = (bytes: Uint8Array): string => {
     return str;
 };
 
+export type ImportFormat = 'native' | 'ivy';
+
 export function useImport() {
     const { requireRestart } = useUI();
     const [isImporting, setIsImporting] = useState(false);
 
-    const handleImport = async () => {
+    const handleImport = async (expectedType?: ImportFormat) => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/json',
+                type: ['application/json', 'application/octet-stream', '*/*'], // Allow loose types for better compat
                 copyToCacheDirectory: true,
             });
 
             if (result.canceled) return;
 
             const file = result.assets[0];
+
+            // ... (rest of the code)
 
             const proceed = Platform.OS === 'web'
                 ? confirm(`This will REPLACE all your current data with content from ${file.name}. This cannot be undone. Are you sure?`)
@@ -106,9 +110,6 @@ export function useImport() {
                 if (!content.trim().startsWith('{') && !content.trim().startsWith('[')) {
                     throw new Error('Likely encoding issue');
                 }
-
-                // Optional: Try lightweight parse check?
-                // JSON.parse(content);
             } catch (error) {
                 logger.info('Failed to read as UTF-8, attempting UTF-16BE decoding...', { error: error instanceof Error ? error.message : String(error) });
 
@@ -129,8 +130,6 @@ export function useImport() {
                     content = decodeUTF16Bytes(bytes);
                 } catch (decodeErr) {
                     logger.error('Failed to decode as UTF-16BE', decodeErr);
-                    // Throw original or new error?
-                    // If we failed both, we can't import.
                     throw new Error('Could not read file. Unknown format or encoding.');
                 }
             }
@@ -145,7 +144,46 @@ export function useImport() {
                 isIvy = ivyImportService.isIvyBackup(data);
             } catch (e) {
                 logger.warn('JSON Parse failed', { error: e instanceof Error ? e.message : String(e) });
-                // Ignore parse error here, let the service handle it if it fails
+                // We'll let it fail later if it's invalid
+            }
+
+            // Expected Format Validation
+            if (expectedType) {
+                if (expectedType === 'native' && isIvy) {
+                    const confirmMismatch = Platform.OS === 'web'
+                        ? confirm('Warning: You selected "Full Frills Backup" but this looks like an Ivy Wallet file. Continue?')
+                        : await new Promise<boolean>(resolve => {
+                            Alert.alert(
+                                'Format Mismatch',
+                                'You selected "Full Frills Backup" but this looks like an Ivy Wallet backup file.\n\nIt might not import correctly as a Native backup.',
+                                [
+                                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                                    { text: 'Try Anyway', style: 'default', onPress: () => resolve(true) }
+                                ]
+                            );
+                        });
+                    if (!confirmMismatch) {
+                        setIsImporting(false);
+                        return;
+                    }
+                } else if (expectedType === 'ivy' && !isIvy) {
+                    const confirmMismatch = Platform.OS === 'web'
+                        ? confirm('Warning: You selected "Ivy Wallet Backup" but this file doesn\'t look like one. Continue?')
+                        : await new Promise<boolean>(resolve => {
+                            Alert.alert(
+                                'Format Mismatch',
+                                'You selected "Ivy Wallet Backup" but this file doesn\'t look like a standard Ivy Wallet export.\n\nIt might not import correctly.',
+                                [
+                                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                                    { text: 'Try Anyway', style: 'default', onPress: () => resolve(true) }
+                                ]
+                            );
+                        });
+                    if (!confirmMismatch) {
+                        setIsImporting(false);
+                        return;
+                    }
+                }
             }
 
             let stats: ImportStats;

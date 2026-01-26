@@ -1,5 +1,5 @@
-import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
+import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
 import Currency from '@/src/data/models/Currency';
 import { useImport } from '@/src/hooks/use-import';
@@ -18,7 +18,7 @@ export default function OnboardingScreen() {
     const [isCompleting, setIsCompleting] = useState(false)
     const { theme } = useTheme()
     const { completeOnboarding } = useUI()
-    const { handleImport, isImporting } = useImport()
+    const { isImporting } = useImport()
 
     useEffect(() => {
         const loadCurrencies = async () => {
@@ -85,7 +85,7 @@ export default function OnboardingScreen() {
             <AppButton
                 variant="outline"
                 size="md"
-                onPress={handleImport}
+                onPress={() => router.push('/import-selection')}
                 loading={isImporting}
                 disabled={isImporting || isCompleting}
             >
