@@ -1,7 +1,8 @@
+import { Opacity, Spacing, Typography, withOpacity } from '@/constants';
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Opacity, Spacing, Typography, withOpacity } from '@/constants';
 import { useUI } from '@/src/contexts/UIContext';
+import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
 import { exportService } from '@/src/services/export-service';
 import { integrityService } from '@/src/services/integrity-service';
@@ -22,8 +23,9 @@ export default function SettingsScreen() {
         setPrivacyMode,
         resetApp,
         cleanupDatabase,
-        isLoading
+        isLoading,
     } = useUI();
+    const { handleImport, isImporting: isImportingData } = useImport();
     const [isExporting, setIsExporting] = useState(false);
     const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
@@ -126,6 +128,7 @@ export default function SettingsScreen() {
 
         try {
             await resetApp();
+            // Should not be reached if blocking UI works, but just in case
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             Alert.alert('Error', `Reset failed: ${msg}`);
@@ -190,6 +193,15 @@ export default function SettingsScreen() {
                         loading={isExporting}
                     >
                         Export to JSON
+                    </AppButton>
+
+                    <AppButton
+                        variant="outline"
+                        onPress={handleImport}
+                        loading={isImportingData}
+                        style={{ marginTop: Spacing.sm }}
+                    >
+                        Import from JSON
                     </AppButton>
 
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />

@@ -40,6 +40,9 @@ interface UIState {
 
   // Privacy
   isPrivacyMode: boolean
+
+  // App Lifecycle
+  isRestartRequired: boolean
 }
 
 interface UIContextType extends UIState {
@@ -51,6 +54,7 @@ interface UIContextType extends UIState {
   cleanupDatabase: () => Promise<{ deletedCount: number }>
   updateUserDetails: (name: string, currency: string) => Promise<void>
   setPrivacyMode: (isPrivacyMode: boolean) => Promise<void>
+  requireRestart: () => void
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined)
@@ -67,6 +71,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     userName: '',
     defaultCurrency: 'USD',
     isPrivacyMode: false,
+    isRestartRequired: false,
   })
 
   // Update themeMode when preference or system scheme changes
@@ -99,6 +104,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           userName: loadedPreferences.userName || '',
           defaultCurrency: loadedPreferences.defaultCurrencyCode || 'USD',
           isPrivacyMode: loadedPreferences.isPrivacyMode || false,
+          isRestartRequired: false,
           isLoading: false,
           isInitialized: true,
         })
@@ -203,6 +209,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         isPrivacyMode: false,
         isLoading: false,
         isInitialized: true,
+        isRestartRequired: true, // Block the app
       })
     } catch (error) {
       logger.error('[UIContext] Failed to reset app:', error)
@@ -227,6 +234,10 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const requireRestart = () => {
+    setUIState(prev => ({ ...prev, isRestartRequired: true }))
+  }
+
   const value: UIContextType = {
     ...uiState,
     completeOnboarding,
@@ -236,6 +247,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     cleanupDatabase,
     updateUserDetails,
     setPrivacyMode,
+    requireRestart,
   }
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>

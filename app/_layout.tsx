@@ -1,6 +1,6 @@
 
-import { ErrorBoundary } from '@/src/components/core';
-import { UIProvider } from '@/src/contexts/UIContext';
+import { AppText, ErrorBoundary } from '@/src/components/core';
+import { UIProvider, useUI } from '@/src/contexts/UIContext';
 import { useColorScheme } from '@/src/hooks/use-color-scheme';
 import {
   Raleway_600SemiBold,
@@ -13,6 +13,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { database } from '../src/data/database/Database';
@@ -34,26 +35,46 @@ export default function RootLayout() {
       <DatabaseProvider database={database}>
         <UIProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <ErrorBoundary>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
-                <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
-                <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
-                <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
-                <Stack.Screen name="account-details" options={{ headerShown: false }} />
-                <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
-              </Stack>
-            </ErrorBoundary>
-
-            <StatusBar style="auto" />
+            <AppContent />
           </ThemeProvider>
         </UIProvider>
       </DatabaseProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
+  const { isRestartRequired } = useUI();
+
+  if (isRestartRequired) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', padding: 20 }}>
+        <StatusBar style="light" />
+        <AppText variant="title" style={{ color: '#fff', textAlign: 'center', marginBottom: 20 }}>
+          App Restart Required
+        </AppText>
+        <AppText variant="body" style={{ color: '#fff', textAlign: 'center' }}>
+          Data has been reset or restored. Please completely close and restart the app not.
+        </AppText>
+      </View>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
+        <Stack.Screen name="account-details" options={{ headerShown: false }} />
+        <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
+      </Stack>
+    </ErrorBoundary>
   );
 }

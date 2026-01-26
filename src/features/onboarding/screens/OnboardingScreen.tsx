@@ -2,6 +2,7 @@ import { Opacity, Size, Spacing, withOpacity } from '@/constants';
 import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
 import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
 import Currency from '@/src/data/models/Currency';
+import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
 import { currencyInitService } from '@/src/services/currency-init-service';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ export default function OnboardingScreen() {
     const [isCompleting, setIsCompleting] = useState(false)
     const { theme } = useTheme()
     const { completeOnboarding } = useUI()
+    const { handleImport, isImporting } = useImport()
 
     useEffect(() => {
         const loadCurrencies = async () => {
@@ -38,7 +40,7 @@ export default function OnboardingScreen() {
         setIsCompleting(true)
         try {
             await completeOnboarding(name.trim(), selectedCurrency)
-            router.push('/account-creation' as any)
+            router.replace('/account-creation' as any)
         } catch (error) {
             console.error('Failed to complete onboarding:', error)
         } finally {
@@ -72,6 +74,22 @@ export default function OnboardingScreen() {
                 style={styles.continueButton}
             >
                 Continue
+            </AppButton>
+
+            <View style={styles.divider}>
+                <View style={[styles.line, { backgroundColor: theme.border }]} />
+                <AppText variant="caption" color="secondary" style={styles.orText}>OR</AppText>
+                <View style={[styles.line, { backgroundColor: theme.border }]} />
+            </View>
+
+            <AppButton
+                variant="outline"
+                size="md"
+                onPress={handleImport}
+                loading={isImporting}
+                disabled={isImporting || isCompleting}
+            >
+                Import Backup
             </AppButton>
         </>
     )
@@ -194,5 +212,17 @@ const styles = StyleSheet.create({
     },
     continueButton: {
         marginBottom: Spacing.xs,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: Spacing.lg,
+    },
+    line: {
+        flex: 1,
+        height: 1,
+    },
+    orText: {
+        marginHorizontal: Spacing.md,
     },
 });
