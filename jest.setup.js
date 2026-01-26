@@ -19,12 +19,6 @@ jest.mock('expo-router', () => ({
     },
 }));
 
-// Mock UUID with unique values
-jest.mock('react-native-get-random-values', () => ({}));
-jest.mock('uuid', () => ({
-    v4: () => `test-uuid-${Math.random().toString(36).substring(2, 9)}`,
-}));
-
 // Mock other platform-specific modules that might fail in Node
 jest.mock('expo-file-system', () => ({
     documentDirectory: 'test-dir/',

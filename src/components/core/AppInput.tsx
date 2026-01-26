@@ -13,6 +13,7 @@ import { AppText } from './AppText'
 export type AppInputProps = TextInputProps & {
     label?: string
     error?: string
+    defaultValue?: string
     variant?: 'default' | 'hero' | 'minimal'
     containerStyle?: ViewStyle
     themeMode?: ThemeMode

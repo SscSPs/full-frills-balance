@@ -6,6 +6,9 @@ module.exports = function (api) {
       // Decorators first (legacy required by WatermelonDB)
       ['@babel/plugin-proposal-decorators', { legacy: true }],
 
+      // React Compiler (must run early)
+      ['babel-plugin-react-compiler', { target: '18' }],
+
       // MUST be last
       'react-native-reanimated/plugin',
     ],

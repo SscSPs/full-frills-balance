@@ -1,5 +1,10 @@
 import { AppConfig, Opacity, Shape, Size, Spacing, withOpacity } from '@/constants';
-import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/src/components/core';
+import { AppButton } from '@/src/components/core/AppButton';
+import { AppCard } from '@/src/components/core/AppCard';
+import { AppInput } from '@/src/components/core/AppInput';
+import { AppText } from '@/src/components/core/AppText';
+import { Box } from '@/src/components/core/Box';
+import { Stack } from '@/src/components/core/Stack';
 import Account from '@/src/data/models/Account';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { accountingService } from '@/src/domain/AccountingService';
@@ -8,8 +13,9 @@ import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { preferences } from '@/src/utils/preferences';
 import { sanitizeAmount } from '@/src/utils/validation';
 import { Ionicons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SimpleFormProps {
     accounts: Account[];
@@ -150,11 +156,16 @@ export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: Sim
             <AppText variant="caption" weight="bold" color="tertiary" style={{ marginLeft: Spacing.xs }}>
                 {title.toUpperCase()}
             </AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accountScroll}>
-                <Stack horizontal space="md">
-                    {accountList.map(account => (
+            <View style={{ minHeight: 80 }}>
+                <FlashList<Account>
+                    data={accountList}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    // @ts-ignore: estimatedItemSize missing in v2 types
+                    estimatedItemSize={200}
+                    extraData={selectedId}
+                    renderItem={({ item: account }) => (
                         <TouchableOpacity
-                            key={account.id}
                             style={[
                                 styles.accountCard,
                                 { backgroundColor: theme.surfaceSecondary, borderColor: theme.border },
@@ -177,9 +188,11 @@ export const SimpleForm = ({ accounts, onSuccess, initialType = 'expense' }: Sim
                                 <Ionicons name="checkmark-circle" size={18} color={activeColor} />
                             )}
                         </TouchableOpacity>
-                    ))}
-                </Stack>
-            </ScrollView>
+                    )}
+                    contentContainerStyle={{ paddingHorizontal: Spacing.xs }}
+                    ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
+                />
+            </View>
         </Box>
     );
 
@@ -335,6 +348,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
+        minWidth: 160,
     },
     accountIndicator: {
         width: 4,
