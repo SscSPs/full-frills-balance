@@ -10,8 +10,8 @@ import Account from '@/src/data/models/Account';
 import Journal from '@/src/data/models/Journal';
 import Transaction from '@/src/data/models/Transaction';
 import { logger } from '@/src/utils/logger';
+import { preferences } from '@/src/utils/preferences';
 import { Q } from '@nozbe/watermelondb';
-import { preferences } from '../utils/preferences';
 
 export interface ExportData {
     exportDate: string;

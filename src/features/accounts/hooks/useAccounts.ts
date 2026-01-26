@@ -1,7 +1,7 @@
 /**
  * Reactive Data Hooks for Accounts
  */
-import Account, { AccountType } from '@/src/data/models/Account'
+import Account from '@/src/data/models/Account'
 import Transaction from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { AccountBalance } from '@/src/types/domain'

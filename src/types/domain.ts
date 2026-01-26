@@ -154,3 +154,38 @@ export interface JournalEntryLine {
     exchangeRate: string;
     accountCurrency?: string;
 }
+
+/**
+ * AccountCreateInput - Input for creating a new account
+ */
+export interface AccountCreateInput {
+    name: string;
+    accountType: AccountType;
+    currencyCode: string;
+    description?: string;
+    parentAccountId?: string;
+    initialBalance?: number;
+}
+
+/**
+ * AccountUpdateInput - Input for updating an existing account
+ */
+export interface AccountUpdateInput {
+    name?: string;
+    description?: string;
+    parentAccountId?: string;
+    accountType?: AccountType;
+}
+
+/**
+ * AccountSummary - Aggregated financial summary across accounts
+ */
+export interface AccountSummary {
+    totalAssets: number;
+    totalLiabilities: number;
+    totalEquity: number;
+    totalIncome: number;
+    totalExpenses: number;
+    netWorth: number;
+}
+

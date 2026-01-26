@@ -5,20 +5,10 @@ import { JournalStatus } from '@/src/data/models/Journal'
 import Transaction, { TransactionType } from '@/src/data/models/Transaction'
 import { auditService } from '@/src/services/audit-service'
 import { rebuildQueueService } from '@/src/services/rebuild-queue-service'
-import { AccountUpdateInput } from '@/src/types/Account'
-import { AccountBalance } from '@/src/types/domain'
+import { AccountBalance, AccountCreateInput, AccountUpdateInput } from '@/src/types/domain'
 import { getEpsilon, roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
 import { currencyRepository } from './CurrencyRepository'
-
-export interface AccountCreateInput {
-  name: string
-  accountType: AccountType
-  currencyCode: string
-  description?: string
-  parentAccountId?: string
-  initialBalance?: number
-}
 
 export class AccountRepository {
   /**

@@ -1,6 +1,6 @@
+import { database } from '@/src/data/database/Database'
+import Currency from '@/src/data/models/Currency'
 import { Q } from '@nozbe/watermelondb'
-import { database } from '../database/Database'
-import Currency from '../models/Currency'
 
 export class CurrencyRepository {
     private get currencies() {

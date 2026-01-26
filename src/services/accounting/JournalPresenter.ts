@@ -1,4 +1,4 @@
-import { AccountType } from '../../data/models/Account';
+import { AccountType } from '@/src/data/models/Account';
 
 export enum JournalDisplayType {
     INCOME = 'INCOME',
