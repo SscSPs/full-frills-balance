@@ -4,11 +4,22 @@ trigger: always_on
 
 # Codebase Architecture & Standards
 
-**(Law of the Land)**
+**Law of the Land**
 
 This document defines **hard constraints** for the codebase.
 These are not suggestions, patterns, or preferences.
-Violations are considered architectural defects and must be corrected immediately.
+Violations are architectural defects and must be corrected immediately.
+
+---
+
+## 0. Mental Model (Read This First)
+
+Think in **layers and boxes**:
+
+* **Layers** enforce dependency direction. You never break them.
+* **Features** are sealed boxes. You interact only through their public API.
+
+If you are unsure where code belongs, **stop**. Misplaced code is worse than missing code.
 
 ---
 
@@ -16,44 +27,54 @@ Violations are considered architectural defects and must be corrected immediatel
 
 ### 1.1 Feature-First Architecture
 
-The codebase is organized by **domain (what the app does)**, not by technology (components, hooks, screens).
+The codebase is organized by **domain**, not by technology.
 
 Each feature owns:
 
-* its UI
-* its hooks
-* its domain logic
+* Screens
+* Feature-only UI components
+* Feature-only hooks
+* Feature-specific domain logic
 
-If code cannot be clearly assigned to a single feature, it does not belong in a feature.
+If code cannot be clearly assigned to **exactly one feature**, it does not belong in a feature.
 
 ---
 
-### 1.2 Thin Routing
+### 1.2 Thin Routing (Non-Negotiable)
 
 The `app/` directory is a **routing layer only**.
 
-* No business logic
-* No data access
-* No calculations
-* No state beyond navigation configuration
+Allowed:
 
-Routes exist only to connect URLs/navigation state to feature screens.
+* Importing a screen from a feature
+* Passing navigation params
+
+Forbidden:
+
+* Business logic
+* Data access
+* Calculations
+* Local state (except navigation configuration)
+
+**Rule of thumb**: if a file in `app/` exceeds ~20 lines, it is wrong.
 
 ---
 
 ### 1.3 Data-Driven UI
 
-The database is the **source of truth**.
+The database is the **single source of truth**.
 
-* UI reacts to data
-* UI does not derive or persist domain state
-* Writes happen in one place only (repositories)
+* UI reacts to persisted data
+* UI never invents or persists domain state
+* All writes happen in repositories, and only there
+
+Derived values must be **pure projections** of persisted data, not new domain rules.
 
 ---
 
 ## 2. Dependency Direction (Non-Negotiable)
 
-Dependencies may only flow **downward**:
+Dependencies flow strictly downward:
 
 ```
 app/
@@ -63,14 +84,16 @@ app/
         → src/utils/
 ```
 
-### Forbidden dependency directions
+### Forbidden directions
 
-* `src/data` importing from `src/services`, `src/features`, or `src/components`
-* `src/services` importing from `src/features` or `src/components`
-* `src/components` importing from `src/features`
+* `src/data` importing from anything above it
+* `src/services` importing from features or UI
+* `src/components` importing from features
 * Any layer importing from `app/`
 
 **UI depends on data. Data never depends on UI.**
+
+These rules are enforced by linting. Violations are build failures.
 
 ---
 
@@ -80,7 +103,7 @@ Do not create new top-level directories.
 
 ```
 /
-├── app/                      # ROUTING LAYER (Thin wrappers only)
+├── app/                      # ROUTING ONLY
 │   ├── (tabs)/
 │   ├── _layout.tsx
 │   └── *.tsx                 # Import Screen from src/features/*
@@ -91,34 +114,33 @@ Do not create new top-level directories.
 │   │   │   ├── screens/
 │   │   │   ├── components/
 │   │   │   ├── hooks/
-│   │   │   └── index.ts      # Public API for the feature
-│   │   ├── journal/
-│   │   ├── dashboard/
+│   │   │   ├── services/     # FEATURE-SPECIFIC BUSINESS RULES
+│   │   │   └── index.ts      # PUBLIC API
 │   │   └── ...
 │   │
-│   ├── components/           # SHARED UI (No domain logic)
-│   │   ├── core/             # Primitives (AppText, AppButton)
-│   │   ├── layout/           # Structural (Screen, ScreenHeader)
-│   │   └── common/           # Cross-feature composition
+│   ├── components/           # SHARED UI ONLY
+│   │   ├── core/
+│   │   ├── layout/
+│   │   └── common/
 │   │
 │   ├── data/                 # DATA LAYER
-│   │   ├── database/         # WatermelonDB setup
-│   │   ├── models/           # DB models
-│   │   └── repositories/     # The ONLY place allowed to write to DB
+│   │   ├── database/
+│   │   ├── models/
+│   │   └── repositories/
 │   │
 │   ├── services/             # CROSS-FEATURE BUSINESS RULES
 │   │   └── *.ts              # Pure TypeScript, no React, no DB writes
 │   │
-│   ├── hooks/                # GLOBAL HOOKS (theme, navigation, app-wide state)
-│   ├── contexts/             # GLOBAL STATE (UI prefs, session state)
-│   └── utils/                # PURE HELPERS (no side effects)
+│   ├── hooks/                # GLOBAL UI HOOKS ONLY
+│   ├── contexts/             # GLOBAL UI STATE
+│   └── utils/                # PURE HELPERS
 ```
 
 ---
 
 ## 4. Feature Boundary Rules
 
-Each feature is a **closed box**.
+Each feature is a **sealed box**.
 
 ### Allowed imports inside a feature
 
@@ -134,30 +156,30 @@ Each feature is a **closed box**.
 
 If multiple features need the same code:
 
-* UI → move to `src/components/common`
-* Logic → move to `src/services`
+* Shared UI → `src/components/common`
+* Shared business rules → `src/services`
 
 ---
 
-## 5. Public API for Features
+## 5. Feature Public API (Mandatory)
 
-Each feature **must** define a public interface:
+Every feature must expose a public interface:
 
 ```
 src/features/<feature>/index.ts
 ```
 
-### Rules
+Rules:
 
-* Only files exported from `index.ts` may be imported outside the feature
+* Only exports from `index.ts` may be imported outside the feature
 * All other files are private implementation details
-* Direct deep imports into another feature are forbidden
+* Deep imports into features are forbidden and linted
 
-This enforces encapsulation mechanically, not socially.
+Encapsulation is enforced mechanically, not socially.
 
 ---
 
-## 6. “Where Does This Go?” Decision Tree
+## 6. Where Does This Go? (Decision Tree)
 
 Follow this order exactly.
 
@@ -166,19 +188,22 @@ Follow this order exactly.
 * YES → `src/features/<feature>/screens/<Name>Screen.tsx`
 * Ensure a thin route exists in `app/`
 
-### 6.2 Is it a UI Component?
+### 6.2 Is it UI?
 
-* Generic primitive → `src/components/core`
-* Structural layout → `src/components/layout`
-* Used by multiple features → `src/components/common`
-* Used by one feature only → `src/features/<feature>/components`
+* Primitive → `components/core`
+* Layout → `components/layout`
+* Shared across features → `components/common`
+* Feature-only → `features/<feature>/components`
+
+Shared components must be **logic-free**.
 
 ### 6.3 Is it Logic or State?
 
 * UI-only state → local state or `contexts/`
-* Domain data → `src/data/models` + `repositories`
+* Feature business rules → `features/<feature>/services`
 * Cross-feature business rules → `src/services`
-* Pure helper function → `src/utils`
+* Persistence → `data/models` + `repositories`
+* Pure helpers → `utils`
 
 ---
 
@@ -186,42 +211,57 @@ Follow this order exactly.
 
 ### Reads
 
-* Performed via **reactive hooks** (`useAccounts`, `useJournal`)
-* Hooks observe the database and expose derived state
+* Performed via **reactive hooks**
+* Hooks may expose **pure projections** of persisted data
+* No domain rules inside hooks
 
 ### Writes
 
 * Performed **only** in repositories
-* UI and hooks must never write directly to the database
+* Never from UI, hooks, or services
 * All writes must be explicitly awaited
 
 ---
 
 ## 8. Hook Constraints
 
-Hooks are **composition tools**, not logic containers.
+Hooks are **composition tools**, not decision-makers.
 
-Rules:
+Hooks may:
 
-* Hooks may READ data
-* Hooks may compose state for rendering
-* Hooks may call services
-* Hooks may NOT write to repositories
-* Hooks may NOT implement business rules
+* Read data
+* Compose UI-facing state
+* Call services
 
-If a hook exceeds ~50 lines, it likely belongs in `services/`.
+Hooks may NOT:
+
+* Write to repositories
+* Implement business rules
+* Enforce permissions or correctness
+
+If a hook exceeds ~50 lines or feels clever, it belongs in services.
+
+### 8.1 Performance Rules
+
+* All action callbacks must be memoized with `useCallback`
+* Prefer a single consolidated observer per screen
+* Consolidated hooks must remain focused and small
 
 ---
 
-## 9. Coding Standards
-
-### Components
+## 9. Components Standards
 
 * Functional components only
-* Use `React.memo` when props are simple
+* `React.memo` when props are simple
 * Never use raw `Text`; always use `AppText`
-* Use design tokens (`@/constants`) only
+* Use design tokens only
 * Props interface must be exported as `<ComponentName>Props`
+
+Shared components must not import services or data.
+
+---
+
+## 10. Naming & Imports
 
 ### Naming
 
@@ -232,49 +272,63 @@ If a hook exceeds ~50 lines, it likely belongs in `services/`.
 ### Imports
 
 * Absolute imports only (`@/src/...`)
-* No relative parent imports (`../../`)
+* No relative parent imports
+* Violations fail linting
 
 ---
 
-## 10. Strict Prohibitions
+## 11. Strict Prohibitions
 
-🔴 DO NOT write logic in `app/`
-🔴 DO NOT access the database from UI components
-🔴 DO NOT couple sibling features
-🔴 DO NOT export domain-specific components from `src/components`
-🔴 DO NOT call services directly from UI components (use hooks)
-🔴 DO NOT use ad-hoc IDs (`Math.random`, `Date.now`) for persistence
+🔴 Logic in `app/`
+🔴 DB access outside repositories
+🔴 Coupling sibling features
+🔴 Domain components in `components/`
+🔴 Services called directly from UI
+🔴 Ad-hoc IDs for persistence
 
 Violations require refactoring, not justification.
 
 ---
 
-## 11. Common Failure Modes (Immediate Refactor Signals)
+## 12. Common Failure Signals
 
-If any of the following appear, the architecture is being violated:
+Immediate refactor required if you see:
 
-* `app/` files exceeding ~20 lines
-* Feature components imported into multiple features
-* Hooks performing non-UI calculations
-* Services importing React or React Native
-* “Temporary” logic placed in `components/common` or `app/`
-
-These are not exceptions. They are defects.
+* Large `app/` files
+* God hooks (over 50 lines)
+* Shared components with logic
+* Services importing React
+* "Temporary" code in shared layers
 
 ---
 
-## 12. Verification Checklist
+## 13. Verification Checklist
 
-Before marking work complete:
+Before marking work complete, **every PR must satisfy all of the following**:
 
-* [ ] `app/` contains routing only
+* [ ] `app/` contains routing only (no logic, no state)
 * [ ] Imports respect dependency direction
 * [ ] Code lives in the correct feature or shared layer
 * [ ] No direct DB access outside repositories
-* [ ] `AppText` used instead of `Text`
-* [ ] Feature boundaries respected
+* [ ] Hooks do not implement business rules
+* [ ] Shared components are logic-free
+* [ ] `AppText` is used instead of raw `Text`
+* [ ] Feature boundaries are respected (no deep imports)
+
+Failure on any item blocks the PR.
 
 ---
 
-**This document exists to prevent entropy.
-If something feels hard to place, stop and fix the structure before adding code.**
+## 14. Type Management
+
+* UI-facing domain read models belong in `src/types/domain.ts`
+* Do not redefine domain shapes locally
+
+---
+
+## 15. Final Rule
+
+This document exists to prevent entropy.
+
+If something feels hard to place, the structure is wrong.
+Fix the structure first. Code comes second.
