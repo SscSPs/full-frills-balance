@@ -1,19 +1,18 @@
 /**
  * Import Hook
  * 
- * Shared logic for importing data from JSON files.
+ * Shared logic for importing data from JSON files and ZIP archives.
  */
 
 import { useUI } from '@/src/contexts/UIContext';
-import { ImportStats, importService } from '@/src/services/import-service';
+import { importService } from '@/src/services/import-service';
 import { ivyImportService } from '@/src/services/ivy-import-service';
 import { logger } from '@/src/utils/logger';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import JSZip from 'jszip';
 import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
-
-
 
 // Helper to convert Base64 to Uint8Array
 const base64ToBytes = (base64: string): Uint8Array => {
@@ -57,6 +56,15 @@ const decodeUTF16Bytes = (bytes: Uint8Array): string => {
     return str;
 };
 
+// Magic bytes for ZIP files (PK\x03\x04)
+const isZipFile = (bytes: Uint8Array): boolean => {
+    return bytes.length >= 4 &&
+        bytes[0] === 0x50 &&
+        bytes[1] === 0x4B &&
+        bytes[2] === 0x03 &&
+        bytes[3] === 0x04;
+};
+
 export type ImportFormat = 'native' | 'ivy';
 
 export function useImport() {
@@ -66,15 +74,19 @@ export function useImport() {
     const handleImport = async (expectedType?: ImportFormat) => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/json', 'application/octet-stream', '*/*'], // Allow loose types for better compat
+                type: [
+                    'application/json',
+                    'application/zip',
+                    'application/x-zip-compressed',
+                    'application/octet-stream',
+                    '*/*'
+                ],
                 copyToCacheDirectory: true,
             });
 
             if (result.canceled) return;
 
             const file = result.assets[0];
-
-            // ... (rest of the code)
 
             const proceed = Platform.OS === 'web'
                 ? confirm(`This will REPLACE all your current data with content from ${file.name}. This cannot be undone. Are you sure?`)
@@ -93,115 +105,126 @@ export function useImport() {
 
             setIsImporting(true);
 
-            // Read file content
-            let content = '';
-
+            // 1. READ RAW BYTES (Unified for JSON and ZIP)
+            let rawBytes: Uint8Array;
             try {
-                // 1. Try Reading as UTF-8 (Fast Path for Standard JSON)
                 if (Platform.OS === 'web') {
                     const response = await fetch(file.uri);
-                    content = await response.text();
+                    const buffer = await response.arrayBuffer();
+                    rawBytes = new Uint8Array(buffer);
                 } else {
-                    content = await FileSystem.readAsStringAsync(file.uri);
+                    const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+                    rawBytes = base64ToBytes(base64);
                 }
+            } catch (readError) {
+                logger.error('Failed to read file', readError);
+                throw new Error('Could not read file from device.');
+            }
 
-                // Check basics - valid JSON usually starts with { or [
-                // Ivy Wallet (UTF-16) read as UTF-8 usually results in garbage or nulls at start
-                if (!content.trim().startsWith('{') && !content.trim().startsWith('[')) {
-                    throw new Error('Likely encoding issue');
-                }
-            } catch (error) {
-                logger.info('Failed to read as UTF-8, attempting UTF-16BE decoding...', { error: error instanceof Error ? error.message : String(error) });
-
-                // 2. Fallback: Read raw bytes and decode strict UTF-16BE
+            // 2. CHECK & EXTRACT ZIP
+            if (isZipFile(rawBytes)) {
+                setIsImporting(true);
+                logger.info('Detected ZIP file, attempting extraction...');
                 try {
-                    let bytes: Uint8Array;
+                    const zip = await JSZip.loadAsync(rawBytes);
+                    const files = Object.keys(zip.files);
 
-                    if (Platform.OS === 'web') {
-                        const response = await fetch(file.uri);
-                        const buffer = await response.arrayBuffer();
-                        bytes = new Uint8Array(buffer);
-                    } else {
-                        // Native: Read Base64 -> Bytes
-                        const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
-                        bytes = base64ToBytes(base64);
+                    // Filter out MACOSX metadata which often pollutes zips from Macs
+                    // User confirmed: "there will only ever be just a single file in it."
+                    // So we pick the first non-junk file we find.
+                    const validFile = files.find(name => !name.includes('__MACOSX') && !zip.files[name].dir);
+
+                    if (!validFile) {
+                        throw new Error('No valid files found in ZIP archive.');
                     }
 
-                    content = decodeUTF16Bytes(bytes);
-                } catch (decodeErr) {
-                    logger.error('Failed to decode as UTF-16BE', decodeErr);
-                    throw new Error('Could not read file. Unknown format or encoding.');
+                    logger.info(`Extracting file from ZIP: ${validFile}`);
+                    rawBytes = await zip.files[validFile].async('uint8array');
+
+                } catch (zipError) {
+                    logger.error('ZIP extraction failed', zipError);
+                    Alert.alert('Archive Error', 'Failed to extract file from ZIP archive.');
+                    setIsImporting(false);
+                    return;
                 }
             }
 
+            // 3. DECODE TEXT (Try UTF-8 -> Fallback UTF-16BE)
+            setIsImporting(true);
+            let content = '';
+            try {
+                // Try UTF-8 first (Fast path for standard JSON)
+                const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+                content = utf8Decoder.decode(rawBytes);
+
+                // Basic check if it looks like JSON
+                if (!content.trim().startsWith('{') && !content.trim().startsWith('[')) {
+                    throw new Error('Likely encoding issue (not UTF-8)');
+                }
+            } catch (e) {
+                logger.info('UTF-8 decode failed or invalid JSON start, attempting UTF-16BE...', { error: String(e) });
+                try {
+                    content = decodeUTF16Bytes(rawBytes);
+                } catch (decodeErr) {
+                    logger.error('Failed to decode as UTF-16BE', decodeErr);
+                    throw new Error('Unknown file encoding.');
+                }
+            }
+
+            // 4. ANALYZE JSON
+            setIsImporting(true);
             let isIvy = false;
             try {
                 // sanitize content - sometimes BOM or null bytes causing issues
-                // remove BOM \uFEFF
-                content = content.replace(/^\uFEFF/, '');
+                content = content.replace(/^\uFEFF/, ''); // Remove BOM
 
                 const data = JSON.parse(content);
                 isIvy = ivyImportService.isIvyBackup(data);
             } catch (e) {
                 logger.warn('JSON Parse failed', { error: e instanceof Error ? e.message : String(e) });
-                // We'll let it fail later if it's invalid
+                // We'll let it fail later if it's invalid during the actual import pass
             }
 
-            // Expected Format Validation
+            // 5. VALIDATIONS (Type Mismatch Warnings)
             if (expectedType) {
                 if (expectedType === 'native' && isIvy) {
                     const confirmMismatch = Platform.OS === 'web'
                         ? confirm('Warning: You selected "Full Frills Backup" but this looks like an Ivy Wallet file. Continue?')
                         : await new Promise<boolean>(resolve => {
-                            Alert.alert(
-                                'Format Mismatch',
-                                'You selected "Full Frills Backup" but this looks like an Ivy Wallet backup file.\n\nIt might not import correctly as a Native backup.',
-                                [
-                                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-                                    { text: 'Try Anyway', style: 'default', onPress: () => resolve(true) }
-                                ]
-                            );
+                            Alert.alert('Format Mismatch', 'Looks like an Ivy Wallet file. Import anyway?',
+                                [{ text: 'Cancel', onPress: () => resolve(false) }, { text: 'Continue', onPress: () => resolve(true) }]);
                         });
-                    if (!confirmMismatch) {
-                        setIsImporting(false);
-                        return;
-                    }
+                    if (!confirmMismatch) { setIsImporting(false); return; }
+
                 } else if (expectedType === 'ivy' && !isIvy) {
                     const confirmMismatch = Platform.OS === 'web'
                         ? confirm('Warning: You selected "Ivy Wallet Backup" but this file doesn\'t look like one. Continue?')
                         : await new Promise<boolean>(resolve => {
-                            Alert.alert(
-                                'Format Mismatch',
-                                'You selected "Ivy Wallet Backup" but this file doesn\'t look like a standard Ivy Wallet export.\n\nIt might not import correctly.',
-                                [
-                                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-                                    { text: 'Try Anyway', style: 'default', onPress: () => resolve(true) }
-                                ]
-                            );
+                            Alert.alert('Format Mismatch', 'Does not look like an Ivy Wallet file. Import anyway?',
+                                [{ text: 'Cancel', onPress: () => resolve(false) }, { text: 'Continue', onPress: () => resolve(true) }]);
                         });
-                    if (!confirmMismatch) {
-                        setIsImporting(false);
-                        return;
-                    }
+                    if (!confirmMismatch) { setIsImporting(false); return; }
                 }
             }
 
-            let stats: ImportStats;
-            if (isIvy) {
-                logger.info('Detected Ivy Wallet backup format');
-                stats = await ivyImportService.importFromIvyJSON(content);
-            } else {
-                logger.info('Assuming native backup format');
-                stats = await importService.importFromJSON(content);
-            }
+            setIsImporting(true);
 
-            // Trigger blocking screen immediately with stats
-            requireRestart(stats);
+            // 6. EXECUTE VIA UICONTEXT (Delays execution to prevent DB locks)
+            const operation = async () => {
+                if (isIvy) {
+                    logger.info('Detected Ivy Wallet backup format');
+                    return await ivyImportService.importFromIvyJSON(content);
+                } else {
+                    logger.info('Assuming native backup format');
+                    return await importService.importFromJSON(content);
+                }
+            };
+
+            requireRestart(await operation());
 
         } catch (error) {
             logger.error('Import failed', error);
             Alert.alert('Import Failed', 'Could not parse or import the selected file.');
-        } finally {
             setIsImporting(false);
         }
     };
