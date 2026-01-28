@@ -3,7 +3,7 @@
  */
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
 import { EnrichedJournal, EnrichedTransaction } from '@/src/types/domain'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * Hook to reactively get journals with pagination and account enrichment
@@ -15,8 +15,24 @@ export function useJournals(pageSize: number = 50, dateRange?: { startDate: numb
     const [hasMore, setHasMore] = useState(true)
     const [currentLimit, setCurrentLimit] = useState(pageSize)
 
+    // Stable key for dateRange to avoid unnecessary effect re-runs
+    const dateRangeKey = useMemo(
+        () => dateRange ? `${dateRange.startDate}-${dateRange.endDate}` : 'none',
+        [dateRange]
+    )
+
+    // Track previous dateRangeKey to detect filter changes vs pagination
+    const prevDateRangeKeyRef = useRef(dateRangeKey)
+
     useEffect(() => {
-        setIsLoading(true) // Reset loading when date range changes
+        // Only show full loading state when date range changes (not on pagination)
+        const isFilterChange = prevDateRangeKeyRef.current !== dateRangeKey
+        if (isFilterChange) {
+            setIsLoading(true)
+            setCurrentLimit(pageSize) // Reset pagination on filter change
+            prevDateRangeKeyRef.current = dateRangeKey
+        }
+
         const { journalsObservable, transactionsObservable } = journalRepository.observeEnrichedJournals(currentLimit, dateRange)
 
         const subscription = journalsObservable.subscribe(async (loaded) => {
@@ -37,7 +53,8 @@ export function useJournals(pageSize: number = 50, dateRange?: { startDate: numb
             subscription.unsubscribe()
             txSubscription.unsubscribe()
         }
-    }, [currentLimit, dateRange?.startDate, dateRange?.endDate])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentLimit, dateRangeKey])
 
     const loadMore = () => {
         if (isLoadingMore || !hasMore) return
@@ -47,6 +64,7 @@ export function useJournals(pageSize: number = 50, dateRange?: { startDate: numb
 
     return { journals, isLoading, isLoadingMore, hasMore, loadMore }
 }
+
 
 /**
  * Custom hook to get reactively updated transactions for an account
@@ -58,8 +76,25 @@ export function useAccountTransactions(accountId: string, pageSize: number = 50,
     const [hasMore, setHasMore] = useState(true)
     const [currentLimit, setCurrentLimit] = useState(pageSize)
 
+    // Stable key for dateRange to avoid unnecessary effect re-runs
+    const dateRangeKey = useMemo(
+        () => dateRange ? `${dateRange.startDate}-${dateRange.endDate}` : 'none',
+        [dateRange]
+    )
+
+    // Track previous keys to detect filter changes vs pagination
+    const prevKeysRef = useRef({ accountId, dateRangeKey })
+
     useEffect(() => {
-        setIsLoading(true)
+        // Only show full loading state when account or date range changes (not on pagination)
+        const isFilterChange = prevKeysRef.current.accountId !== accountId ||
+            prevKeysRef.current.dateRangeKey !== dateRangeKey
+        if (isFilterChange) {
+            setIsLoading(true)
+            setCurrentLimit(pageSize) // Reset pagination on filter change
+            prevKeysRef.current = { accountId, dateRangeKey }
+        }
+
         const subscription = journalRepository
             .observeAccountTransactions(accountId, currentLimit, dateRange)
             .subscribe(async (loaded) => {
@@ -71,7 +106,8 @@ export function useAccountTransactions(accountId: string, pageSize: number = 50,
             })
 
         return () => subscription.unsubscribe()
-    }, [accountId, currentLimit, dateRange?.startDate, dateRange?.endDate])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accountId, currentLimit, dateRangeKey])
 
     const loadMore = () => {
         if (isLoadingMore || !hasMore) return

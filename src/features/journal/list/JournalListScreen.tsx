@@ -28,7 +28,7 @@ export function JournalListScreen() {
         return { type: 'MONTH', month: now.getMonth(), year: now.getFullYear() };
     })
     const [isDatePickerVisible, setIsDatePickerVisible] = React.useState(false)
-    const { journals, isLoading, isLoadingMore, hasMore, loadMore } = useJournals(50, dateRange || undefined)
+    const { journals, isLoading, isLoadingMore, loadMore } = useJournals(50, dateRange || undefined)
     const { income, expense, netWorth, totalAssets, totalLiabilities, isPrivacyMode, isLoading: isSummaryLoading } = useSummary()
     const [isDashboardHidden, setIsDashboardHidden] = React.useState(isPrivacyMode)
 

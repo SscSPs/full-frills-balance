@@ -104,7 +104,7 @@ export function DateRangePicker({ visible, onClose, onSelect, currentFilter }: D
                 flatListRef.current?.scrollToIndex({ index: targetIndex, animated: false, viewPosition: 0.5 });
             }, 100);
         }
-    }, [visible, currentFilter]);
+    }, [visible, currentFilter, monthList]);
 
     // Handlers
     const handleSelectMonth = (month: number, year: number) => {
