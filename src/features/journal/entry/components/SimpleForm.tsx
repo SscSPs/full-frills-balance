@@ -253,50 +253,53 @@ export const SimpleForm = ({
         }
     };
 
-    const renderAccountSelector = (title: string, accountList: Account[], selectedId: string, onSelect: (id: string) => void) => (
-        <Box gap="sm" marginVertical="md">
-            <AppText variant="caption" weight="bold" color="tertiary" style={{ marginLeft: Spacing.xs }}>
-                {title.toUpperCase()}
-            </AppText>
-            <View style={{ minHeight: 80 }}>
-                <FlashList<Account>
-                    data={accountList}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    // @ts-ignore: estimatedItemSize missing in v2 types
-                    estimatedItemSize={200}
-                    extraData={selectedId}
-                    renderItem={({ item: account }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.accountCard,
-                                { backgroundColor: theme.surfaceSecondary, borderColor: theme.border },
-                                selectedId === account.id && {
-                                    backgroundColor: withOpacity(activeColor, Opacity.soft),
-                                    borderColor: activeColor
-                                }
-                            ]}
-                            onPress={() => onSelect(account.id)}
-                        >
-                            <View style={[styles.accountIndicator, { backgroundColor: activeColor, opacity: selectedId === account.id ? 1 : Opacity.soft }]} />
-                            <AppText
-                                variant="body"
-                                weight={selectedId === account.id ? "semibold" : "regular"}
-                                style={{ color: theme.text, flex: 1 }}
+    const renderAccountSelector = (title: string, accountList: Account[], selectedId: string, onSelect: (id: string) => void, tintColor?: string) => {
+        const selectorColor = tintColor || activeColor;
+        return (
+            <Box gap="sm" marginVertical="md">
+                <AppText variant="caption" weight="bold" color="tertiary" style={{ marginLeft: Spacing.xs }}>
+                    {title.toUpperCase()}
+                </AppText>
+                <View style={{ minHeight: 80 }}>
+                    <FlashList<Account>
+                        data={accountList}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        // @ts-ignore: estimatedItemSize missing in v2 types
+                        estimatedItemSize={200}
+                        extraData={selectedId}
+                        renderItem={({ item: account }) => (
+                            <TouchableOpacity
+                                style={[
+                                    styles.accountCard,
+                                    { backgroundColor: theme.surfaceSecondary, borderColor: theme.border },
+                                    selectedId === account.id && {
+                                        backgroundColor: withOpacity(selectorColor, Opacity.soft),
+                                        borderColor: selectorColor
+                                    }
+                                ]}
+                                onPress={() => onSelect(account.id)}
                             >
-                                {account.name}
-                            </AppText>
-                            {selectedId === account.id && (
-                                <Ionicons name="checkmark-circle" size={18} color={activeColor} />
-                            )}
-                        </TouchableOpacity>
-                    )}
-                    contentContainerStyle={{ paddingHorizontal: Spacing.xs }}
-                    ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
-                />
-            </View>
-        </Box>
-    );
+                                <View style={[styles.accountIndicator, { backgroundColor: selectorColor, opacity: selectedId === account.id ? 1 : Opacity.soft }]} />
+                                <AppText
+                                    variant="body"
+                                    weight={selectedId === account.id ? "semibold" : "regular"}
+                                    style={{ color: theme.text, flex: 1 }}
+                                >
+                                    {account.name}
+                                </AppText>
+                                {selectedId === account.id && (
+                                    <Ionicons name="checkmark-circle" size={18} color={selectorColor} />
+                                )}
+                            </TouchableOpacity>
+                        )}
+                        contentContainerStyle={{ paddingHorizontal: Spacing.xs }}
+                        ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
+                    />
+                </View>
+            </Box>
+        );
+    };
 
     const activeColor = type === 'expense' ? theme.expense : type === 'income' ? theme.income : theme.primary;
 
@@ -309,7 +312,7 @@ export const SimpleForm = ({
                 </AppText>
                 <Stack horizontal align="center" justify="center">
                     <Box marginVertical="sm" style={{ marginTop: Spacing.md }}>
-                        <AppText variant="title" weight="bold" style={{ color: activeColor, opacity: Opacity.heavy }}>
+                        <AppText variant="title" weight="bold" style={{ color: theme.textSecondary, opacity: Opacity.heavy }}>
                             {sourceAccount?.currencyCode || defaultCurrency}
                         </AppText>
                     </Box>
@@ -356,7 +359,7 @@ export const SimpleForm = ({
                     <>
                         {renderAccountSelector("To Category / Account", expenseAccounts, destinationId, setDestinationId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("From Account", transactionAccounts, sourceId, setSourceId)}
+                        {renderAccountSelector("From Account", transactionAccounts, sourceId, setSourceId, theme.primary)}
                     </>
                 )}
 
@@ -364,15 +367,15 @@ export const SimpleForm = ({
                     <>
                         {renderAccountSelector("From Source / Account", incomeAccounts, sourceId, setSourceId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("To Account", transactionAccounts, destinationId, setDestinationId)}
+                        {renderAccountSelector("To Account", transactionAccounts, destinationId, setDestinationId, theme.primary)}
                     </>
                 )}
 
                 {type === 'transfer' && (
                     <>
-                        {renderAccountSelector("Source Account", accounts, sourceId, setSourceId)}
+                        {renderAccountSelector("Source Account", accounts, sourceId, setSourceId, theme.primary)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("Destination Account", accounts, destinationId, setDestinationId)}
+                        {renderAccountSelector("Destination Account", accounts, destinationId, setDestinationId, theme.primary)}
                     </>
                 )}
             </AppCard>
@@ -437,7 +440,12 @@ export const SimpleForm = ({
                     variant="primary"
                     onPress={handleSave}
                     disabled={!amount || !sourceId || !destinationId || (sourceId === destinationId) || isSubmitting || isLoadingRate || !!rateError}
-                    style={{ backgroundColor: activeColor, height: Size.buttonXl, borderRadius: Shape.radius.r4 }}
+                    style={[
+                        { height: Size.buttonXl, borderRadius: Shape.radius.r4 },
+                        (!amount || !sourceId || !destinationId || (sourceId === destinationId) || isSubmitting || isLoadingRate || !!rateError)
+                            ? { backgroundColor: theme.surfaceSecondary }
+                            : { backgroundColor: activeColor }
+                    ]}
                 >
                     {isSubmitting ? 'SAVING...' : sourceId === destinationId ? 'CHOOSE DIFFERENT ACCOUNTS' : `SAVE ${type.toUpperCase()}`}
                 </AppButton>
