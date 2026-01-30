@@ -36,7 +36,7 @@ export const RestartRequiredScreen = () => {
             <View style={styles.content}>
                 <View style={[styles.iconContainer, { backgroundColor: isImport ? withOpacity(theme.success, Opacity.soft) : withOpacity(theme.error, Opacity.soft) }]}>
                     <IvyIcon
-                        name={isImport ? 'checkmark' : 'trash'}
+                        name={isImport ? 'checkCircle' : 'delete'}
                         size={48}
                         color={isImport ? theme.success : theme.error}
                     />

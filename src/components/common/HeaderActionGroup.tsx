@@ -33,7 +33,7 @@ export function HeaderActionGroup({
             {isDeleted ? (
                 onRecover && (
                     <IconButton
-                        name="refresh-outline"
+                        name="refresh"
                         onPress={onRecover}
                         variant="clear"
                         size={Typography.sizes.xl}
@@ -44,7 +44,7 @@ export function HeaderActionGroup({
                 <>
                     {onEdit && (
                         <IconButton
-                            name="create-outline"
+                            name="edit"
                             onPress={onEdit}
                             variant="clear"
                             size={Typography.sizes.xl}
@@ -53,7 +53,7 @@ export function HeaderActionGroup({
                     )}
                     {onDelete && (
                         <IconButton
-                            name="trash-outline"
+                            name="delete"
                             onPress={onDelete}
                             variant="clear"
                             size={Typography.sizes.xl}

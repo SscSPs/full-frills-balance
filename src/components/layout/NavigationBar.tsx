@@ -14,7 +14,7 @@ export type NavigationBarProps = {
     subtitle?: string
     onBack?: () => void
     showBack?: boolean
-    backIcon?: 'arrow-back' | 'close'
+    backIcon?: 'back' | 'close'
     rightActions?: React.ReactNode
     style?: ViewStyle
 }
@@ -24,7 +24,7 @@ export function NavigationBar({
     subtitle,
     onBack,
     showBack = true,
-    backIcon = 'arrow-back',
+    backIcon = 'back',
     rightActions,
     style
 }: NavigationBarProps) {

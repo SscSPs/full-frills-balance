@@ -190,7 +190,7 @@ export function DateRangePicker({ visible, onClose, onSelect, currentFilter }: D
     const renderDatePicker = () => (
         <View style={{ flex: 1 }}>
             <View style={styles.pickerHeader}>
-                <IconButton name="arrow-back" onPress={() => setView('MENU')} />
+                <IconButton name="back" onPress={() => setView('MENU')} />
                 <AppText variant="subheading">
                     Select {view === 'START_DATE' ? 'Start' : 'End'} Date
                 </AppText>
