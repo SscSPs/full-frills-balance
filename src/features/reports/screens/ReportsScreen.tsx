@@ -5,10 +5,12 @@ import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { AppCard, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
+import { AppConfig } from '@/src/constants/app-config';
 import { useTheme } from '@/src/hooks/use-theme';
 import { DailyNetWorth, ExpenseCategory, reportService } from '@/src/services/report-service';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { DateRange, PeriodFilter, formatDate, getLastNRange } from '@/src/utils/dateUtils';
+import { preferences } from '@/src/utils/preferences';
 import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -36,10 +38,11 @@ export default function ReportsScreen() {
         setLoading(true);
         try {
             const { startDate, endDate } = dateRange;
+            const targetCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
 
-            const history = await reportService.getNetWorthHistory(startDate, endDate);
-            const breakdown = await reportService.getExpenseBreakdown(startDate, endDate);
-            const incVsExp = await reportService.getIncomeVsExpense(startDate, endDate);
+            const history = await reportService.getNetWorthHistory(startDate, endDate, targetCurrency);
+            const breakdown = await reportService.getExpenseBreakdown(startDate, endDate, targetCurrency);
+            const incVsExp = await reportService.getIncomeVsExpense(startDate, endDate, targetCurrency);
 
             setNetWorthHistory(history);
             setIncomeVsExpense(incVsExp);
@@ -73,7 +76,7 @@ export default function ReportsScreen() {
     const currentNetWorth = netWorthHistory.length > 0 ? netWorthHistory[netWorthHistory.length - 1].netWorth : 0;
 
     return (
-        <Screen title="Reports" showBack={false}>
+        <Screen showBack={false}>
             {/* Header Filter Bar */}
             <View style={styles.filterBar}>
                 <TouchableOpacity

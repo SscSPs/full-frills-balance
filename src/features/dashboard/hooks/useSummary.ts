@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import { useUI } from '@/src/contexts/UIContext';
 import { database } from '@/src/data/database/Database';
 import Account from '@/src/data/models/Account';
@@ -6,12 +7,16 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { WealthSummary, wealthService } from '@/src/services/wealth-service';
 import { logger } from '@/src/utils/logger';
+import { preferences } from '@/src/utils/preferences';
 import { Q } from '@nozbe/watermelondb';
 import { useEffect, useRef, useState } from 'react';
 
 export interface DashboardSummaryData extends WealthSummary {
     income: number;
     expense: number;
+    totalEquity: number;
+    totalIncome: number;
+    totalExpense: number;
     isPrivacyMode: boolean;
     isLoading: boolean;
     togglePrivacyMode: () => void;
@@ -34,6 +39,9 @@ export const useSummary = () => {
         netWorth: 0,
         totalAssets: 0,
         totalLiabilities: 0,
+        totalEquity: 0,
+        totalIncome: 0,
+        totalExpense: 0,
         isLoading: true,
     });
 
@@ -48,7 +56,8 @@ export const useSummary = () => {
                 accountRepository.getAccountBalances()
             ]);
 
-            const wealth = wealthService.calculateSummary(balances);
+            const targetCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+            const wealth = await wealthService.calculateSummary(balances, targetCurrency);
 
             setData({
                 income: monthly.income,

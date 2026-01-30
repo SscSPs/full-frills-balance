@@ -3,11 +3,13 @@ import { Shape, Size, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { AccountCard } from '@/src/features/accounts/components/AccountCard';
 import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { useSummary } from '@/src/features/dashboard';
 import { useTheme } from '@/src/hooks/use-theme';
 import { getAccountSections } from '@/src/utils/accountUtils';
+import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function AccountsScreen() {
     const router = useRouter()
@@ -40,17 +42,56 @@ export default function AccountsScreen() {
         return getAccountSections(accounts)
     }, [accounts])
 
-    const renderHeader = () => (
-        <Box direction="row" justify="flex-end" style={{ marginTop: Spacing.sm, marginBottom: Spacing.md }}>
-            <TouchableOpacity
-                onPress={() => router.push('/account-reorder' as any)}
-                style={[styles.reorderButton, { borderColor: theme.border }]}
-            >
-                <AppIcon name="reorder" size={Size.iconXs} color={theme.primary} />
-                <AppText variant="caption" weight="bold" color="primary">REORDER</AppText>
-            </TouchableOpacity>
-        </Box>
-    )
+    const {
+        totalAssets,
+        totalLiabilities,
+        totalEquity,
+        totalIncome,
+        totalExpense,
+        isPrivacyMode
+    } = useSummary()
+
+    const renderHeader = () => {
+        const categories = [
+            { label: 'Assets', value: totalAssets, color: theme.asset },
+            { label: 'Liabilities', value: totalLiabilities, color: theme.liability },
+            { label: 'Equity', value: totalEquity, color: theme.equity },
+            { label: 'Income', value: totalIncome, color: theme.income },
+            { label: 'Expenses', value: totalExpense, color: theme.expense },
+        ]
+
+        return (
+            <View style={styles.header}>
+                <Box direction="row" align="center" justify="space-between" style={styles.headerTop}>
+                    <AppText variant="title" weight="bold">Accounts</AppText>
+                    <TouchableOpacity
+                        onPress={() => router.push('/account-reorder' as any)}
+                        style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
+                    >
+                        <AppIcon name="reorder" size={Size.iconSm} color={theme.text} />
+                    </TouchableOpacity>
+                </Box>
+
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.summaryScroll}
+                >
+                    {categories.map((cat, index) => (
+                        <React.Fragment key={cat.label}>
+                            <View style={styles.summaryItem}>
+                                <AppText variant="caption" color="secondary" weight="bold">{cat.label.toUpperCase()}</AppText>
+                                <AppText variant="subheading" weight="bold" style={{ color: cat.color }}>
+                                    {isPrivacyMode ? '••••' : CurrencyFormatter.formatShort(cat.value)}
+                                </AppText>
+                            </View>
+                            {index < categories.length - 1 && <View style={styles.summaryDivider} />}
+                        </React.Fragment>
+                    ))}
+                </ScrollView>
+            </View>
+        )
+    }
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -134,8 +175,35 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         paddingBottom: Size.fab + Spacing.xxxl, // Space for FAB overlap
     },
+    header: {
+        paddingTop: Spacing.xl,
+        paddingBottom: Spacing.lg,
+    },
+    headerTop: {
+        marginBottom: Spacing.xl,
+    },
+    reorderIconButton: {
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Shape.radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    summaryScroll: {
+        paddingRight: Spacing.lg,
+    },
+    summaryItem: {
+        minWidth: 80,
+    },
+    summaryDivider: {
+        width: 1,
+        height: 30,
+        backgroundColor: '#333',
+        marginHorizontal: Spacing.md,
+        alignSelf: 'center',
+    },
     sectionHeaderContainer: {
-        marginTop: Spacing.md,
+        marginTop: Spacing.xl,
         marginBottom: Spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',

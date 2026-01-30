@@ -55,5 +55,41 @@ export const CurrencyFormatter = {
     format(amount: number, currencyCode?: string, options?: CurrencyFormatOptions): string {
         const code = currencyCode || preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
         return this.formatAmount(amount, code, options);
+    },
+
+    /**
+     * Formats an amount in short form (e.g., 1K, 1M, 1L, 1Cr).
+     */
+    formatShort(amount: number, currencyCode?: string): string {
+        const code = currencyCode || preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+        const absAmount = Math.abs(amount);
+        const sign = amount < 0 ? '-' : '';
+
+        if (code === 'INR') {
+            if (absAmount >= 10000000) { // 1 Crore
+                return `${sign}${(absAmount / 10000000).toFixed(1).replace(/\.0$/, '')}Cr`;
+            }
+            if (absAmount >= 100000) { // 1 Lakh
+                return `${sign}${(absAmount / 100000).toFixed(1).replace(/\.0$/, '')}L`;
+            }
+            if (absAmount >= 1000) {
+                return `${sign}${(absAmount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+            }
+        } else {
+            if (absAmount >= 1000000000000) {
+                return `${sign}${(absAmount / 1000000000000).toFixed(1).replace(/\.0$/, '')}T`;
+            }
+            if (absAmount >= 1000000000) {
+                return `${sign}${(absAmount / 1000000000).toFixed(1).replace(/\.0$/, '')}B`;
+            }
+            if (absAmount >= 1000000) {
+                return `${sign}${(absAmount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+            }
+            if (absAmount >= 1000) {
+                return `${sign}${(absAmount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+            }
+        }
+
+        return this.format(amount, code, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 };

@@ -16,6 +16,7 @@ export { AccountType, JournalDisplayType, TransactionType };
 export interface AccountBalance {
     accountId: string;
     balance: number;
+    currencyCode: string;
     transactionCount: number;
     asOfDate: number;
     accountType: AccountType;

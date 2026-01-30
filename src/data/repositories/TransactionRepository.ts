@@ -300,6 +300,28 @@ export class TransactionRepository {
       .fetch()
     return transactions[0] || null
   }
+
+  /**
+   * Finds all transactions for multiple accounts within a date range.
+   * Optimized for bulk reporting.
+   */
+  async findByAccountsAndDateRange(
+    accountIds: string[],
+    startDate: number,
+    endDate: number
+  ): Promise<Transaction[]> {
+    return this.transactions
+      .query(
+        Q.and(
+          Q.where('account_id', Q.oneOf(accountIds)),
+          Q.where('transaction_date', Q.gte(startDate)),
+          Q.where('transaction_date', Q.lte(endDate)),
+          Q.where('deleted_at', Q.eq(null))
+        )
+      )
+      .extend(Q.sortBy('transaction_date', 'desc'))
+      .fetch()
+  }
 }
 
 // Export a singleton instance

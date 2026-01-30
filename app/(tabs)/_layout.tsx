@@ -1,5 +1,4 @@
 import { AppIcon } from '@/src/components/core';
-import { Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -16,18 +15,7 @@ export default function TabLayout() {
                     backgroundColor: theme.background,
                     borderTopColor: theme.border,
                 },
-                headerStyle: {
-                    backgroundColor: theme.background,
-                    // @ts-ignore
-                    boxShadow: 'none',
-                    borderBottomWidth: 1,
-                    borderBottomColor: theme.border,
-                },
-                headerTitleStyle: {
-                    color: theme.text,
-                    fontFamily: Typography.fonts.bold,
-                    fontSize: Typography.sizes.xl,
-                },
+                headerShown: false,
             }}
         >
             <Tabs.Screen

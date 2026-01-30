@@ -131,6 +131,7 @@ export class AccountRepository {
     return {
       accountId: account.id,
       balance,
+      currencyCode: account.currencyCode,
       transactionCount,
       asOfDate: cutoffDate,
       accountType: account.accountType

@@ -137,7 +137,6 @@ export default function SettingsScreen() {
 
     return (
         <Screen
-            title="Settings"
             showBack={false}
             scrollable
             withPadding

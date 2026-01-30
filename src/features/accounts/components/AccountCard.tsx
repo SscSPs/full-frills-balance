@@ -1,4 +1,4 @@
-import { AppCard, AppText, Badge, IvyIcon } from '@/src/components/core';
+import { AppCard, AppText, IvyIcon } from '@/src/components/core';
 import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
@@ -56,21 +56,13 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
                         <IvyIcon
                             label={account.name}
                             color={textColor}
-                            size={32}
+                            size={24}
                         />
                         <View style={styles.titleInfo}>
-                            <AppText variant="body" weight="bold" style={{ color: textColor }} numberOfLines={1}>
+                            <AppText variant="body" weight="bold" style={[styles.accountName, { color: textColor }]} numberOfLines={1}>
                                 {account.name}
                             </AppText>
-                            <AppText variant="caption" style={{ color: subTextColor }}>
-                                {account.accountType}
-                            </AppText>
                         </View>
-                        <Badge variant="default" size="sm" style={{ backgroundColor: textColor }}>
-                            <AppText variant="caption" weight="bold" style={{ color: accentColor, fontSize: Typography.sizes.xs }}>
-                                {transactionCount}
-                            </AppText>
-                        </Badge>
                     </View>
 
                     <View style={styles.balanceSection}>
@@ -86,28 +78,36 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: Spacing.md,
+        marginBottom: Spacing.lg,
         borderRadius: Shape.radius.xl,
         overflow: 'hidden',
     },
     headerSection: {
-        padding: Spacing.lg,
-        paddingBottom: Spacing.xl,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.xl,
     },
     headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: Spacing.lg,
+        marginBottom: Spacing.md,
     },
     titleInfo: {
-        marginLeft: Spacing.md,
+        marginLeft: Spacing.sm,
         flex: 1,
     },
+    accountName: {
+        fontSize: Typography.sizes.lg,
+    },
     balanceSection: {
-        marginTop: Spacing.sm,
+        marginTop: Spacing.xs,
+        alignItems: 'center',
     },
     balanceText: {
-        fontSize: Typography.sizes.xxxl,
+        fontSize: Typography.sizes.hero / 1.5, // hero is too big (72), so we scale it or use xxxl
         fontFamily: Typography.fonts.bold,
+    },
+    reconciledText: {
+        marginTop: Spacing.xs,
+        opacity: Opacity.medium,
     },
 });
