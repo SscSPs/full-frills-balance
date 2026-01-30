@@ -60,20 +60,11 @@ export function JournalListScreen() {
         );
     });
 
-    if (isLoading) {
-        return (
-            <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={styles.loadingContainer}>
-                    <AppText variant="body">Loading journals...</AppText>
-                </View>
-            </View>
-        );
-    }
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <TypedFlashList
-                data={filteredJournals}
+                data={journals}
                 renderItem={({ item }: { item: EnrichedJournal }) => (
                     <JournalCard
                         journal={item}
@@ -122,18 +113,27 @@ export function JournalListScreen() {
                     </>
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <AppText variant="heading" style={styles.emptyText}>
-                            No transactions yet
-                        </AppText>
-                        <AppText
-                            variant="body"
-                            color="secondary"
-                            style={styles.emptySubtext}
-                        >
-                            Tap the + button to add your first transaction
-                        </AppText>
-                    </View>
+                    isLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="small" />
+                            <AppText variant="body" color="secondary" style={{ marginTop: Spacing.sm }}>
+                                Loading journals...
+                            </AppText>
+                        </View>
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <AppText variant="heading" style={styles.emptyText}>
+                                No transactions yet
+                            </AppText>
+                            <AppText
+                                variant="body"
+                                color="secondary"
+                                style={styles.emptySubtext}
+                            >
+                                Tap the + button to add your first transaction
+                            </AppText>
+                        </View>
+                    )
                 }
                 ListFooterComponent={
                     isLoadingMore ? (
