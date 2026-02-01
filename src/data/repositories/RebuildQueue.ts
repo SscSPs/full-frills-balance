@@ -23,6 +23,7 @@ class RebuildQueueService {
     private queue: Map<string, number> = new Map() // accountId -> minFromDate
     private timeoutId: ReturnType<typeof setTimeout> | null = null
     private isProcessing: boolean = false
+    private currentProcessingPromise: Promise<void> | null = null
     private config: RebuildQueueConfig
 
     constructor(config: Partial<RebuildQueueConfig> = {}) {
@@ -62,7 +63,27 @@ class RebuildQueueService {
             clearTimeout(this.timeoutId)
             this.timeoutId = null
         }
-        await this.processQueue()
+
+        // Wait for current process if any
+        if (this.currentProcessingPromise) {
+            await this.currentProcessingPromise
+        }
+
+        // Keep processing batches until the queue is empty
+        while (this.queue.size > 0) {
+            await this.processQueue()
+        }
+    }
+
+    /**
+     * Stop the service, clear any pending timeouts, and empty the queue.
+     */
+    stop(): void {
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId)
+            this.timeoutId = null
+        }
+        this.queue.clear()
     }
 
     /**
@@ -86,6 +107,11 @@ class RebuildQueueService {
         this.timeoutId = setTimeout(() => {
             this.processQueue()
         }, this.config.debounceMs)
+
+        // Prevent Node.js from hanging if this timer is active
+        if (this.timeoutId && typeof this.timeoutId === 'object' && 'unref' in this.timeoutId) {
+            (this.timeoutId as any).unref()
+        }
     }
 
     private async processQueue(): Promise<void> {
@@ -93,46 +119,51 @@ class RebuildQueueService {
             return
         }
 
-        this.isProcessing = true
-        try {
-            // Take up to maxBatchSize items from the queue
-            const batch: { id: string; fromDate: number }[] = []
-            for (const [accountId, fromDate] of this.queue.entries()) {
-                batch.push({ id: accountId, fromDate })
-                if (batch.length >= this.config.maxBatchSize) {
-                    break
+        this.currentProcessingPromise = (async () => {
+            this.isProcessing = true
+            try {
+                // Take up to maxBatchSize items from the queue
+                const batch: { id: string; fromDate: number }[] = []
+                for (const [accountId, fromDate] of this.queue.entries()) {
+                    batch.push({ id: accountId, fromDate })
+                    if (batch.length >= this.config.maxBatchSize) {
+                        break
+                    }
                 }
+
+                // Remove processed items from queue
+                for (const item of batch) {
+                    this.queue.delete(item.id)
+                }
+
+                logger.debug(`[RebuildQueue] Processing batch of ${batch.length} accounts`)
+
+                // Process all accounts in the batch
+                const results = await Promise.allSettled(
+                    batch.map(item => transactionRepository.rebuildRunningBalances(item.id, item.fromDate))
+                )
+
+                // Log any failures
+                const failures = results.filter(r => r.status === 'rejected')
+                if (failures.length > 0) {
+                    logger.warn(`[RebuildQueue] ${failures.length}/${batch.length} rebuilds failed`)
+                }
+
+                logger.debug(`[RebuildQueue] Batch complete. ${this.queue.size} remaining in queue.`)
+
+                // If there are more items, schedule another processing
+                if (this.queue.size > 0) {
+                    this.scheduleProcessing()
+                }
+            } catch (error) {
+                logger.error('[RebuildQueue] Error processing queue:', error)
+            } finally {
+                this.isProcessing = false
+                this.currentProcessingPromise = null
             }
+        })()
 
-            // Remove processed items from queue
-            for (const item of batch) {
-                this.queue.delete(item.id)
-            }
-
-            logger.debug(`[RebuildQueue] Processing batch of ${batch.length} accounts`)
-
-            // Process all accounts in the batch
-            const results = await Promise.allSettled(
-                batch.map(item => transactionRepository.rebuildRunningBalances(item.id, item.fromDate))
-            )
-
-            // Log any failures
-            const failures = results.filter(r => r.status === 'rejected')
-            if (failures.length > 0) {
-                logger.warn(`[RebuildQueue] ${failures.length}/${batch.length} rebuilds failed`)
-            }
-
-            logger.debug(`[RebuildQueue] Batch complete. ${this.queue.size} remaining in queue.`)
-
-            // If there are more items, schedule another processing
-            if (this.queue.size > 0) {
-                this.scheduleProcessing()
-            }
-        } catch (error) {
-            logger.error('[RebuildQueue] Error processing queue:', error)
-        } finally {
-            this.isProcessing = false
-        }
+        return this.currentProcessingPromise
     }
 }
 

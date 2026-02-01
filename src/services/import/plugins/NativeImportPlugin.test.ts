@@ -1,0 +1,96 @@
+import { database } from '@/src/data/database/Database';
+import { nativePlugin } from '@/src/services/import/plugins/native-plugin';
+import { integrityService } from '@/src/services/integrity-service';
+import { preferences } from '@/src/utils/preferences';
+
+// Mock dependencies
+jest.mock('@/src/data/database/Database', () => ({
+    database: {
+        collections: {
+            get: jest.fn().mockReturnThis(),
+        },
+        write: jest.fn().mockImplementation(cb => cb()),
+        batch: jest.fn().mockResolvedValue(true),
+    }
+}));
+
+jest.mock('@/src/services/integrity-service', () => ({
+    integrityService: {
+        resetDatabase: jest.fn().mockResolvedValue(true),
+    }
+}));
+
+jest.mock('@/src/utils/preferences', () => ({
+    preferences: {
+        clearPreferences: jest.fn().mockResolvedValue(true),
+        setTheme: jest.fn().mockResolvedValue(true),
+        setOnboardingCompleted: jest.fn().mockResolvedValue(true),
+        setUserName: jest.fn().mockResolvedValue(true),
+        setDefaultCurrencyCode: jest.fn().mockResolvedValue(true),
+        setIsPrivacyMode: jest.fn().mockResolvedValue(true),
+    }
+}));
+
+describe('NativeImportPlugin', () => {
+    const validNativeData = {
+        version: '1.0.0',
+        preferences: { userName: 'Test User' },
+        accounts: [{ id: 'a1', name: 'Acc 1' }],
+        journals: [{ id: 'j1', journalDate: Date.now() }],
+        transactions: [{ id: 't1', accountId: 'a1', journalId: 'j1' }]
+    };
+
+    describe('detect', () => {
+        it('returns true for valid native format', () => {
+            expect(nativePlugin.detect(validNativeData)).toBe(true);
+        });
+
+        it('returns false if version is missing', () => {
+            const data = { ...validNativeData };
+            delete (data as any).version;
+            expect(nativePlugin.detect(data)).toBe(false);
+        });
+
+        it('returns false if categories is present (Ivy format)', () => {
+            const data = { ...validNativeData, categories: [] };
+            expect(nativePlugin.detect(data)).toBe(false);
+        });
+    });
+
+    describe('import', () => {
+        const mockCollection = {
+            prepareCreate: jest.fn().mockImplementation(cb => {
+                const record = { _raw: {} };
+                cb(record);
+                return record;
+            })
+        };
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+            (database.collections.get as jest.Mock).mockReturnValue(mockCollection);
+        });
+
+        it('performs full import process', async () => {
+            const stats = await nativePlugin.import(JSON.stringify(validNativeData));
+
+            expect(integrityService.resetDatabase).toHaveBeenCalled();
+            expect(preferences.clearPreferences).toHaveBeenCalled();
+            expect(preferences.setUserName).toHaveBeenCalledWith('Test User');
+            expect(database.batch).toHaveBeenCalled();
+
+            expect(stats.accounts).toBe(1);
+            expect(stats.journals).toBe(1);
+            expect(stats.transactions).toBe(1);
+        });
+
+        it('throws error for invalid JSON', async () => {
+            await expect(nativePlugin.import('invalid-json')).rejects.toThrow(/Invalid JSON/);
+        });
+
+        it('throws error for missing sections', async () => {
+            const incompleteData = { version: '1.0' };
+            await expect(nativePlugin.import(JSON.stringify(incompleteData))).rejects.toThrow(/missing required data/);
+        });
+    });
+});

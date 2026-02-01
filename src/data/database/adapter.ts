@@ -12,7 +12,10 @@ const adapter = new LokiJSAdapter({
     migrations,
     dbName: 'full-frills-balance',
     useWebWorker: false,
-    useIncrementalIndexedDB: typeof process !== 'undefined' && process.env.NODE_ENV !== 'test',
+    useIncrementalIndexedDB: true,
+    extraLokiOptions: {
+        autosave: false,
+    }
 })
 
 export default adapter

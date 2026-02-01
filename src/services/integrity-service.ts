@@ -40,14 +40,14 @@ export class IntegrityService {
      * Computes account balance from scratch by iterating all transactions.
      * This is the source of truth for balance verification.
      */
-    async computeBalanceFromTransactions(accountId: string): Promise<number> {
+    async computeBalanceFromTransactions(accountId: string, cutoffDate?: number): Promise<number> {
         const account = await accountRepository.find(accountId)
         if (!account) {
             throw new Error(`Account ${accountId} not found`)
         }
 
         // Fetch all posted, non-deleted transactions for this account
-        const transactions = await database.collections.get<Transaction>('transactions')
+        let query = database.collections.get<Transaction>('transactions')
             .query(
                 Q.where('account_id', accountId),
                 Q.where('deleted_at', Q.eq(null)),
@@ -56,7 +56,12 @@ export class IntegrityService {
                     Q.where('deleted_at', Q.eq(null))
                 ))
             )
-            .fetch()
+
+        if (cutoffDate !== undefined) {
+            query = query.extend(Q.where('transaction_date', Q.lte(cutoffDate)))
+        }
+
+        const transactions = await query.fetch()
 
         const precision = await currencyRepository.getPrecision(account.currencyCode)
 
@@ -73,14 +78,14 @@ export class IntegrityService {
     /**
      * Verifies a single account's balance against computed value.
      */
-    async verifyAccountBalance(accountId: string): Promise<BalanceVerificationResult> {
+    async verifyAccountBalance(accountId: string, cutoffDate: number = Date.now()): Promise<BalanceVerificationResult> {
         const account = await accountRepository.find(accountId)
         if (!account) {
             throw new Error(`Account ${accountId} not found`)
         }
 
-        const cachedData = await accountRepository.getAccountBalance(accountId)
-        const computedBalance = await this.computeBalanceFromTransactions(accountId)
+        const cachedData = await accountRepository.getAccountBalance(accountId, cutoffDate)
+        const computedBalance = await this.computeBalanceFromTransactions(accountId, cutoffDate)
         const precision = await currencyRepository.getPrecision(account.currencyCode)
         const discrepancy = Math.abs(cachedData.balance - computedBalance)
 

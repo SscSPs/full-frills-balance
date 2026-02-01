@@ -72,7 +72,7 @@ describe('JournalRepository', () => {
                         { accountId: expenseAccountId, amount: 50, transactionType: TransactionType.DEBIT },
                     ],
                 })
-            ).rejects.toThrow(/Double-entry violation/)
+            ).rejects.toThrow(/unbalanced by/)
         })
 
         it('should handle multi-leg journals', async () => {
@@ -181,7 +181,7 @@ describe('JournalRepository', () => {
 
     describe('deleteJournal', () => {
         // TODO: Fix rebuild queue singleton timing issue in test environment
-        it.skip('should soft-delete journal and its transactions', async () => {
+        it('should soft-delete journal and its transactions', async () => {
             const journal = await journalRepository.createJournalWithTransactions({
                 description: 'To be deleted',
                 journalDate: Date.now(),

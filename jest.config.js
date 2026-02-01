@@ -4,7 +4,7 @@ module.exports = {
     transformIgnorePatterns: [
         'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@nozbe/watermelondb)',
     ],
-    testPathIgnorePatterns: ['/node_modules/', '/tests/'],
+    testPathIgnorePatterns: ['/node_modules/', '/tests/', '/e2e/'],
     collectCoverage: true,
     collectCoverageFrom: [
         'src/**/*.{ts,tsx}',
@@ -16,8 +16,8 @@ module.exports = {
     ],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
     moduleNameMapper: {
-        '^@/src/(.*)$': '<rootDir>/src/$1',
-        '^\\./adapter$': '<rootDir>/src/data/database/adapter.ts',
+        '^@/src/data/database/adapter$': '<rootDir>/src/data/database/adapter.ts',
         'idGenerator$': '<rootDir>/src/data/database/idGenerator.ts',
+        '^@/src/(.*)$': '<rootDir>/src/$1',
     },
 };
