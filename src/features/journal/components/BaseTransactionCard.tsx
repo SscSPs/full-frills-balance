@@ -52,7 +52,10 @@ export const BaseTransactionCard = ({
     let typeIcon: IconName = 'document';
     let typeColor: string = theme.textSecondary;
 
-    if (displayType === JournalDisplayType.INCOME) {
+    if (isIncrease !== undefined) {
+        typeColor = isIncrease ? theme.income : theme.expense;
+        typeIcon = isIncrease ? 'arrowUp' : 'arrowDown';
+    } else if (displayType === JournalDisplayType.INCOME) {
         typeIcon = 'arrowUp';
         typeColor = theme.income;
     } else if (displayType === JournalDisplayType.EXPENSE) {
@@ -128,7 +131,10 @@ export const BaseTransactionCard = ({
                         weight="bold"
                         style={{ color: typeColor }}
                     >
-                        {displayType === JournalDisplayType.INCOME ? '+ ' : displayType === JournalDisplayType.EXPENSE ? '− ' : ''}
+                        {isIncrease !== undefined
+                            ? (isIncrease ? '+ ' : '− ')
+                            : (displayType === JournalDisplayType.INCOME ? '+ ' : displayType === JournalDisplayType.EXPENSE ? '− ' : '')
+                        }
                         {formattedAmount}
                     </AppText>
                 </View>

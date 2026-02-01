@@ -1,4 +1,5 @@
 import { AccountType } from '@/src/data/models/Account';
+import { TransactionType } from '@/src/data/models/Transaction';
 
 export enum JournalDisplayType {
     INCOME = 'INCOME',
@@ -52,6 +53,7 @@ export enum SemanticType {
  */
 export interface TransactionLike {
     accountId: string;
+    transactionType?: TransactionType;
 }
 
 export interface JournalPresentation {
@@ -72,14 +74,27 @@ export class JournalPresenter {
             const type = accountTypes.get(tx.accountId);
             if (type === AccountType.INCOME) hasIncome = true;
             else if (type === AccountType.EXPENSE) hasExpense = true;
-            else {
-                // Asset, Liability, Equity - used implicitly as default (Transfer)
-            }
         });
 
+        // 1. Explicit Domain Accounts take precedence
         if (hasIncome && hasExpense) return JournalDisplayType.MIXED;
         if (hasIncome) return JournalDisplayType.INCOME;
         if (hasExpense) return JournalDisplayType.EXPENSE;
+
+        // 2. Structural Classification (e.g. Asset <-> Equity/Liability)
+        if (txs.length === 2) {
+            const leg1Type = accountTypes.get(txs[0].accountId);
+            const leg2Type = accountTypes.get(txs[1].accountId);
+
+            if ((leg1Type === AccountType.ASSET && leg2Type === AccountType.EQUITY) ||
+                (leg1Type === AccountType.EQUITY && leg2Type === AccountType.ASSET)) {
+
+                const assetLeg = txs.find(tx => accountTypes.get(tx.accountId) === AccountType.ASSET);
+                if (assetLeg?.transactionType === 'DEBIT') return JournalDisplayType.INCOME;
+                if (assetLeg?.transactionType === 'CREDIT') return JournalDisplayType.EXPENSE;
+            }
+        }
+
         return JournalDisplayType.TRANSFER;
     }
 
