@@ -59,3 +59,26 @@ export function useAccountBalance(accountId: string | null) {
     )
     return { balanceData, isLoading }
 }
+
+/**
+ * Hook for account actions (mutations)
+ */
+export function useAccountActions() {
+    const deleteAccount = async (account: Account) => {
+        return await accountRepository.delete(account)
+    }
+
+    const recoverAccount = async (accountId: string) => {
+        return await accountRepository.recover(accountId)
+    }
+
+    const updateAccountOrder = async (account: Account, newOrder: number) => {
+        return await accountRepository.updateOrder(account, newOrder)
+    }
+
+    return {
+        deleteAccount,
+        recoverAccount,
+        updateAccountOrder
+    }
+}

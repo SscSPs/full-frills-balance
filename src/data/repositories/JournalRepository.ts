@@ -9,8 +9,8 @@ import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { rebuildQueueService } from '@/src/data/repositories/RebuildQueue'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { JournalPresenter } from '@/src/services/accounting/JournalPresenter'
+import { accountingService } from '@/src/services/AccountingService'
 import { EnrichedJournal, EnrichedTransaction } from '@/src/types/domain'
-import { getBalanceImpactMultiplier, validateBalance } from '@/src/utils/accounting-utils'
 import { logger } from '@/src/utils/logger'
 import { roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
@@ -125,7 +125,7 @@ export class JournalRepository {
     })
 
     // Validate double-entry accounting by converting transaction amounts to journal currency
-    const validationResult = validateBalance(roundedTransactionData.map(t => ({
+    const validationResult = accountingService.validateJournal(roundedTransactionData.map(t => ({
       amount: t.amount,
       type: t.transactionType,
       exchangeRate: t.exchangeRate
@@ -146,14 +146,16 @@ export class JournalRepository {
       const precision = accountPrecisions.get(tx.accountId) ?? 2
       const latestTx = await transactionRepository.findLatestForAccountBeforeDate(tx.accountId, journalFields.journalDate)
 
-      const isBackdated = !!latestTx && latestTx.transactionDate > journalFields.journalDate
-
-      if (isBackdated) {
+      if (accountingService.isBackdated(journalFields.journalDate, latestTx?.transactionDate)) {
         accountsToRebuild.add(tx.accountId)
       } else {
-        let balance = latestTx?.runningBalance || 0
-        const multiplier = getBalanceImpactMultiplier(account.accountType as any, tx.transactionType)
-        balance = roundToPrecision(balance + (tx.amount * multiplier), precision)
+        const balance = accountingService.calculateNewBalance(
+          latestTx?.runningBalance || 0,
+          tx.amount,
+          account.accountType as AccountType,
+          tx.transactionType,
+          precision
+        )
         calculatedBalances.set(tx.accountId, balance)
       }
     }
@@ -496,7 +498,7 @@ export class JournalRepository {
     })
 
     // 1. Validate the balance first using the rounded amounts
-    const validationResult = validateBalance(roundedTransactionData.map(t => ({
+    const validationResult = accountingService.validateJournal(roundedTransactionData.map(t => ({
       amount: t.amount,
       type: t.transactionType,
       exchangeRate: t.exchangeRate
@@ -525,13 +527,15 @@ export class JournalRepository {
         const precision = accountPrecisions.get(txData.accountId) ?? 2
         const latestOtherTx = await transactionRepository.findLatestForAccountBeforeDate(txData.accountId, journalFields.journalDate)
 
-        const isBackdated = !!latestOtherTx && latestOtherTx.transactionDate > journalFields.journalDate
-
         let running_balance: number | undefined = undefined
-        if (!isBackdated) {
-          const balance = latestOtherTx?.runningBalance || 0
-          const multiplier = getBalanceImpactMultiplier(account.accountType as any, txData.transactionType)
-          running_balance = roundToPrecision(balance + (txData.amount * multiplier), precision)
+        if (!accountingService.isBackdated(journalFields.journalDate, latestOtherTx?.transactionDate)) {
+          running_balance = accountingService.calculateNewBalance(
+            latestOtherTx?.runningBalance || 0,
+            txData.amount,
+            account.accountType as AccountType,
+            txData.transactionType,
+            precision
+          )
           calculatedBalances.set(txData.accountId, running_balance)
         } else {
           accountsToRebuild.add(txData.accountId)

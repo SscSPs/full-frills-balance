@@ -1,7 +1,6 @@
 import { AppIcon, AppText } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { Spacing } from '@/src/constants'
-import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { AuditLogItem, type AuditLogEntry } from '@/src/features/audit/components/AuditLogItem'
 import { useTheme } from '@/src/hooks/use-theme'
 import { auditService } from '@/src/services/audit-service'
@@ -9,6 +8,7 @@ import { logger } from '@/src/utils/logger'
 import { useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
+import { useAuditAccounts } from '../hooks/useAuditData'
 
 export default function AuditLogScreen() {
     const { theme } = useTheme();
@@ -17,22 +17,10 @@ export default function AuditLogScreen() {
     const [logs, setLogs] = useState<AuditLogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-    const [accountMap, setAccountMap] = useState<Record<string, { name: string; currency: string }>>({});
+
+    const { accountMap, isLoading: accountsLoading } = useAuditAccounts();
 
     const isFiltered = !!(entityType && entityId);
-
-    const loadAccountMap = React.useCallback(async () => {
-        try {
-            const allAccounts = await accountRepository.findAll();
-            const map: Record<string, { name: string; currency: string }> = {};
-            allAccounts.forEach(acc => {
-                map[acc.id] = { name: acc.name, currency: acc.currencyCode };
-            });
-            setAccountMap(map);
-        } catch (error) {
-            logger.error('Failed to load account map:', error);
-        }
-    }, []);
 
     const loadLogs = React.useCallback(async () => {
         setIsLoading(true);
@@ -60,8 +48,7 @@ export default function AuditLogScreen() {
 
     useEffect(() => {
         loadLogs();
-        loadAccountMap();
-    }, [loadLogs, loadAccountMap]);
+    }, [loadLogs]);
 
     const toggleExpanded = (id: string) => {
         setExpandedIds(prev => {
@@ -80,7 +67,7 @@ export default function AuditLogScreen() {
             title={isFiltered ? 'Edit History' : 'Audit Log'}
         >
             <View style={styles.viewContent}>
-                {isLoading ? (
+                {(isLoading || accountsLoading) ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={theme.primary} />
                     </View>

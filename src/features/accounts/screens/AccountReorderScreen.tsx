@@ -1,8 +1,7 @@
 import { AppCard, AppIcon, AppText, Stack } from '@/src/components/core';
 import { Palette, Shape, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
-import { accountRepository } from '@/src/data/repositories/AccountRepository';
-import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { useAccountActions, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import { useRouter } from 'expo-router';
@@ -17,6 +16,7 @@ export default function AccountReorderScreen() {
     const router = useRouter();
     const { theme } = useTheme();
     const { accounts: initialAccounts, isLoading } = useAccounts();
+    const { updateAccountOrder } = useAccountActions();
     const [accounts, setAccounts] = useState<Account[]>([]);
 
     useEffect(() => {
@@ -37,7 +37,6 @@ export default function AccountReorderScreen() {
         newAccounts.splice(newIndex, 0, item);
 
         // Calculate new orderNum based on neighbors
-        // Same logic as Ivy Wallet calculateOrderNum
         const itemBefore = newAccounts[newIndex - 1];
         const itemAfter = newAccounts[newIndex + 1];
 
@@ -57,7 +56,7 @@ export default function AccountReorderScreen() {
 
         // Persistent update
         try {
-            await accountRepository.updateOrder(item, newOrderNum);
+            await updateAccountOrder(item, newOrderNum);
         } catch (error) {
             logger.error('Failed to update account order:', error);
             // Revert if failed

@@ -63,7 +63,7 @@ export class IntegrityService {
         // Sum up all transactions with precision-aware rounding at each step
         let balance = 0
         for (const tx of transactions) {
-            const multiplier = accountingService.getBalanceImpactMultiplier(account.accountType as any, tx.transactionType)
+            const multiplier = accountingService.getImpactMultiplier(account.accountType as any, tx.transactionType)
             balance = roundToPrecision(balance + (tx.amount * multiplier), precision)
         }
 

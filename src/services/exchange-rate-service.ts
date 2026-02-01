@@ -22,6 +22,8 @@ export interface ExchangeRateData {
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export class ExchangeRateService {
+    private memoryCache: Map<string, { rates: Record<string, number>; timestamp: number }> = new Map()
+
     private get exchangeRates() {
         return database.collections.get<ExchangeRate>('exchange_rates')
     }
@@ -35,19 +37,39 @@ export class ExchangeRateService {
             return 1.0
         }
 
-        // Check cache first
+        // 1. Check Memory Cache
+        const memCached = this.memoryCache.get(fromCurrency)
+        if (memCached && Date.now() - memCached.timestamp < CACHE_DURATION_MS) {
+            if (memCached.rates[toCurrency]) {
+                return memCached.rates[toCurrency]
+            }
+        }
+
+        // 2. Check DB Cache
         const cached = await this.getCachedRate(fromCurrency, toCurrency)
         if (cached && this.isRateFresh(cached)) {
+            // Update memory cache for this base while we're at it
+            this.updateMemoryCache(fromCurrency, toCurrency, cached.rate)
             return cached.rate
         }
 
-        // Fetch fresh rate
-        const rate = await this.fetchRateFromAPI(fromCurrency, toCurrency)
+        // 3. Fetch fresh rates for the entire base
+        const rates = await this.fetchRatesForBase(fromCurrency)
 
-        // Cache it
-        await this.cacheRate(fromCurrency, toCurrency, rate)
+        if (!rates[toCurrency]) {
+            throw new Error(`No rate found for ${fromCurrency} to ${toCurrency}`)
+        }
 
-        return rate
+        // 4. Persist this specific rate to DB for offline use
+        await this.cacheRate(fromCurrency, toCurrency, rates[toCurrency])
+
+        return rates[toCurrency]
+    }
+
+    private updateMemoryCache(base: string, target: string, rate: number) {
+        const entry = this.memoryCache.get(base) || { rates: {}, timestamp: Date.now() }
+        entry.rates[target] = rate
+        this.memoryCache.set(base, entry)
     }
 
     /**
@@ -78,12 +100,9 @@ export class ExchangeRateService {
     }
 
     /**
-     * Fetch rate from API
+     * Fetch all rates for a base currency and cache them
      */
-    private async fetchRateFromAPI(
-        fromCurrency: string,
-        toCurrency: string
-    ): Promise<number> {
+    async fetchRatesForBase(fromCurrency: string): Promise<Record<string, number>> {
         try {
             const response = await fetch(`${AppConfig.api.exchangeRateBaseUrl}/${fromCurrency}`)
 
@@ -92,23 +111,37 @@ export class ExchangeRateService {
             }
 
             const data = await response.json()
+            const rates = data.rates as Record<string, number>
 
-            if (!data.rates || !data.rates[toCurrency]) {
-                throw new Error(`No rate found for ${fromCurrency} to ${toCurrency}`)
+            if (!rates) {
+                throw new Error(`No rates found for base ${fromCurrency}`)
             }
 
-            return data.rates[toCurrency]
+            // Update memory cache
+            this.memoryCache.set(fromCurrency, {
+                rates,
+                timestamp: Date.now()
+            })
+
+            return rates
         } catch (error) {
-            logger.error('Failed to fetch exchange rate:', error)
-            // Fallback: try to get last known rate even if stale
-            const cached = await this.getCachedRate(fromCurrency, toCurrency)
-            if (cached) {
-                logger.warn('Using stale exchange rate from cache')
-                return cached.rate
+            logger.error('Failed to fetch exchange rates:', error)
+
+            // Fallback: try to get any cached rate from DB if API fails
+            const cachedRecords = await this.exchangeRates
+                .query(Q.where('from_currency', fromCurrency))
+                .fetch()
+
+            if (cachedRecords.length > 0) {
+                logger.warn(`Using stale exchange rates from DB for ${fromCurrency}`)
+                const staleRates: Record<string, number> = {}
+                cachedRecords.forEach(r => {
+                    staleRates[r.toCurrency] = r.rate
+                })
+                return staleRates
             }
-            throw new Error(
-                `Failed to get exchange rate for ${fromCurrency} to ${toCurrency}`
-            )
+
+            throw error
         }
     }
 

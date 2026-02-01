@@ -9,8 +9,7 @@ import { DateRangePicker } from '@/src/components/common/DateRangePicker'
 import { AppButton, AppCard, AppIcon, AppText, Badge, FloatingActionButton, IconButton, IvyIcon } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { Shape, Spacing } from '@/src/constants'
-import { accountRepository } from '@/src/data/repositories/AccountRepository'
-import { useAccount, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts'
+import { useAccount, useAccountActions, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts'
 import { TransactionItem, useAccountTransactions } from '@/src/features/journal'
 import { useTheme } from '@/src/hooks/use-theme'
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter'
@@ -43,6 +42,7 @@ export default function AccountDetailsScreen() {
     const { account, isLoading: accountLoading } = useAccount(accountId)
     const { transactions, isLoading: transactionsLoading } = useAccountTransactions(accountId, 50, dateRange || undefined)
     const { balanceData, isLoading: balanceLoading } = useAccountBalance(accountId)
+    const { deleteAccount, recoverAccount: recoverAction } = useAccountActions()
 
     const balance = balanceData?.balance || 0
     const transactionCount = balanceData?.transactionCount || 0
@@ -59,7 +59,7 @@ export default function AccountDetailsScreen() {
             message,
             async () => {
                 try {
-                    await accountRepository.delete(account!);
+                    await deleteAccount(account!);
                     showSuccessAlert('Deleted', 'Account has been deleted.');
                     router.push('/(tabs)/accounts' as any);
                 } catch (error) {
@@ -77,7 +77,7 @@ export default function AccountDetailsScreen() {
             'This will restore the deleted account. Continue?',
             async () => {
                 try {
-                    await accountRepository.recover(accountId);
+                    await recoverAction(accountId);
                     showSuccessAlert('Recovered', 'Account has been restored.');
                     router.replace(`/account-details?accountId=${accountId}` as any);
                 } catch (error) {

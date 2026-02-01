@@ -28,7 +28,7 @@ export class JournalEntryService {
         }));
 
         // Validation
-        const validation = accountingService.validateBalance(domainLines);
+        const validation = accountingService.validateJournal(domainLines);
         if (!validation.isValid) {
             return { success: false, error: `Journal is not balanced. Discrepancy: ${validation.imbalance}` };
         }

@@ -5,70 +5,33 @@ import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { AppCard, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
-import { AppConfig } from '@/src/constants/app-config';
+import { useReports } from '@/src/features/reports/hooks/useReports';
 import { useTheme } from '@/src/hooks/use-theme';
-import { DailyNetWorth, ExpenseCategory, reportService } from '@/src/services/report-service';
+import type { DailyNetWorth, ExpenseCategory } from '@/src/services/report-service';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
-import { DateRange, PeriodFilter, formatDate, getLastNRange } from '@/src/utils/dateUtils';
-import { preferences } from '@/src/utils/preferences';
-import { useEffect, useState } from 'react';
+import { DateRange, PeriodFilter, formatDate } from '@/src/utils/dateUtils';
+import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ReportsScreen() {
     const { theme } = useTheme();
-    const [netWorthHistory, setNetWorthHistory] = useState<DailyNetWorth[]>([]);
-    const [expenses, setExpenses] = useState<ExpenseCategory[]>([]);
-    const [incomeVsExpense, setIncomeVsExpense] = useState<{ income: number, expense: number }>({ income: 0, expense: 0 });
-    const [loading, setLoading] = useState(true);
-
-    // Filters
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [periodFilter, setPeriodFilter] = useState<PeriodFilter>({
-        type: 'LAST_N',
-        lastN: 30,
-        lastNUnit: 'days'
-    });
-    const [dateRange, setDateRange] = useState<DateRange>(getLastNRange(30, 'days'));
 
-    useEffect(() => {
-        loadData();
-    }, [dateRange.startDate, dateRange.endDate]);
-
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const { startDate, endDate } = dateRange;
-            const targetCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
-
-            const history = await reportService.getNetWorthHistory(startDate, endDate, targetCurrency);
-            const breakdown = await reportService.getExpenseBreakdown(startDate, endDate, targetCurrency);
-            const incVsExp = await reportService.getIncomeVsExpense(startDate, endDate, targetCurrency);
-
-            setNetWorthHistory(history);
-            setIncomeVsExpense(incVsExp);
-
-            // Assign colors to breakdown dynamically if not set
-            const colors = [
-                theme.primary,
-                theme.error,
-                theme.success,
-                theme.warning,
-                theme.asset,
-                theme.primaryLight
-            ];
-            setExpenses(breakdown.map((b, i) => ({ ...b, color: colors[i % colors.length] })));
-
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const {
+        netWorthHistory,
+        expenses,
+        incomeVsExpense,
+        loading,
+        error,
+        dateRange,
+        periodFilter,
+        loadData,
+        updateFilter
+    } = useReports();
 
     const handleDateSelect = (range: DateRange | null, filter: PeriodFilter) => {
         if (range) {
-            setDateRange(range);
-            setPeriodFilter(filter);
+            updateFilter(range, filter);
         }
         setShowDatePicker(false);
     };
@@ -110,7 +73,7 @@ export default function ReportsScreen() {
 
                     <View style={styles.chartContainer}>
                         <LineChart
-                            data={netWorthHistory.map(d => ({ x: d.date, y: d.netWorth }))}
+                            data={netWorthHistory.map((d: DailyNetWorth) => ({ x: d.date, y: d.netWorth }))}
                             height={180}
                             color={theme.primary}
                         />
@@ -147,12 +110,12 @@ export default function ReportsScreen() {
                     <AppCard style={styles.chartCard} padding="lg">
                         <View style={styles.donutContainer}>
                             <DonutChart
-                                data={expenses.map(e => ({ value: e.amount, color: e.color || theme.text, label: e.accountName }))}
+                                data={expenses.map((e: ExpenseCategory) => ({ value: e.amount, color: e.color || theme.text, label: e.accountName }))}
                                 size={160}
                                 strokeWidth={25}
                             />
                             <View style={styles.legend}>
-                                {expenses.slice(0, 5).map((e, index) => (
+                                {expenses.slice(0, 5).map((e: ExpenseCategory, index: number) => (
                                     <View key={e.accountId} style={styles.legendItem}>
                                         <View style={[styles.dot, { backgroundColor: e.color }]} />
                                         <View style={{ flex: 1, marginRight: Spacing.sm }}>
