@@ -177,8 +177,7 @@ export const getStartOfMonth = (timestamp: number): number => {
  */
 export const getEndOfMonth = (timestamp: number): number => {
   const date = new Date(timestamp);
-  date.setMonth(date.getMonth() + 1, 0); // Next month, day 0
-  date.setDate(0); // Last day of previous month
+  date.setMonth(date.getMonth() + 1, 0); // Next month, day 0 (which is last day of current month)
   date.setHours(23, 59, 59, 999);
   return date.getTime();
 };
@@ -226,7 +225,6 @@ export const createDateRange = (
 
       const quarterEnd = new Date(now);
       quarterEnd.setMonth(quarterEndMonth + 1, 0); // Next month, day 0
-      quarterEnd.setDate(0);
       quarterEnd.setHours(23, 59, 59, 999);
 
       return {

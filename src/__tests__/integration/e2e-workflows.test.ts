@@ -22,6 +22,10 @@ describe('E2E Workflows', () => {
         integrityService = new IntegrityService()
     }, 30000)
 
+    afterAll(() => {
+        rebuildQueueService.stop()
+    })
+
     describe('Daily expense tracking workflow', () => {
         it('should track a full day of expenses with correct balances', async () => {
             // Setup: Create accounts

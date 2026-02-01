@@ -8,7 +8,7 @@ import {
     roundToPrecision,
     safeAdd,
     safeSubtract
-} from '../../src/utils/money'
+} from '@/src/utils/money'
 
 describe('money utilities', () => {
     describe('roundToPrecision', () => {

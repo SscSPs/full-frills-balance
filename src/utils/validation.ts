@@ -22,7 +22,7 @@ export const validateAccountName = (name: string): { isValid: boolean; error?: s
     return { isValid: false, error: 'Account name must be less than 100 characters' }
   }
 
-  if (!/^[a-zA-Z0-9\s\-_&()]+$/.test(sanitizedName)) {
+  if (!/^[a-zA-Z0-9\s\-_&().,'#]+$/.test(sanitizedName)) {
     return {
       isValid: false,
       error: 'Account name can only contain letters, numbers, spaces, and basic punctuation'

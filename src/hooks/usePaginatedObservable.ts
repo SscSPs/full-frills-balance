@@ -62,7 +62,8 @@ export function usePaginatedObservable<T, E = T>(
         const isFilterChange = prevDateRangeKeyRef.current !== dateRangeKey;
         if (isFilterChange) {
             setIsLoading(true);
-            setCurrentLimit(pageSize); // Reset pagination on filter change
+            setCurrentLimit(pageSize); // Reset pagination    // Filter change detection
+            // If range changes, or if filter logic changes (not implemented yet), we reset
             prevDateRangeKeyRef.current = dateRangeKey;
         }
 

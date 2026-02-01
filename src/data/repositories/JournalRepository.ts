@@ -648,9 +648,12 @@ export class JournalRepository {
     const reverseAccountIds = originalTransactions.map(tx => tx.accountId)
     await accountRepository.findAllByIds(reverseAccountIds)
 
+    // Capture timestamp once to ensure consistency between creation and rebuild queue
+    const now = Date.now()
+
     const reversalJournal = await database.write(async () => {
       const revJ = await this.journals.create((j) => {
-        j.journalDate = Date.now()
+        j.journalDate = now
         j.description = `Reversal of: ${originalJournal.description || originalJournalId} (${reason})`
         j.currencyCode = originalJournal.currencyCode
         j.status = JournalStatus.POSTED
@@ -690,7 +693,7 @@ export class JournalRepository {
 
     // Trigger rebuild for all affected accounts since the reversal is at current date
     const accountIdsToRebuild = new Set(originalTransactions.map(tx => tx.accountId))
-    rebuildQueueService.enqueueMany(accountIdsToRebuild, Date.now())
+    rebuildQueueService.enqueueMany(accountIdsToRebuild, now)
 
     return reversalJournal
   }
