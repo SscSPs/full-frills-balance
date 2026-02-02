@@ -1,8 +1,8 @@
+import { AppIcon } from '@/src/components/core/AppIcon';
 import { Opacity, Shape, Size, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { AppIcon } from './AppIcon';
 
 interface FABProps {
     onPress: () => void;

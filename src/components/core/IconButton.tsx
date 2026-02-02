@@ -3,6 +3,7 @@
  * Encodes visual identity for navigation and action buttons
  */
 
+import { AppIcon, IconName } from '@/src/components/core/AppIcon'
 import { Opacity, Shape, Size, Spacing } from '@/src/constants/design-tokens'
 import { useTheme } from '@/src/hooks/use-theme'
 import React from 'react'
@@ -12,7 +13,6 @@ import {
     type TouchableOpacityProps,
     type ViewStyle
 } from 'react-native'
-import { AppIcon, IconName } from './AppIcon'
 
 export type IconButtonVariant = 'primary' | 'surface' | 'clear' | 'error' | 'success'
 

@@ -3,8 +3,8 @@
  * 
  * Reusable style patterns for consistent layout across screens.
  */
+import { Spacing } from '@/src/constants/design-tokens';
 import { StyleSheet } from 'react-native';
-import { Spacing } from './design-tokens';
 
 /**
  * Common layout styles that are reused across multiple screens.

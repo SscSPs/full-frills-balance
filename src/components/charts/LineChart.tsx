@@ -1,10 +1,10 @@
 
+import { AppText } from '@/src/components/core';
 import { Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useMemo } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { AppText } from '../core';
 
 interface DataPoint {
     x: number; // timestamp

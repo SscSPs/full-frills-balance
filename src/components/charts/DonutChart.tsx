@@ -1,9 +1,9 @@
 
+import { AppText } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { AppText } from '../core';
 
 interface DonutData {
     value: number;

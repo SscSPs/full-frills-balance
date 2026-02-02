@@ -1,6 +1,6 @@
 import { AccountType } from '@/src/data/models/Account';
+import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { AccountBalance } from '@/src/types/domain';
-import { exchangeRateService } from './exchange-rate-service';
 
 export interface WealthSummary {
     netWorth: number;

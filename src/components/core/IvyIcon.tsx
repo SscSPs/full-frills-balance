@@ -1,8 +1,8 @@
+import { AppIcon, IconName } from '@/src/components/core/AppIcon';
 import { AppText } from '@/src/components/core/AppText';
 import { getContrastColor } from '@/src/constants/theme-helpers';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { AppIcon, IconName } from './AppIcon';
 
 interface IvyIconProps {
     name?: IconName;

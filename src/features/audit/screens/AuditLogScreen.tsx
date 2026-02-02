@@ -2,13 +2,13 @@ import { AppIcon, AppText } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { Spacing } from '@/src/constants'
 import { AuditLogItem, type AuditLogEntry } from '@/src/features/audit/components/AuditLogItem'
+import { useAuditAccounts } from '@/src/features/audit/hooks/useAuditData'
 import { useTheme } from '@/src/hooks/use-theme'
 import { auditService } from '@/src/services/audit-service'
 import { logger } from '@/src/utils/logger'
 import { useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
-import { useAuditAccounts } from '../hooks/useAuditData'
 
 export default function AuditLogScreen() {
     const { theme } = useTheme();
