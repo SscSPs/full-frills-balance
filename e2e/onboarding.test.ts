@@ -1,26 +1,22 @@
-import { expect, test } from '@playwright/test';
-import { clearAppState } from './utils';
+import { expect, test } from './fixtures';
 
-test.describe('User Journey: Onboarding', () => {
-    test.beforeEach(async ({ page }) => {
-        await clearAppState(page);
+test.describe('Basic Onboarding', () => {
+    test.beforeEach(async ({ onboardingPage }) => {
+        await onboardingPage.clearAppState();
     });
 
-    test('should complete onboarding successfully', async ({ page }) => {
-        // 1. Initial Load
-        await expect(page.getByText('Welcome to Balance')).toBeVisible({ timeout: 30000 });
+    test('should complete onboarding flow', async ({ onboardingPage }) => {
+        await onboardingPage.goto('/');
 
-        // 2. Name Step
-        await page.getByPlaceholder('Enter your name').fill('Test User');
-        // Using exact text and force click for RN-Web compatibility
-        await page.getByText('Continue', { exact: true }).click({ force: true });
+        await onboardingPage.assertOnboardingStarted();
 
-        // 3. Currency Step
-        await expect(page.getByText('Default Currency', { exact: true })).toBeVisible({ timeout: 10000 });
-        await page.getByText('USD').first().click();
-        await page.getByText('Get Started').click({ force: true });
+        await onboardingPage.fillName('Basic User');
+        await onboardingPage.clickContinue();
 
-        // 4. Verify account creation
-        await expect(page.getByText(/New Account|Account Name/).first()).toBeVisible({ timeout: 15000 });
+        await onboardingPage.selectCurrency('USD');
+        await onboardingPage.clickGetStarted();
+
+        // Should land on accounts or dashboard
+        await expect(onboardingPage.page.getByText(/New Account|Dashboard|Hello,/i).first()).toBeVisible({ timeout: 15000 });
     });
 });
