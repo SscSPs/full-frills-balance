@@ -23,6 +23,7 @@ export class TransactionRepository {
       Partial<Transaction>,
       'id' | 'createdAt' | 'updatedAt' | 'running_balance'
     >,
+    precision: number = 2,
     enforcePositiveAmount = true
   ): Promise<Transaction> {
     // Enforce positive amount invariant
@@ -32,12 +33,6 @@ export class TransactionRepository {
 
     const accountId = transactionData.accountId;
     if (!accountId) throw new Error('accountId is required for transaction creation');
-
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { accountRepository } = require('./AccountRepository');
-    const account = await accountRepository.find(accountId);
-    if (!account) throw new Error(`Account ${accountId} not found`);
-    const precision = await currencyRepository.getPrecision(account.currencyCode);
 
     return database.write(async () => {
       return this.transactions.create((transaction) => {
@@ -180,19 +175,40 @@ export class TransactionRepository {
   /**
    * Gets all transactions for an account
    */
-  async findByAccount(accountId: string): Promise<Transaction[]> {
-    return this.transactions
-      .query(
-        Q.experimentalJoinTables(['journals']),
-        Q.where('account_id', accountId),
-        Q.where('deleted_at', Q.eq(null)),
-        Q.on('journals', [
-          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
-          Q.where('deleted_at', Q.eq(null))
-        ])
-      )
+  async findByAccount(accountId: string, limit?: number, dateRange?: { startDate: number, endDate: number }): Promise<Transaction[]> {
+    const clauses: any[] = [
+      Q.experimentalJoinTables(['journals']),
+      Q.where('account_id', accountId),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+        Q.where('deleted_at', Q.eq(null))
+      ])
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('transaction_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('transaction_date', Q.lte(dateRange.endDate)))
+    }
+
+    const query = this.transactions.query(...clauses)
       .extend(Q.sortBy('transaction_date', 'desc'))
       .extend(Q.sortBy('created_at', 'desc'))
+
+    if (limit) {
+      query.extend(Q.take(limit))
+    }
+
+    return query.fetch()
+  }
+
+  async findByJournals(journalIds: string[]): Promise<Transaction[]> {
+    if (journalIds.length === 0) return []
+    return this.transactions
+      .query(
+        Q.where('journal_id', Q.oneOf(journalIds)),
+        Q.where('deleted_at', Q.eq(null))
+      )
       .fetch()
   }
 
@@ -326,7 +342,41 @@ export class TransactionRepository {
       .extend(Q.sortBy('transaction_date', 'desc'))
       .fetch()
   }
+
+  /**
+   * Gets the transaction count for an account before a given date.
+   */
+  async getCountForAccount(
+    accountId: string,
+    cutoffDate: number = Date.now()
+  ): Promise<number> {
+    return this.transactions
+      .query(
+        Q.experimentalJoinTables(['journals']),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ]),
+        Q.where('account_id', accountId),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.where('transaction_date', Q.lte(cutoffDate))
+      )
+      .fetchCount()
+  }
+
+  /**
+   * Observe transaction count for a specific date range.
+   * Useful as a "trigger" for reports.
+   */
+  observeCountByDateRange(startDate: number, endDate: number) {
+    return this.transactions
+      .query(
+        Q.where('transaction_date', Q.gte(startDate)),
+        Q.where('transaction_date', Q.lte(endDate)),
+        Q.where('deleted_at', Q.eq(null))
+      )
+      .observeCount()
+  }
 }
 
-// Export a singleton instance
 export const transactionRepository = new TransactionRepository()

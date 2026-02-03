@@ -1,9 +1,7 @@
-/**
- * Reactive Data Hooks for Journal/Transactions
- */
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
 import { useAccount } from '@/src/features/accounts/hooks/useAccounts'
 import { usePaginatedObservable } from '@/src/hooks/usePaginatedObservable'
+import { journalService } from '@/src/services/JournalService'
 import { EnrichedJournal, EnrichedTransaction } from '@/src/types/domain'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -18,7 +16,7 @@ export function useJournals(pageSize: number = 50, dateRange?: { startDate: numb
             const { journalsObservable } = journalRepository.observeEnrichedJournals(limit, range)
             return journalsObservable
         },
-        enrich: (_, limit, range) => journalRepository.findEnrichedJournals(limit, range),
+        enrich: (_, limit, range) => journalService.findEnrichedJournals(limit, range),
         secondaryObserve: () => {
             const { transactionsObservable } = journalRepository.observeEnrichedJournals(1, undefined)
             return transactionsObservable
@@ -58,7 +56,7 @@ export function useAccountTransactions(accountId: string, pageSize: number = 50,
             limit,
             range && 'startDate' in range ? { startDate: range.startDate, endDate: range.endDate } : undefined
         ),
-        enrich: (_, limit, range) => journalRepository.findEnrichedTransactionsForAccount(
+        enrich: (_, limit, range) => journalService.findEnrichedTransactionsForAccount(
             accountId,
             limit,
             range && 'startDate' in range ? { startDate: range.startDate, endDate: range.endDate } : undefined
@@ -88,7 +86,7 @@ export function useJournalTransactions(journalId: string | null) {
         const subscription = journalRepository
             .observeJournalTransactions(journalId)
             .subscribe(async () => {
-                const enrichedTxs = await journalRepository.findEnrichedTransactionsByJournal(journalId)
+                const enrichedTxs = await journalService.findEnrichedTransactionsByJournal(journalId)
                 setTransactions(enrichedTxs)
                 setIsLoading(false)
             })

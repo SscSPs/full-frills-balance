@@ -30,6 +30,20 @@ export class AuditService {
     async getRecentLogs(limit: number = 100): Promise<AuditLog[]> {
         return auditRepository.fetchRecent(limit)
     }
+
+    /**
+     * Observe audit trail for a specific entity
+     */
+    observeAuditTrail(entityType: string, entityId: string) {
+        return auditRepository.observeByEntity(entityType, entityId)
+    }
+
+    /**
+     * Observe recent audit logs
+     */
+    observeRecentLogs(limit: number = 100) {
+        return auditRepository.observeRecent(limit)
+    }
 }
 
 // Export singleton instance

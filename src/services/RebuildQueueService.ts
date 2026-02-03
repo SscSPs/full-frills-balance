@@ -54,7 +54,8 @@ class RebuildQueueService {
      * @param fromDate Optional earliest date of change for all accounts.
      */
     enqueueMany(accountIds: string[] | Set<string>, fromDate: number = Date.now()): void {
-        for (const id of accountIds) {
+        const ids = Array.isArray(accountIds) ? accountIds : Array.from(accountIds);
+        for (const id of ids) {
             this.enqueue(id, fromDate)
         }
     }
@@ -130,7 +131,8 @@ class RebuildQueueService {
             try {
                 // Take up to maxBatchSize items from the queue
                 const batch: { id: string; fromDate: number }[] = []
-                for (const [accountId, fromDate] of this.queue.entries()) {
+                const entries = Array.from(this.queue.entries());
+                for (const [accountId, fromDate] of entries) {
                     batch.push({ id: accountId, fromDate })
                     if (batch.length >= this.config.maxBatchSize) {
                         break

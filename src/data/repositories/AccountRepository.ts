@@ -1,34 +1,25 @@
 import { database } from '@/src/data/database/Database'
 import Account, { AccountType } from '@/src/data/models/Account'
-import { AuditAction } from '@/src/data/models/AuditLog'
-import Transaction, { TransactionType } from '@/src/data/models/Transaction'
-import { auditRepository } from '@/src/data/repositories/AuditRepository'
-import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
-import { rebuildQueueService } from '@/src/data/repositories/RebuildQueue'
-import { AccountBalance, AccountCreateInput, AccountUpdateInput } from '@/src/types/domain'
+import Transaction from '@/src/data/models/Transaction'
 import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
-import { getEpsilon, roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
 
-export class AccountRepository {
-  /**
-   * Returns whether any accounts exist
-   */
-  async exists(): Promise<boolean> {
-    const count = await this.accounts.query(Q.where('deleted_at', Q.eq(null))).fetchCount()
-    return count > 0
-  }
+export interface AccountPersistenceInput {
+  name: string
+  accountType: AccountType
+  currencyCode: string
+  description?: string
+  orderNum?: number
+  parentAccountId?: string
+}
 
+export class AccountRepository {
   private get db() {
     return database
   }
 
   private get accounts() {
     return this.db.collections.get<Account>('accounts')
-  }
-
-  private get transactions() {
-    return this.db.collections.get<Transaction>('transactions')
   }
 
   /**
@@ -58,251 +49,38 @@ export class AccountRepository {
 
   /**
    * Observe account balance.
-   * Re-emits whenever transactions for this account change.
+   * Re-emits whenever transactions for this account change OR their parent journals change status.
    */
   observeBalance(accountId: string) {
-    return this.transactions
-      .query(Q.where('account_id', accountId))
+    return database.collections.get<Transaction>('transactions')
+      .query(
+        Q.experimentalJoinTables(['journals']),
+        Q.where('account_id', accountId),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ])
+      )
       .observe()
   }
 
   /**
-   * Normalized balance direction map for account types
-   * Positive values increase balance, negative values decrease balance
+   * PURE PERSISTENCE METHODS
    */
-  private getBalanceDirection(accountType: AccountType): { debit: number; credit: number } {
-    switch (accountType) {
-      case AccountType.ASSET:
-      case AccountType.EXPENSE:
-        return { debit: 1, credit: -1 } // Debits increase, credits decrease
-      case AccountType.LIABILITY:
-      case AccountType.EQUITY:
-      case AccountType.INCOME:
-        return { debit: -1, credit: 1 } // Credits increase, debits decrease
-      default:
-        return { debit: 0, credit: 0 }
-    }
-  }
 
-  /**
-   * Returns an account's balance and transaction count as of a given date
-   * @param accountId The account ID
-   * @param cutoffDate Optional end date (timestamp). Defaults to now.
-   */
-  async getAccountBalance(
-    accountId: string,
-    cutoffDate: number = Date.now()
-  ): Promise<AccountBalance> {
-    const account = await this.find(accountId)
-    if (!account) throw new Error(`Account ${accountId} not found`)
-
-    // 1. Get running balance from latest transaction before cutoff
-    const latestTxs = await this.transactions
-      .query(
-        Q.experimentalJoinTables(['journals']),
-        Q.on('journals', [
-          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
-          Q.where('deleted_at', Q.eq(null))
-        ]),
-        Q.where('account_id', accountId),
-        Q.where('deleted_at', Q.eq(null)),
-        // Use transaction_date which maps to journal_date
-        Q.where('transaction_date', Q.lte(cutoffDate))
-      )
-      .extend(Q.sortBy('transaction_date', 'desc'))
-      .extend(Q.sortBy('created_at', 'desc'))
-      .extend(Q.take(1))
-      .fetch()
-
-    const balance = latestTxs.length > 0 ? (latestTxs[0].runningBalance || 0) : 0
-
-    // 2. Get transaction count (Fast Count)
-    const transactionCount = await this.transactions
-      .query(
-        Q.experimentalJoinTables(['journals']),
-        Q.on('journals', [
-          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
-          Q.where('deleted_at', Q.eq(null))
-        ]),
-        Q.where('account_id', accountId),
-        Q.where('deleted_at', Q.eq(null)),
-        Q.where('transaction_date', Q.lte(cutoffDate))
-      )
-      .fetchCount()
-
-    return {
-      accountId: account.id,
-      balance,
-      currencyCode: account.currencyCode,
-      transactionCount,
-      asOfDate: cutoffDate,
-      accountType: account.accountType
-    }
-  }
-
-  /**
-   * Gets balances for all accounts in batch
-   * Optimized: queries only the latest transaction per account (not all transactions)
-   */
-  async getAccountBalances(asOfDate?: number): Promise<AccountBalance[]> {
-    const accounts = await this.findAll()
-    if (accounts.length === 0) return []
-
-    const cutoffDate = asOfDate ?? Date.now()
-
-    // Query each account's latest transaction in parallel (1 tx per account max)
-    const balancePromises = accounts.map(async (account): Promise<AccountBalance> => {
-      // Get latest transaction for this account
-      const latestTxs = await this.transactions
-        .query(
-          Q.experimentalJoinTables(['journals']),
-          Q.on('journals', [
-            Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
-            Q.where('deleted_at', Q.eq(null))
-          ]),
-          Q.where('account_id', account.id),
-          Q.where('deleted_at', Q.eq(null)),
-          Q.where('transaction_date', Q.lte(cutoffDate))
-        )
-        .extend(Q.sortBy('transaction_date', 'desc'))
-        .extend(Q.sortBy('created_at', 'desc'))
-        .extend(Q.take(1))
-        .fetch()
-
-      // Get transaction count (fast count query)
-      const transactionCount = await this.transactions
-        .query(
-          Q.experimentalJoinTables(['journals']),
-          Q.on('journals', [
-            Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
-            Q.where('deleted_at', Q.eq(null))
-          ]),
-          Q.where('account_id', account.id),
-          Q.where('deleted_at', Q.eq(null)),
-          Q.where('transaction_date', Q.lte(cutoffDate))
-        )
-        .fetchCount()
-
-      return {
-        accountId: account.id,
-        balance: latestTxs.length > 0 ? (latestTxs[0].runningBalance || 0) : 0,
-        currencyCode: account.currencyCode,
-        transactionCount,
-        asOfDate: cutoffDate,
-        accountType: account.accountType
-      }
-    })
-
-    return Promise.all(balancePromises)
-  }
-
-  /**
-   * Creates a new account
-   * Supports optional initial balance by creating a "Balance Adjustment" journal
-   */
-  async create(accountData: AccountCreateInput): Promise<Account> {
-    const { initialBalance, ...accountFields } = accountData
-
-    // 1. Create the account
-    const newAccount = await this.db.write(async () => {
-      return this.accounts.create((account) => {
-        Object.assign(account, accountFields)
-      })
-    })
-
-    // 2. Audit account creation
-    const precision = await currencyRepository.getPrecision(newAccount.currencyCode)
-    await auditRepository.log({
-      entityType: 'account',
-      entityId: newAccount.id,
-      action: AuditAction.CREATE,
-      changes: {
-        name: newAccount.name,
-        accountType: newAccount.accountType,
-        currencyCode: newAccount.currencyCode,
-        description: newAccount.description,
-        initialBalance: initialBalance ? roundToPrecision(initialBalance, precision) : undefined
-      }
-    })
-
-    // 3. Handle initial balance if provided and non-zero
-    if (initialBalance) {
-      const precision = await currencyRepository.getPrecision(newAccount.currencyCode)
-
-      // Use precision-aware epsilon check
-      if (Math.abs(initialBalance) > getEpsilon(precision)) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { journalRepository } = require('./JournalRepository')
-
-        const roundedAmount = roundToPrecision(Math.abs(initialBalance), precision)
-
-        let balancingAccountId = await this.getOpeningBalancesAccountId(newAccount.currencyCode)
-        const direction = this.getBalanceDirection(newAccount.accountType)
-
-        const accountTxType = direction.debit === 1 ? TransactionType.DEBIT : TransactionType.CREDIT
-        const equityTxType = direction.debit === 1 ? TransactionType.CREDIT : TransactionType.DEBIT
-
-        await journalRepository.createJournalWithTransactions({
-          journalDate: Date.now(),
-          description: `Initial Balance: ${newAccount.name}`,
-          currencyCode: newAccount.currencyCode,
-          transactions: [
-            {
-              accountId: newAccount.id,
-              amount: roundedAmount,
-              transactionType: accountTxType
-            },
-            {
-              accountId: balancingAccountId,
-              amount: roundedAmount,
-              transactionType: equityTxType
-            }
-          ]
-        })
-      }
-    }
-
-    return newAccount
-  }
-
-  /**
-   * Helper to get or create the "Opening Balances" equity account
-   */
-  private async getOpeningBalancesAccountId(currencyCode: string): Promise<string> {
-    const name = `Opening Balances (${currencyCode})`
-    const existing = await this.findByName(name)
-    if (existing) return existing.id
-
-    // Use a direct write to bypass the 'create' wrapper's recursion
-    const openingAcc = await this.db.write(async () => {
-      return this.accounts.create((account) => {
-        account.name = name
-        account.accountType = AccountType.EQUITY
-        account.currencyCode = currencyCode
-        account.description = 'System account for initial balances'
-      })
-    })
-    return openingAcc.id
-  }
-
-  /**
-   * Finds an account by ID
-   */
   async find(id: string): Promise<Account | null> {
-    return this.accounts.find(id)
+    try {
+      return await this.accounts.find(id)
+    } catch {
+      return null
+    }
   }
 
-  /**
-   * Fetches multiple accounts by ID in a single batch.
-   */
   async findAllByIds(ids: string[]): Promise<Account[]> {
     if (ids.length === 0) return []
     return this.accounts.query(Q.where('id', Q.oneOf(ids))).fetch()
   }
 
-  /**
-   * Finds an account by name
-   */
   async findByName(name: string): Promise<Account | null> {
     const accounts = await this.accounts
       .query(
@@ -315,9 +93,6 @@ export class AccountRepository {
     return accounts[0] || null
   }
 
-  /**
-   * Gets all active accounts
-   */
   async findAll(): Promise<Account[]> {
     return this.accounts
       .query(
@@ -327,161 +102,30 @@ export class AccountRepository {
       .fetch()
   }
 
-  /**
-   * Gets accounts by type
-   */
-  async findByType(type: AccountType): Promise<Account[]> {
-    return this.accounts
-      .query(
-        Q.and(
-          Q.where('account_type', type),
-          Q.where('deleted_at', Q.eq(null))
-        ),
-        Q.sortBy('order_num', Q.asc)
-      )
-      .fetch()
+  async create(data: AccountPersistenceInput): Promise<Account> {
+    return await this.db.write(async () => {
+      return this.accounts.create((account) => {
+        Object.assign(account, data)
+      })
+    })
   }
 
-  /**
-   * Gets child accounts of a parent account
-   */
-  async findChildren(parentAccountId: string): Promise<Account[]> {
-    return this.accounts
-      .query(
-        Q.and(
-          Q.where('parent_account_id', parentAccountId),
-          Q.where('deleted_at', Q.eq(null))
-        ),
-        Q.sortBy('order_num', Q.asc)
-      )
-      .fetch()
-  }
-
-  /**
-   * Updates an account
-   */
-  async update(
-    account: Account,
-    updates: AccountUpdateInput
-  ): Promise<Account> {
-    const beforeState = {
-      name: account.name,
-      accountType: account.accountType,
-      currencyCode: account.currencyCode,
-      description: account.description,
-      parentAccountId: account.parentAccountId
-    }
-
-    const updatedAccount = await this.db.write(async () => {
+  async update(account: Account, updates: Partial<AccountPersistenceInput>): Promise<Account> {
+    return await this.db.write(async () => {
       await account.update((acc) => {
         Object.assign(acc, updates)
       })
       return account
     })
-
-    // Log update
-    await auditRepository.log({
-      entityType: 'account',
-      entityId: account.id,
-      action: AuditAction.UPDATE,
-      changes: {
-        before: beforeState,
-        after: updates
-      }
-    })
-
-    // Trigger rebuild if account type changed (as it affects running balance logic)
-    if (updates.accountType && updates.accountType !== beforeState.accountType) {
-      rebuildQueueService.enqueue(account.id, 0) // Rebuild from the beginning
-    }
-
-    return updatedAccount
   }
 
-  /**
-   * Updates an account's order number
-   */
-  async updateOrder(account: Account, newOrderNum: number): Promise<void> {
+  async delete(account: Account): Promise<void> {
     await this.db.write(async () => {
       await account.update(record => {
-        record.orderNum = newOrderNum
+        record.deletedAt = new Date()
       })
-    })
-
-    await auditRepository.log({
-      entityType: 'account',
-      entityId: account.id,
-      action: AuditAction.UPDATE,
-      changes: { orderNum: newOrderNum }
-    })
-  }
-
-  /**
-   * Soft deletes an account
-   */
-  async delete(account: Account): Promise<void> {
-    const auditData = {
-      name: account.name,
-      accountType: account.accountType
-    }
-
-    await this.db.write(async () => {
-      await account.markAsDeleted()
-    })
-
-    await auditRepository.log({
-      entityType: 'account',
-      entityId: account.id,
-      action: AuditAction.DELETE,
-      changes: auditData
-    })
-  }
-
-  async recover(accountId: string): Promise<void> {
-    const account = await this.accounts.find(accountId)
-    const accountName = account.name
-
-    await this.db.write(async () => {
-      // Clear deletion status and timestamp in raw record
-      const raw = {
-        ...(account as any)._raw,
-        _status: 'updated',
-        deleted_at: null
-      }
-
-      // Bypasses Model level restrictions by going to the adapter directly.
-      // Cast to any to handle potential signature variations across adapters.
-      await (this.db.adapter.batch as any)([['update', 'accounts', raw]])
-    })
-
-    // Log recovery outside the write transaction
-    await auditRepository.log({
-      entityType: 'account',
-      entityId: accountId,
-      action: AuditAction.UPDATE,
-      changes: {
-        action: 'RECOVERED',
-        name: accountName
-      }
-    })
-  }
-
-  /**
-   * Seed default accounts (batch operation for initialization)
-   * This creates accounts without initial balances or audit logs for fast seeding.
-   */
-  async seedDefaults(accounts: { name: string; accountType: AccountType; currencyCode: string }[]): Promise<void> {
-    await this.db.write(async () => {
-      for (const accountData of accounts) {
-        await this.accounts.create((account) => {
-          account.name = accountData.name
-          account.accountType = accountData.accountType
-          account.currencyCode = accountData.currencyCode
-        })
-      }
     })
   }
 }
 
-// Export a singleton instance
 export const accountRepository = new AccountRepository()

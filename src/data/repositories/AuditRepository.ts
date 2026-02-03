@@ -46,6 +46,34 @@ export class AuditRepository {
     }
 
     /**
+     * Observe audit logs for a specific entity
+     */
+    observeByEntity(
+        entityType: string,
+        entityId: string
+    ) {
+        return this.auditLogs
+            .query(
+                Q.where('entity_type', entityType),
+                Q.where('entity_id', entityId),
+                Q.sortBy('timestamp', Q.desc)
+            )
+            .observe()
+    }
+
+    /**
+     * Observe recent audit logs
+     */
+    observeRecent(limit: number = 100) {
+        return this.auditLogs
+            .query(
+                Q.sortBy('timestamp', Q.desc),
+                Q.take(limit)
+            )
+            .observe()
+    }
+
+    /**
      * Fetch recent audit logs
      */
     async fetchRecent(limit: number = 100): Promise<AuditLog[]> {

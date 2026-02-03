@@ -56,7 +56,12 @@ export function useAccountBalance(accountId: string | null) {
             accountRepository.observeById(stableAccountId),
             accountRepository.observeBalance(stableAccountId)
         ]) : of(null),
-        async () => stableAccountId ? accountRepository.getAccountBalance(stableAccountId) : null,
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        async () => {
+            if (!stableAccountId) return null;
+            const { balanceService } = require('@/src/services/BalanceService');
+            return balanceService.getAccountBalance(stableAccountId);
+        },
         [stableAccountId],
         null as AccountBalance | null
     )
@@ -74,26 +79,33 @@ export function useAccountActions() {
         currencyCode: string;
         initialBalance?: number;
     }) => {
-        return accountRepository.create(data)
+        const { accountService } = require('@/src/services/AccountService');
+        return accountService.createAccount(data)
     }, [])
 
     const updateAccount = useCallback(async (account: Account, data: {
         name?: string;
         accountType?: AccountType;
+        currencyCode?: string;
+        description?: string;
     }) => {
-        return accountRepository.update(account, data)
+        const { accountService } = require('@/src/services/AccountService');
+        return accountService.updateAccount(account.id, data)
     }, [])
 
     const deleteAccount = useCallback(async (account: Account) => {
-        return accountRepository.delete(account)
+        const { accountService } = require('@/src/services/AccountService');
+        return accountService.deleteAccount(account)
     }, [])
 
     const recoverAccount = useCallback(async (accountId: string) => {
-        return accountRepository.recover(accountId)
+        const { accountService } = require('@/src/services/AccountService');
+        return accountService.recoverAccount(accountId)
     }, [])
 
     const updateAccountOrder = useCallback(async (account: Account, newOrder: number) => {
-        return accountRepository.updateOrder(account, newOrder)
+        const { accountService } = require('@/src/services/AccountService');
+        return accountService.updateAccountOrder(account, newOrder)
     }, [])
 
     return {
