@@ -7,20 +7,20 @@ export class JournalEntryPage extends BasePage {
     }
 
     async selectType(type: 'EXPENSE' | 'INCOME' | 'TRANSFER') {
-        await this.page.getByText(type, { exact: true }).click();
+        const typeStart = type.toLowerCase();
+        await this.page.getByTestId(`tab-${typeStart}`).click();
     }
 
     async selectSourceAccount(accountName: string) {
-        // Source account is usually the second one in Expense, first in Income/Transfer
-        // But since they are horizontally scrollable lists, we can just find the text
-        // and click it. SimpleForm uses renderAccountSelector.
-        const account = this.page.getByText(accountName, { exact: true }).first();
-        await account.click();
+        // Use the testID we added to SimpleForm
+        const sanitizedName = accountName.replace(/\s+/g, '-');
+        await this.page.getByTestId(`account-option-${sanitizedName}`).click();
     }
 
     async selectDestinationAccount(accountName: string) {
-        const account = this.page.getByText(accountName, { exact: true }).last();
-        await account.click();
+        // Use the testID we added to SimpleForm
+        const sanitizedName = accountName.replace(/\s+/g, '-');
+        await this.page.getByTestId(`account-option-${sanitizedName}`).click();
     }
 
     async enterDescription(description: string) {
@@ -28,10 +28,24 @@ export class JournalEntryPage extends BasePage {
     }
 
     async save() {
+        await this.assertSaveEnabled();
         await this.page.getByTestId('save-button').click();
+    }
+
+    async delete() {
+        await this.page.getByTestId('delete-button').click();
     }
 
     async assertSaveDisabled() {
         await expect(this.page.getByTestId('save-button')).toBeDisabled();
+    }
+
+    async assertSaveEnabled() {
+        await expect(this.page.getByTestId('save-button')).toBeEnabled();
+    }
+
+    async assertTransactionVisible(description: string, amount: string) {
+        await expect(this.page.getByText(description)).toBeVisible();
+        await expect(this.page.getByText(amount)).toBeVisible();
     }
 }

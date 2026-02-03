@@ -237,6 +237,7 @@ export default function AccountCreationScreen() {
                         onPress={handleSaveAccount}
                         disabled={!accountName.trim() || isCreating}
                         style={styles.createButton}
+                        testID="save-button"
                     >
                         {isCreating ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Account')}
                     </AppButton>

@@ -26,6 +26,7 @@ export const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({ value,
             {accountTypes.map((type) => (
                 <TouchableOpacity
                     key={type.key}
+                    testID={`account-type-option-${type.key}`}
                     style={[
                         styles.button,
                         value === type.key && styles.buttonSelected,

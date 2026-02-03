@@ -129,12 +129,14 @@ export default function AccountDetailsScreen() {
             ) : (
                 <>
                     <IconButton
+                        testID="edit-button"
                         name="edit"
                         onPress={handleEdit}
                         variant="surface"
                         iconColor={theme.text}
                     />
                     <IconButton
+                        testID="delete-button"
                         name="delete"
                         onPress={handleDelete}
                         variant="surface"

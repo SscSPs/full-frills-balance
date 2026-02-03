@@ -1,6 +1,6 @@
 import { test } from './fixtures';
 
-test.skip('Settings and Maintenance', () => {
+test.describe('Settings and Maintenance', () => {
     test.setTimeout(120000);
     test.beforeEach(async ({ onboardingPage, accountsPage, dashboardPage }) => {
         await onboardingPage.clearAppState();
@@ -8,6 +8,7 @@ test.skip('Settings and Maintenance', () => {
         await onboardingPage.completeOnboarding('Settings User');
 
         // Create an account to reach the dashboard/tabs
+        await accountsPage.navigateToCreation();
         await accountsPage.createAccount('Settings Check', 'Asset');
 
         // Now we should be on the proper authenticated screens
@@ -15,7 +16,7 @@ test.skip('Settings and Maintenance', () => {
         await dashboardPage.assertWelcomeVisible('Settings User');
     });
 
-    test('should reset the app from settings', async ({ dashboardPage, settingsPage, onboardingPage }) => {
+    test.skip('should reset the app from settings', async ({ dashboardPage, settingsPage, onboardingPage }) => {
         await dashboardPage.switchToSettings();
 
         // Handle browser confirm dialog

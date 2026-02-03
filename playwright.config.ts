@@ -4,17 +4,17 @@ export default defineConfig({
     testDir: './e2e',
     timeout: 120 * 1000, // Global test timeout: 120s
     expect: {
-        timeout: 20 * 1000,
+        timeout: 20000,
     },
-    fullyParallel: true,
+    fullyParallel: false,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 1, // Retry for flakiness
-    workers: process.env.CI ? 1 : undefined,
+    retries: 0, // No retries
+    workers: 1,
     reporter: 'html',
     use: {
         baseURL: 'http://localhost:8081',
         trace: 'on-first-retry',
-        actionTimeout: 15 * 1000, // Action timeout
+        actionTimeout: 15000,
     },
     projects: [
         {

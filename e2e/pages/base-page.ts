@@ -38,14 +38,14 @@ export class BasePage {
         });
 
         await this.page.reload({ waitUntil: 'domcontentloaded' });
-        await this.page.waitForTimeout(500);
+        await this.page.waitForTimeout(100);
     }
 
     async clickPlusButton() {
-        let fab = this.page.getByTestId('fab-button').first();
+        let fab = this.page.getByTestId('fab-button');
         if (await fab.count() > 0) {
-            await fab.waitFor({ state: 'visible' });
-            await fab.click();
+            await fab.first().waitFor({ state: 'visible' });
+            await fab.first().click();
             return;
         }
 
@@ -65,8 +65,8 @@ export class BasePage {
         await selector.click({ force: true });
     }
 
-    async waitForNavigation(timeout: number = 2000) {
-        await this.page.waitForTimeout(timeout);
+    async waitForNavigation(urlPattern: RegExp | string) {
+        await this.page.waitForURL(urlPattern, { timeout: 1000 });
     }
 
     async switchToDashboard() {
