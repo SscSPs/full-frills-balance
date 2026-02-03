@@ -3,8 +3,8 @@ import { Shape, Size, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { AccountCard } from '@/src/features/accounts/components/AccountCard';
 import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
-import { useSummary } from '@/src/hooks/useSummary';
 import { useTheme } from '@/src/hooks/use-theme';
+import { useSummary } from '@/src/hooks/useSummary';
 import { getAccountSections } from '@/src/utils/accountUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
@@ -15,7 +15,7 @@ export default function AccountsScreen() {
     const router = useRouter()
     const { theme } = useTheme()
 
-    const { accounts, isLoading: accountsLoading } = useAccounts()
+    const { accounts, isLoading: accountsLoading, version: accountsVersion } = useAccounts()
 
     const [collapsedSections, setCollapsedSections] = React.useState<Set<string>>(new Set())
 
@@ -46,7 +46,7 @@ export default function AccountsScreen() {
     const sections = useMemo(() => {
         if (!accounts.length) return []
         return getAccountSections(accounts)
-    }, [accounts])
+    }, [accounts, accountsVersion])
 
     const {
         totalAssets,
@@ -54,7 +54,8 @@ export default function AccountsScreen() {
         totalEquity,
         totalIncome,
         totalExpense,
-        isPrivacyMode
+        isPrivacyMode,
+        version: summaryVersion
     } = useSummary()
 
     const renderHeader = useMemo(() => {
@@ -113,6 +114,7 @@ export default function AccountsScreen() {
         totalExpense,
         totalIncome,
         totalLiabilities,
+        summaryVersion,
     ])
 
     const renderSectionHeader = useCallback(({ section: { title, data } }: { section: { title: string; data: Account[] } }) => {
@@ -164,6 +166,7 @@ export default function AccountsScreen() {
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <SectionList
                 sections={sections}
+                extraData={accountsVersion}
                 refreshing={accountsLoading}
                 onRefresh={handleRefresh} // Reactivity handles updates, but need prop for PullToRefresh visual
                 keyExtractor={keyExtractor}

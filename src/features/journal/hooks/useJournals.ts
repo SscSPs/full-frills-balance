@@ -2,6 +2,7 @@
  * Reactive Data Hooks for Journal/Transactions
  */
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
+import { useAccount } from '@/src/features/accounts/hooks/useAccounts'
 import { usePaginatedObservable } from '@/src/hooks/usePaginatedObservable'
 import { EnrichedJournal, EnrichedTransaction } from '@/src/types/domain'
 import { useEffect, useMemo, useState } from 'react'
@@ -32,31 +33,41 @@ export function useJournals(pageSize: number = 50, dateRange?: { startDate: numb
  * Custom hook to get reactively updated transactions for an account
  * 
  * Note: This hook uses usePaginatedObservable with account-specific filtering.
- * The accountId is included in the dateRange key to trigger proper resets.
+ * It also observes the account itself to ensure name/type changes trigger re-enrichment.
  */
 export function useAccountTransactions(accountId: string, pageSize: number = 50, dateRange?: { startDate: number, endDate: number }) {
-    // Create a composite date range that includes accountId for proper filter change detection
-    const compositeRange = useMemo(() => {
-        if (!dateRange) return undefined
-        return { ...dateRange, accountId } as { startDate: number, endDate: number, accountId?: string }
-    }, [dateRange, accountId])
+    // Observe the account itself to detect property changes (name, type)
+    const { account } = useAccount(accountId)
 
-    const { items: transactions, isLoading, isLoadingMore, hasMore, loadMore } = usePaginatedObservable<any, EnrichedTransaction>({
+    // Create a composite date range that includes accountId and account versioning properties
+    // for proper filter change detection and re-enrichment
+    const compositeRange = useMemo(() => {
+        if (!dateRange) return { accountVersion: `${account?.name}-${account?.accountType}` } as any
+        return {
+            ...dateRange,
+            accountId,
+            accountVersion: `${account?.name}-${account?.accountType}`
+        } as { startDate: number, endDate: number, accountId?: string, accountVersion?: string }
+    }, [dateRange, accountId, account?.name, account?.accountType])
+
+    const { items: transactions, isLoading, isLoadingMore, hasMore, loadMore, version } = usePaginatedObservable<any, EnrichedTransaction>({
         pageSize,
         dateRange: compositeRange,
         observe: (limit, range) => journalRepository.observeAccountTransactions(
             accountId,
             limit,
-            range ? { startDate: range.startDate, endDate: range.endDate } : undefined
+            range && 'startDate' in range ? { startDate: range.startDate, endDate: range.endDate } : undefined
         ),
         enrich: (_, limit, range) => journalRepository.findEnrichedTransactionsForAccount(
             accountId,
             limit,
-            range ? { startDate: range.startDate, endDate: range.endDate } : undefined
+            range && 'startDate' in range ? { startDate: range.startDate, endDate: range.endDate } : undefined
         ),
+        // Secondary observe ensures we pick up *other* transaction changes too
+        secondaryObserve: () => journalRepository.observeAccountTransactions(accountId, 1, undefined)
     })
 
-    return { transactions, isLoading, isLoadingMore, hasMore, loadMore }
+    return { transactions, isLoading, isLoadingMore, hasMore, loadMore, version }
 }
 
 

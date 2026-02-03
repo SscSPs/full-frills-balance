@@ -16,6 +16,7 @@ export interface DashboardSummaryData extends WealthSummary {
     totalExpense: number;
     isPrivacyMode: boolean;
     isLoading: boolean;
+    version: number;
     togglePrivacyMode: () => void;
 }
 
@@ -40,6 +41,7 @@ export const useSummary = () => {
         totalIncome: 0,
         totalExpense: 0,
         isLoading: true,
+        version: 0,
     });
 
     const fetchSummary = async () => {
@@ -59,15 +61,16 @@ export const useSummary = () => {
 
             const wealth = await wealthService.calculateSummary(balances, targetCurrency);
 
-            setData({
+            setData(prev => ({
                 income: monthly.income,
                 expense: monthly.expense,
                 ...wealth,
                 isLoading: false,
-            });
+                version: prev.version + 1,
+            }));
         } catch (error) {
             logger.error('Failed to fetch summary:', error);
-            setData(prev => ({ ...prev, isLoading: false }));
+            setData(prev => ({ ...prev, isLoading: false, version: prev.version + 1 }));
         }
     };
 

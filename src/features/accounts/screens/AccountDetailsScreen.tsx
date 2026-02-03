@@ -41,9 +41,9 @@ export default function AccountDetailsScreen() {
         navigateNext,
     } = useDateRangeFilter({ defaultToCurrentMonth: true })
 
-    const { account, isLoading: accountLoading } = useAccount(accountId)
-    const { transactions, isLoading: transactionsLoading } = useAccountTransactions(accountId, 50, dateRange || undefined)
-    const { balanceData, isLoading: balanceLoading } = useAccountBalance(accountId)
+    const { account, isLoading: accountLoading, version: accountVersion } = useAccount(accountId)
+    const { transactions, isLoading: transactionsLoading, version: txVersion } = useAccountTransactions(accountId, 50, dateRange || undefined)
+    const { balanceData, isLoading: balanceLoading, version: balanceVersion } = useAccountBalance(accountId)
     const { deleteAccount, recoverAccount: recoverAction } = useAccountActions()
 
     const balance = balanceData?.balance || 0
@@ -143,7 +143,7 @@ export default function AccountDetailsScreen() {
                 </>
             )}
         </View>
-    ), [handleDelete, handleEdit, handleRecover, isDeleted, theme.error, theme.income, theme.text]);
+    ), [handleDelete, handleEdit, handleRecover, isDeleted, theme.error, theme.income, theme.text, accountVersion]);
 
     if (accountLoading) {
         return (
@@ -257,6 +257,8 @@ export default function AccountDetailsScreen() {
         theme.liability,
         theme.primary,
         transactionCount,
+        accountVersion,
+        balanceVersion,
     ]);
 
     const renderItem = useCallback(({ item }: { item: EnrichedTransaction }) => (
@@ -278,7 +280,7 @@ export default function AccountDetailsScreen() {
                 </AppText>
             </AppCard>
         )
-    ), [theme.primary, transactionsLoading]);
+    ), [theme.primary, transactionsLoading, txVersion]);
 
     const keyExtractor = useCallback((item: EnrichedTransaction) => item.id, []);
 

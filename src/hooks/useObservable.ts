@@ -6,6 +6,7 @@
  * - Updating local state when observable emits
  * - Unsubscribing on unmount
  * - Managing loading state
+ * - Versioning to force re-renders on same-reference emissions
  */
 import { DependencyList, useEffect, useState } from 'react';
 import { Observable } from 'rxjs';
@@ -14,6 +15,7 @@ export interface UseObservableResult<T> {
     data: T;
     isLoading: boolean;
     error: Error | null;
+    version: number;
 }
 
 export interface UseObservableOptions {
@@ -40,6 +42,7 @@ export function useObservable<T>(
     const [data, setData] = useState<T>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [version, setVersion] = useState(0);
 
     useEffect(() => {
         if (!keepPreviousData) {
@@ -50,7 +53,10 @@ export function useObservable<T>(
 
         const subscription = observableFactory().subscribe({
             next: (result) => {
-                setData(result);
+                // For arrays, always create a new reference to ensure React notices the change
+                // even if the contents are identical (identity persistence in WatermelonDB)
+                setData(Array.isArray(result) ? [...result] : result as any);
+                setVersion(v => v + 1);
                 setIsLoading(false);
             },
             error: (err) => {
@@ -63,7 +69,7 @@ export function useObservable<T>(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, deps);
 
-    return { data, isLoading, error };
+    return { data, isLoading, error, version };
 }
 
 /**
@@ -86,6 +92,7 @@ export function useObservableWithEnrichment<T, E>(
     const [data, setData] = useState<E>(initialValue);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [version, setVersion] = useState(0);
 
     useEffect(() => {
         setIsLoading(true);
@@ -96,6 +103,7 @@ export function useObservableWithEnrichment<T, E>(
                 try {
                     const enriched = await enricher(result);
                     setData(enriched);
+                    setVersion(v => v + 1);
                     setIsLoading(false);
                 } catch (err) {
                     setError(err instanceof Error ? err : new Error(String(err)));
@@ -112,5 +120,5 @@ export function useObservableWithEnrichment<T, E>(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, deps);
 
-    return { data, isLoading, error };
+    return { data, isLoading, error, version };
 }

@@ -39,17 +39,17 @@ export class AccountRepository {
     const query = includeDeleted
       ? this.accounts.query(Q.sortBy('order_num', Q.asc))
       : this.accounts.query(Q.where('deleted_at', Q.eq(null)), Q.sortBy('order_num', Q.asc))
-    return query.observe()
+    return query.observeWithColumns(['account_type', 'name', 'order_num', 'currency_code'])
   }
 
   observeByType(accountType: string) {
-    return this.accounts
+    const query = this.accounts
       .query(
         Q.where('account_type', accountType),
         Q.where('deleted_at', Q.eq(null)),
         Q.sortBy('order_num', Q.asc)
       )
-      .observe()
+    return query.observeWithColumns(['name', 'order_num', 'currency_code'])
   }
 
   observeById(accountId: string) {

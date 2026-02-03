@@ -7,6 +7,7 @@
  * - Filter change detection via refs (avoids full reload on pagination)
  * - Observable subscription lifecycle
  * - loadMore function
+ * - Versioning to force re-renders on same-reference emissions
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Observable } from 'rxjs';
@@ -35,6 +36,7 @@ export interface UsePaginatedObservableResult<E> {
     isLoadingMore: boolean;
     hasMore: boolean;
     loadMore: () => void;
+    version: number;
 }
 
 export function usePaginatedObservable<T, E = T>(
@@ -47,10 +49,11 @@ export function usePaginatedObservable<T, E = T>(
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [currentLimit, setCurrentLimit] = useState(pageSize);
+    const [version, setVersion] = useState(0);
 
     // Stable key for dateRange to avoid unnecessary effect re-runs
     const dateRangeKey = useMemo(
-        () => dateRange ? `${dateRange.startDate}-${dateRange.endDate}` : 'none',
+        () => dateRange ? `${dateRange.startDate}-${dateRange.endDate}-${(dateRange as any).accountId || ''}-${(dateRange as any).accountVersion || ''}` : 'none',
         [dateRange]
     );
 
@@ -62,8 +65,7 @@ export function usePaginatedObservable<T, E = T>(
         const isFilterChange = prevDateRangeKeyRef.current !== dateRangeKey;
         if (isFilterChange) {
             setIsLoading(true);
-            setCurrentLimit(pageSize); // Reset pagination    // Filter change detection
-            // If range changes, or if filter logic changes (not implemented yet), we reset
+            setCurrentLimit(pageSize); // Reset pagination
             prevDateRangeKeyRef.current = dateRangeKey;
         }
 
@@ -77,6 +79,7 @@ export function usePaginatedObservable<T, E = T>(
                 setItems(loaded as unknown as E[]);
             }
             setHasMore(loaded.length >= currentLimit);
+            setVersion(v => v + 1);
             setIsLoading(false);
             setIsLoadingMore(false);
         });
@@ -86,16 +89,15 @@ export function usePaginatedObservable<T, E = T>(
         if (secondaryObserve && enrich) {
             secondarySubscription = secondaryObserve().subscribe(async () => {
                 // Re-fetch enriched data when secondary observable fires
-                // Use firstValueFrom-style pattern with proper cleanup
                 const primaryData = await new Promise<T[]>((resolve) => {
                     const innerSub = observe(currentLimit, dateRange).subscribe((data) => {
                         resolve(data);
-                        // Defer unsubscribe to next tick to avoid reference before initialization
                         setTimeout(() => innerSub.unsubscribe(), 0);
                     });
                 });
                 const enriched = await enrich(primaryData, currentLimit, dateRange);
                 setItems(enriched as E[]);
+                setVersion(v => v + 1);
             });
         }
 
@@ -112,5 +114,5 @@ export function usePaginatedObservable<T, E = T>(
         setCurrentLimit(prev => prev + pageSize);
     };
 
-    return { items, isLoading, isLoadingMore, hasMore, loadMore };
+    return { items, isLoading, isLoadingMore, hasMore, loadMore, version };
 }

@@ -6,42 +6,42 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { useObservable, useObservableWithEnrichment } from '@/src/hooks/useObservable'
 import { AccountBalance } from '@/src/types/domain'
 import { useCallback, useMemo } from 'react'
-import { of } from 'rxjs'
+import { combineLatest, of } from 'rxjs'
 
 /**
  * Hook to reactively get all accounts
  */
 export function useAccounts() {
-    const { data: accounts, isLoading } = useObservable(
+    const { data: accounts, isLoading, version } = useObservable(
         () => accountRepository.observeAll(),
         [],
         [] as Account[]
     )
-    return { accounts, isLoading }
+    return { accounts, isLoading, version }
 }
 
 /**
  * Hook to reactively get accounts by type
  */
 export function useAccountsByType(accountType: string) {
-    const { data: accounts, isLoading } = useObservable(
+    const { data: accounts, isLoading, version } = useObservable(
         () => accountRepository.observeByType(accountType),
         [accountType],
         [] as Account[]
     )
-    return { accounts, isLoading }
+    return { accounts, isLoading, version }
 }
 
 /**
  * Hook to reactively get a single account by ID
  */
 export function useAccount(accountId: string | null) {
-    const { data: account, isLoading } = useObservable(
+    const { data: account, isLoading, version } = useObservable(
         () => accountId ? accountRepository.observeById(accountId) : of(null),
         [accountId],
         null as Account | null
     )
-    return { account, isLoading }
+    return { account, isLoading, version }
 }
 
 /**
@@ -51,13 +51,16 @@ export function useAccountBalance(accountId: string | null) {
     // Use a stable empty observable when accountId is null
     const stableAccountId = useMemo(() => accountId, [accountId])
 
-    const { data: balanceData, isLoading } = useObservableWithEnrichment(
-        () => stableAccountId ? accountRepository.observeBalance(stableAccountId) : of(null),
+    const { data: balanceData, isLoading, version } = useObservableWithEnrichment(
+        () => stableAccountId ? combineLatest([
+            accountRepository.observeById(stableAccountId),
+            accountRepository.observeBalance(stableAccountId)
+        ]) : of(null),
         async () => stableAccountId ? accountRepository.getAccountBalance(stableAccountId) : null,
         [stableAccountId],
         null as AccountBalance | null
     )
-    return { balanceData, isLoading }
+    return { balanceData, isLoading, version }
 }
 
 /**
