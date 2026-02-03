@@ -4,6 +4,8 @@
  * Handles balance verification and crash recovery.
  * Ensures data integrity by detecting and repairing stale running balances.
  * This service is responsible for checking if the account balances match the transaction history.
+ * 
+ * All database writes are delegated to repositories.
  */
 
 import { database } from '@/src/data/database/Database'
@@ -36,9 +38,34 @@ export interface IntegrityCheckResult {
     results: BalanceVerificationResult[]
 }
 
-const DEFAULT_EXPENSE_CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Housing', 'Other Expense'];
-const DEFAULT_INCOME_CATEGORIES = ['Salary', 'Gifts', 'Interest', 'Other Income'];
-const DEFAULT_ASSET_ACCOUNTS = ['Wallet'];
+interface DefaultAccountData {
+    name: string
+    accountType: AccountType
+    currencyCode: string
+}
+
+const DEFAULT_CURRENCY = 'USD'
+
+const DEFAULT_EXPENSE_CATEGORIES: DefaultAccountData[] = [
+    { name: 'Food', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Transport', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Shopping', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Entertainment', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Health', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Housing', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Other Expense', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
+]
+
+const DEFAULT_INCOME_CATEGORIES: DefaultAccountData[] = [
+    { name: 'Salary', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Gifts', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Interest', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
+    { name: 'Other Income', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
+]
+
+const DEFAULT_ASSET_ACCOUNTS: DefaultAccountData[] = [
+    { name: 'Wallet', accountType: AccountType.ASSET, currencyCode: DEFAULT_CURRENCY },
+]
 
 export class IntegrityService {
     /**
@@ -142,11 +169,9 @@ export class IntegrityService {
     async runStartupCheck(): Promise<IntegrityCheckResult> {
         logger.info('[IntegrityService] Starting startup integrity check...')
 
-        const existingAccountsCount = await database.collections.get<Account>('accounts')
-            .query(Q.where('deleted_at', Q.eq(null)))
-            .fetchCount()
+        const accountsExist = await accountRepository.exists()
 
-        if (existingAccountsCount === 0) {
+        if (!accountsExist) {
             logger.info('[IntegrityService] No accounts found. Seeding default accounts/categories...')
             await this.seedDefaultAccounts()
         }
@@ -200,43 +225,18 @@ export class IntegrityService {
     }
 
     /**
-     * Seeds default accounts and categories.
+     * Seeds default accounts and categories via repository.
      */
     async seedDefaultAccounts(): Promise<void> {
-        const defaultCurrency = 'USD';
+        const allDefaults = [
+            ...DEFAULT_EXPENSE_CATEGORIES,
+            ...DEFAULT_INCOME_CATEGORIES,
+            ...DEFAULT_ASSET_ACCOUNTS,
+        ]
 
-        await database.write(async () => {
-            const accountsCollection = database.collections.get<Account>('accounts');
+        await accountRepository.seedDefaults(allDefaults)
 
-            // Create Expense Categories
-            for (const name of DEFAULT_EXPENSE_CATEGORIES) {
-                await accountsCollection.create((account) => {
-                    account.name = name;
-                    account.accountType = AccountType.EXPENSE;
-                    account.currencyCode = defaultCurrency;
-                });
-            }
-
-            // Create Income Categories
-            for (const name of DEFAULT_INCOME_CATEGORIES) {
-                await accountsCollection.create((account) => {
-                    account.name = name;
-                    account.accountType = AccountType.INCOME;
-                    account.currencyCode = defaultCurrency;
-                });
-            }
-
-            // Create Default Asset Accounts
-            for (const name of DEFAULT_ASSET_ACCOUNTS) {
-                await accountsCollection.create((account) => {
-                    account.name = name;
-                    account.accountType = AccountType.ASSET;
-                    account.currencyCode = defaultCurrency;
-                });
-            }
-        });
-
-        logger.info(`[IntegrityService] Seeded default accounts and categories.`);
+        logger.info(`[IntegrityService] Seeded ${allDefaults.length} default accounts and categories.`)
     }
 
     /**

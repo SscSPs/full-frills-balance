@@ -2,10 +2,10 @@
  * Currency Initialization Service
  * 
  * Populates the currencies table with common currencies on first launch.
+ * All database operations are delegated to CurrencyRepository.
  */
 
-import { database } from '@/src/data/database/Database'
-import Currency from '@/src/data/models/Currency'
+import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { logger } from '@/src/utils/logger'
 
 interface CurrencyData {
@@ -37,15 +37,11 @@ const COMMON_CURRENCIES: CurrencyData[] = [
 ]
 
 export class CurrencyInitService {
-    private get currencies() {
-        return database.collections.get<Currency>('currencies')
-    }
-
     /**
      * Initialize currencies table if empty
      */
     async initialize(): Promise<void> {
-        const existingCount = await this.currencies.query().fetchCount()
+        const existingCount = await currencyRepository.count()
 
         if (existingCount > 0) {
             // Already initialized
@@ -54,16 +50,7 @@ export class CurrencyInitService {
 
         logger.info('Initializing currencies table with common currencies...')
 
-        await database.write(async () => {
-            for (const currencyData of COMMON_CURRENCIES) {
-                await this.currencies.create((currency) => {
-                    currency.code = currencyData.code
-                    currency.symbol = currencyData.symbol
-                    currency.name = currencyData.name
-                    currency.precision = currencyData.precision
-                })
-            }
-        })
+        await currencyRepository.seedDefaults(COMMON_CURRENCIES)
 
         logger.info(`Initialized ${COMMON_CURRENCIES.length} currencies`)
     }
@@ -71,19 +58,15 @@ export class CurrencyInitService {
     /**
      * Get all currencies
      */
-    async getAllCurrencies(): Promise<Currency[]> {
-        return this.currencies.query().fetch()
+    async getAllCurrencies() {
+        return currencyRepository.findAll()
     }
 
     /**
      * Get currency by code
      */
-    async getCurrencyByCode(code: string): Promise<Currency | null> {
-        const currencies = await this.currencies
-            .query()
-            .fetch()
-
-        return currencies.find(c => c.code === code) || null
+    async getCurrencyByCode(code: string) {
+        return currencyRepository.findByCode(code)
     }
 }
 

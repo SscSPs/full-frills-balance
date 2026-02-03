@@ -461,6 +461,22 @@ export class AccountRepository {
       }
     })
   }
+
+  /**
+   * Seed default accounts (batch operation for initialization)
+   * This creates accounts without initial balances or audit logs for fast seeding.
+   */
+  async seedDefaults(accounts: { name: string; accountType: AccountType; currencyCode: string }[]): Promise<void> {
+    await this.db.write(async () => {
+      for (const accountData of accounts) {
+        await this.accounts.create((account) => {
+          account.name = accountData.name
+          account.accountType = accountData.accountType
+          account.currencyCode = accountData.currencyCode
+        })
+      }
+    })
+  }
 }
 
 // Export a singleton instance

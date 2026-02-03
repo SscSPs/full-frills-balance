@@ -191,9 +191,6 @@ export class TransactionRepository {
       .fetch()
   }
 
-  /**
-   * Observe transactions for a specific journal
-   */
   observeByJournal(journalId: string) {
     return this.transactions
       .query(
@@ -204,6 +201,16 @@ export class TransactionRepository {
       )
       .extend(Q.sortBy('transaction_date', 'asc'))
       .extend(Q.sortBy('created_at', 'asc'))
+      .observe()
+  }
+
+  /**
+   * Observe all active (non-deleted) transactions
+   * Useful for dashboard summary reactive updates
+   */
+  observeActive() {
+    return this.transactions
+      .query(Q.where('deleted_at', Q.eq(null)))
       .observe()
   }
 

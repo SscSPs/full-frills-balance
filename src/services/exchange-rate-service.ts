@@ -3,13 +3,13 @@
  * 
  * Handles currency conversion with caching and API integration.
  * Uses exchangerate-api.com free tier (1500 requests/month).
+ * 
+ * All database operations are delegated to ExchangeRateRepository.
  */
 
 import { AppConfig } from '@/src/constants'
-import { database } from '@/src/data/database/Database'
-import ExchangeRate from '@/src/data/models/ExchangeRate'
+import { exchangeRateRepository } from '@/src/data/repositories/ExchangeRateRepository'
 import { logger } from '@/src/utils/logger'
-import { Q } from '@nozbe/watermelondb'
 
 export interface ExchangeRateData {
     fromCurrency: string
@@ -23,10 +23,6 @@ const CACHE_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export class ExchangeRateService {
     private memoryCache: Map<string, { rates: Record<string, number>; timestamp: number }> = new Map()
-
-    private get exchangeRates() {
-        return database.collections.get<ExchangeRate>('exchange_rates')
-    }
 
     /**
      * Get exchange rate, using cache if available and recent
@@ -45,9 +41,9 @@ export class ExchangeRateService {
             }
         }
 
-        // 2. Check DB Cache
-        const cached = await this.getCachedRate(fromCurrency, toCurrency)
-        if (cached && this.isRateFresh(cached)) {
+        // 2. Check DB Cache via repository
+        const cached = await exchangeRateRepository.getCachedRate(fromCurrency, toCurrency)
+        if (cached && this.isRateFresh(cached.effectiveDate)) {
             // Update memory cache for this base while we're at it
             this.updateMemoryCache(fromCurrency, toCurrency, cached.rate)
             return cached.rate
@@ -60,8 +56,12 @@ export class ExchangeRateService {
             throw new Error(`No rate found for ${fromCurrency} to ${toCurrency}`)
         }
 
-        // 4. Persist this specific rate to DB for offline use
-        await this.cacheRate(fromCurrency, toCurrency, rates[toCurrency])
+        // 4. Persist this specific rate to DB for offline use via repository
+        await exchangeRateRepository.cacheRate({
+            fromCurrency,
+            toCurrency,
+            rate: rates[toCurrency],
+        })
 
         return rates[toCurrency]
     }
@@ -73,29 +73,10 @@ export class ExchangeRateService {
     }
 
     /**
-     * Get cached rate from database
-     */
-    private async getCachedRate(
-        fromCurrency: string,
-        toCurrency: string
-    ): Promise<ExchangeRate | null> {
-        const rates = await this.exchangeRates
-            .query(
-                Q.where('from_currency', fromCurrency),
-                Q.where('to_currency', toCurrency),
-                Q.sortBy('effective_date', Q.desc),
-                Q.take(1)
-            )
-            .fetch()
-
-        return rates[0] || null
-    }
-
-    /**
      * Check if cached rate is still fresh  
      */
-    private isRateFresh(rate: ExchangeRate): boolean {
-        const age = Date.now() - rate.effectiveDate
+    private isRateFresh(effectiveDate: number): boolean {
+        const age = Date.now() - effectiveDate
         return age < CACHE_DURATION_MS
     }
 
@@ -128,9 +109,7 @@ export class ExchangeRateService {
             logger.error('Failed to fetch exchange rates:', error)
 
             // Fallback: try to get any cached rate from DB if API fails
-            const cachedRecords = await this.exchangeRates
-                .query(Q.where('from_currency', fromCurrency))
-                .fetch()
+            const cachedRecords = await exchangeRateRepository.getAllRatesForBase(fromCurrency)
 
             if (cachedRecords.length > 0) {
                 logger.warn(`Using stale exchange rates from DB for ${fromCurrency}`)
@@ -143,25 +122,6 @@ export class ExchangeRateService {
 
             throw error
         }
-    }
-
-    /**
-     * Cache exchange rate in database
-     */
-    private async cacheRate(
-        fromCurrency: string,
-        toCurrency: string,
-        rate: number
-    ): Promise<void> {
-        await database.write(async () => {
-            await this.exchangeRates.create((record) => {
-                record.fromCurrency = fromCurrency
-                record.toCurrency = toCurrency
-                record.rate = rate
-                record.effectiveDate = Date.now()
-                record.source = 'exchangerate-api.com'
-            })
-        })
     }
 
     /**

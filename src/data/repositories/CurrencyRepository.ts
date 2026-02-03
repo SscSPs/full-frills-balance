@@ -38,6 +38,43 @@ export class CurrencyRepository {
     async findAll(): Promise<Currency[]> {
         return this.currencies.query().fetch()
     }
+
+    /**
+     * Get count of currencies
+     */
+    async count(): Promise<number> {
+        return this.currencies.query().fetchCount()
+    }
+
+    /**
+     * Create a single currency
+     */
+    async create(data: { code: string; symbol: string; name: string; precision: number }): Promise<Currency> {
+        return database.write(async () => {
+            return this.currencies.create((currency) => {
+                currency.code = data.code
+                currency.symbol = data.symbol
+                currency.name = data.name
+                currency.precision = data.precision
+            })
+        })
+    }
+
+    /**
+     * Seed default currencies (batch operation)
+     */
+    async seedDefaults(currencies: { code: string; symbol: string; name: string; precision: number }[]): Promise<void> {
+        await database.write(async () => {
+            for (const currencyData of currencies) {
+                await this.currencies.create((currency) => {
+                    currency.code = currencyData.code
+                    currency.symbol = currencyData.symbol
+                    currency.name = currencyData.name
+                    currency.precision = currencyData.precision
+                })
+            }
+        })
+    }
 }
 
 export const currencyRepository = new CurrencyRepository()

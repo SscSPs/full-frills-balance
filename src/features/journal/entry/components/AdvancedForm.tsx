@@ -124,5 +124,3 @@ export const AdvancedForm = ({
         </Stack>
     );
 };
-
-// styles removed as it was empty and unused

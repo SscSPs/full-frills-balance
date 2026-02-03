@@ -1,14 +1,11 @@
 import { AppConfig } from '@/src/constants/app-config';
 import { useUI } from '@/src/contexts/UIContext';
-import { database } from '@/src/data/database/Database';
-import Account from '@/src/data/models/Account';
-import Transaction from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
+import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { WealthSummary, wealthService } from '@/src/services/wealth-service';
 import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';
-import { Q } from '@nozbe/watermelondb';
 import { useEffect, useRef, useState } from 'react';
 
 export interface DashboardSummaryData extends WealthSummary {
@@ -27,7 +24,7 @@ export interface DashboardSummaryData extends WealthSummary {
  * 
  * Optimizations:
  * - Debounced recalculation (300ms) to prevent rapid re-renders
- * - Subscribes to accounts + transactions (not journals) for efficiency
+ * - Subscribes to accounts + transactions via repositories (not direct DB access)
  * - Filters out deleted records
  */
 export const useSummary = () => {
@@ -85,18 +82,14 @@ export const useSummary = () => {
         // Initial load (immediate, no debounce)
         fetchSummary();
 
-        // Subscribe to account changes (filtered to non-deleted)
-        const accountSubscription = database.collections
-            .get<Account>('accounts')
-            .query(Q.where('deleted_at', Q.eq(null)))
-            .observe()
+        // Subscribe to account changes via repository (not direct DB access)
+        const accountSubscription = accountRepository
+            .observeAll()
             .subscribe(debouncedFetch);
 
-        // Subscribe to transaction changes (filtered to non-deleted)
-        const transactionSubscription = database.collections
-            .get<Transaction>('transactions')
-            .query(Q.where('deleted_at', Q.eq(null)))
-            .observe()
+        // Subscribe to transaction changes via repository (not direct DB access)
+        const transactionSubscription = transactionRepository
+            .observeActive()
             .subscribe(debouncedFetch);
 
         return () => {

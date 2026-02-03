@@ -1,11 +1,11 @@
 /**
  * Reactive Data Hooks for Accounts
  */
-import Account from '@/src/data/models/Account'
+import Account, { AccountType } from '@/src/data/models/Account'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { useObservable, useObservableWithEnrichment } from '@/src/hooks/useObservable'
 import { AccountBalance } from '@/src/types/domain'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { of } from 'rxjs'
 
 /**
@@ -62,21 +62,40 @@ export function useAccountBalance(accountId: string | null) {
 
 /**
  * Hook for account actions (mutations)
+ * Consolidated: provides CRUD operations and management actions
  */
 export function useAccountActions() {
-    const deleteAccount = async (account: Account) => {
-        return await accountRepository.delete(account)
-    }
+    const createAccount = useCallback(async (data: {
+        name: string;
+        accountType: AccountType;
+        currencyCode: string;
+        initialBalance?: number;
+    }) => {
+        return accountRepository.create(data)
+    }, [])
 
-    const recoverAccount = async (accountId: string) => {
-        return await accountRepository.recover(accountId)
-    }
+    const updateAccount = useCallback(async (account: Account, data: {
+        name?: string;
+        accountType?: AccountType;
+    }) => {
+        return accountRepository.update(account, data)
+    }, [])
 
-    const updateAccountOrder = async (account: Account, newOrder: number) => {
-        return await accountRepository.updateOrder(account, newOrder)
-    }
+    const deleteAccount = useCallback(async (account: Account) => {
+        return accountRepository.delete(account)
+    }, [])
+
+    const recoverAccount = useCallback(async (accountId: string) => {
+        return accountRepository.recover(accountId)
+    }, [])
+
+    const updateAccountOrder = useCallback(async (account: Account, newOrder: number) => {
+        return accountRepository.updateOrder(account, newOrder)
+    }, [])
 
     return {
+        createAccount,
+        updateAccount,
         deleteAccount,
         recoverAccount,
         updateAccountOrder
