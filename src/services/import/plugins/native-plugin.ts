@@ -7,6 +7,7 @@
 
 import { database } from '@/src/data/database/Database';
 import Account from '@/src/data/models/Account';
+import AuditLog from '@/src/data/models/AuditLog';
 import Journal from '@/src/data/models/Journal';
 import Transaction from '@/src/data/models/Transaction';
 import { ImportPlugin, ImportStats } from '@/src/services/import/types';
@@ -26,6 +27,7 @@ interface NativeImportData {
     accounts: any[];
     journals: any[];
     transactions: any[];
+    auditLogs?: any[];
 }
 
 export const nativePlugin: ImportPlugin = {
@@ -72,7 +74,7 @@ export const nativePlugin: ImportPlugin = {
         try {
             // 1. Wipe existing data
             logger.warn('[NativePlugin] Wiping database for import...');
-            await integrityService.resetDatabase();
+            await integrityService.resetDatabase({ seedDefaults: false });
 
             // 2. Clear and restore preferences
             await preferences.clearPreferences();
@@ -92,6 +94,7 @@ export const nativePlugin: ImportPlugin = {
                 const accountsCollection = database.collections.get<Account>('accounts');
                 const journalsCollection = database.collections.get<Journal>('journals');
                 const transactionsCollection = database.collections.get<Transaction>('transactions');
+                const auditLogsCollection = database.collections.get<AuditLog>('audit_logs');
 
                 logger.debug(`[NativePlugin] creating ${data.accounts.length} accounts...`);
 
@@ -139,11 +142,25 @@ export const nativePlugin: ImportPlugin = {
                     })
                 );
 
+                const auditLogPrepares = (data.auditLogs || []).map((log: any) =>
+                    auditLogsCollection.prepareCreate(record => {
+                        record._raw.id = log.id;
+                        record.entityType = log.entityType;
+                        record.entityId = log.entityId;
+                        record.action = log.action;
+                        record.changes = log.changes;
+                        record.timestamp = log.timestamp;
+                        record._raw._status = 'synced';
+                        if (log.createdAt) (record as any)._raw.created_at = new Date(log.createdAt).getTime();
+                    })
+                );
+
                 logger.info('[NativePlugin] Executing batch insert...');
                 await database.batch(
                     ...accountPrepares,
                     ...journalPrepares,
-                    ...transactionPrepares
+                    ...transactionPrepares,
+                    ...auditLogPrepares
                 );
             });
 
@@ -152,6 +169,7 @@ export const nativePlugin: ImportPlugin = {
                 accounts: data.accounts.length,
                 journals: data.journals.length,
                 transactions: data.transactions.length,
+                auditLogs: data.auditLogs?.length || 0,
                 skippedTransactions: 0
             };
         } catch (error) {

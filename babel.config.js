@@ -7,7 +7,7 @@ module.exports = function (api) {
       ['@babel/plugin-proposal-decorators', { legacy: true }],
 
       // React Compiler (must run early)
-      ['babel-plugin-react-compiler', { target: '18' }],
+      ['babel-plugin-react-compiler', { target: '19' }],
 
       // MUST be last
       'react-native-reanimated/plugin',

@@ -1,2 +1,2 @@
-import DesignPreviewScreen from '@/src/features/dev/screens/DesignPreviewScreen';
+import { DesignPreviewScreen } from '@/src/features/dev';
 export default DesignPreviewScreen;

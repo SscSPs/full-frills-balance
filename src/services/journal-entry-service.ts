@@ -1,7 +1,7 @@
 import { AppConfig } from '@/src/constants';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
 import { JournalLineInput } from '@/src/services/accounting/JournalCalculator';
-import { accountingService } from '@/src/services/AccountingService';
+import { accountingService } from '@/src/utils/accountingService';
 import { JournalEntryLine } from '@/src/types/domain';
 import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';

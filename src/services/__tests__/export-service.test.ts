@@ -45,12 +45,22 @@ describe('ExportService', () => {
                 transactionDate: FIXED_DATE.valueOf(),
                 createdAt: FIXED_DATE,
             }];
+            const mockAuditLogs = [{
+                id: 'log1',
+                entityType: 'ACCOUNT',
+                entityId: 'acc1',
+                action: 'CREATE',
+                changes: '{}',
+                timestamp: FIXED_DATE.valueOf(),
+                createdAt: FIXED_DATE,
+            }];
 
             const mockQuery = {
                 fetch: jest.fn()
                     .mockResolvedValueOnce(mockAccounts)      // accounts
                     .mockResolvedValueOnce(mockJournals)      // journals
                     .mockResolvedValueOnce(mockTransactions)  // transactions
+                    .mockResolvedValueOnce(mockAuditLogs)     // audit logs
             };
 
             (database.collections.get as jest.Mock).mockReturnValue({
@@ -62,11 +72,12 @@ describe('ExportService', () => {
             const json = await exportService.exportToJSON();
             const data = JSON.parse(json);
 
-            expect(data.version).toBe('1.0.0');
+            expect(data.version).toBe('1.1.0');
             expect(data.accounts).toHaveLength(1);
             expect(data.accounts[0].name).toBe('Cash');
             expect(data.journals).toHaveLength(1);
             expect(data.transactions).toHaveLength(1);
+            expect(data.auditLogs).toHaveLength(1);
             expect(data.preferences.theme).toBe('dark');
         });
 
@@ -87,6 +98,7 @@ describe('ExportService', () => {
                     .mockResolvedValueOnce(5)  // accounts
                     .mockResolvedValueOnce(10) // journals
                     .mockResolvedValueOnce(20) // transactions
+                    .mockResolvedValueOnce(3)  // audit logs
             };
 
             (database.collections.get as jest.Mock).mockReturnValue({
@@ -98,6 +110,7 @@ describe('ExportService', () => {
             expect(summary.accounts).toBe(5);
             expect(summary.journals).toBe(10);
             expect(summary.transactions).toBe(20);
+            expect(summary.auditLogs).toBe(3);
         });
     });
 });

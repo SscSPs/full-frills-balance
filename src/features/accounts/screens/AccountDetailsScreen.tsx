@@ -6,20 +6,21 @@
 
 import { DateRangeFilter } from '@/src/components/common/DateRangeFilter'
 import { DateRangePicker } from '@/src/components/common/DateRangePicker'
+import { MemoizedTransactionItem } from '@/src/components/common/TransactionItem'
 import { AppButton, AppCard, AppIcon, AppText, Badge, FloatingActionButton, IconButton, IvyIcon } from '@/src/components/core'
 import { Screen } from '@/src/components/layout'
 import { Shape, Spacing } from '@/src/constants'
 import { useAccount, useAccountActions, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts'
-import { TransactionItem } from '@/src/features/journal/components/TransactionItem'
 import { useAccountTransactions } from '@/src/features/journal/hooks/useJournals'
 import { useTheme } from '@/src/hooks/use-theme'
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter'
+import { EnrichedTransaction } from '@/src/types/domain'
 import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/src/utils/alerts'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
 import { DateRange, PeriodFilter } from '@/src/utils/dateUtils'
 import { logger } from '@/src/utils/logger'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
 
 export default function AccountDetailsScreen() {
@@ -49,7 +50,8 @@ export default function AccountDetailsScreen() {
     const transactionCount = balanceData?.transactionCount || 0
     const isDeleted = (account as any)?._raw?._status === 'deleted' || (account as any)?._raw?.deleted_at != null
 
-    const handleDelete = () => {
+    const handleDelete = useCallback(() => {
+        if (!account) return;
         const hasTransactions = transactionCount > 0;
         const message = hasTransactions
             ? `This account has ${transactionCount} transaction(s). Deleting it will orphan these transactions. Are you sure?`
@@ -60,7 +62,7 @@ export default function AccountDetailsScreen() {
             message,
             async () => {
                 try {
-                    await deleteAccount(account!);
+                    await deleteAccount(account);
                     showSuccessAlert('Deleted', 'Account has been deleted.');
                     router.push('/(tabs)/accounts' as any);
                 } catch (error) {
@@ -70,9 +72,9 @@ export default function AccountDetailsScreen() {
                 }
             }
         );
-    };
+    }, [account, deleteAccount, router, transactionCount]);
 
-    const handleRecover = async () => {
+    const handleRecover = useCallback(() => {
         showConfirmationAlert(
             'Recover Account',
             'This will restore the deleted account. Continue?',
@@ -88,9 +90,34 @@ export default function AccountDetailsScreen() {
                 }
             }
         );
-    };
+    }, [accountId, recoverAction, router]);
 
-    const HeaderActions = (
+    const handleEdit = useCallback(() => {
+        router.push(`/account-creation?accountId=${accountId}` as any);
+    }, [accountId, router]);
+
+    const handleBack = useCallback(() => {
+        router.back();
+    }, [router]);
+
+    const handleAuditPress = useCallback(() => {
+        router.push(`/audit-log?entityType=account&entityId=${accountId}` as any);
+    }, [accountId, router]);
+
+    const handleTransactionPress = useCallback((transaction: EnrichedTransaction) => {
+        router.push(`/transaction-details?journalId=${transaction.journalId}` as any);
+    }, [router]);
+
+    const handleAddPress = useCallback(() => {
+        router.push(`/journal-entry?sourceId=${accountId}` as any);
+    }, [accountId, router]);
+
+    const handleDateSelect = useCallback((range: DateRange | null, filter: PeriodFilter) => {
+        setFilter(range, filter);
+        hideDatePicker();
+    }, [hideDatePicker, setFilter]);
+
+    const headerActions = useMemo(() => (
         <View style={styles.headerActions}>
             {isDeleted ? (
                 <IconButton
@@ -103,7 +130,7 @@ export default function AccountDetailsScreen() {
                 <>
                     <IconButton
                         name="edit"
-                        onPress={() => router.push(`/account-creation?accountId=${accountId}` as any)}
+                        onPress={handleEdit}
                         variant="surface"
                         iconColor={theme.text}
                     />
@@ -116,7 +143,7 @@ export default function AccountDetailsScreen() {
                 </>
             )}
         </View>
-    );
+    ), [handleDelete, handleEdit, handleRecover, isDeleted, theme.error, theme.income, theme.text]);
 
     if (accountLoading) {
         return (
@@ -135,7 +162,7 @@ export default function AccountDetailsScreen() {
                     <AppText variant="body" color="error">
                         Account not found
                     </AppText>
-                    <AppButton variant="outline" onPress={() => router.back()}>
+                    <AppButton variant="outline" onPress={handleBack}>
                         Go Back
                     </AppButton>
                 </View>
@@ -143,23 +170,23 @@ export default function AccountDetailsScreen() {
         )
     }
 
-    const renderHeader = () => (
+    const listHeader = useMemo(() => (
         <View style={styles.headerListRegion}>
             {/* Account Info Card */}
             <AppCard elevation="sm" style={styles.accountInfoCard}>
                 <View style={styles.accountHeader}>
                     <IvyIcon
-                        label={account!.name}
-                        color={account!.accountType.toLowerCase() === 'liability' ? theme.liability : (account!.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
+                        label={account.name}
+                        color={account.accountType.toLowerCase() === 'liability' ? theme.liability : (account.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
                         size={48}
                     />
                     <View style={styles.titleInfo}>
                         <AppText variant="title">
-                            {account!.name}
+                            {account.name}
                         </AppText>
                         <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
-                            <Badge variant={account!.accountType.toLowerCase() as any}>
-                                {account!.accountType}
+                            <Badge variant={account.accountType.toLowerCase() as any}>
+                                {account.accountType}
                             </Badge>
                             {isDeleted && (
                                 <Badge variant="expense">
@@ -176,7 +203,7 @@ export default function AccountDetailsScreen() {
                             Current Balance
                         </AppText>
                         <AppText variant="heading">
-                            {balanceLoading ? '...' : CurrencyFormatter.format(balance, account!.currencyCode)}
+                            {balanceLoading ? '...' : CurrencyFormatter.format(balance, account.currencyCode)}
                         </AppText>
                     </View>
 
@@ -193,7 +220,7 @@ export default function AccountDetailsScreen() {
                 <View style={[styles.accountMeta, { borderTopWidth: 1, borderTopColor: theme.border }]}>
                     <TouchableOpacity
                         style={styles.historyLink}
-                        onPress={() => router.push(`/audit-log?entityType=account&entityId=${accountId}` as any)}
+                        onPress={handleAuditPress}
                     >
                         <AppText variant="caption" color="primary" weight="semibold">View Edit History</AppText>
                         <AppIcon name="chevronRight" size={14} color={theme.primary} />
@@ -214,43 +241,65 @@ export default function AccountDetailsScreen() {
                 />
             </View>
         </View>
-    );
+    ), [
+        account,
+        balance,
+        balanceLoading,
+        dateRange,
+        handleAuditPress,
+        isDeleted,
+        navigateNext,
+        navigatePrevious,
+        showDatePicker,
+        theme.asset,
+        theme.border,
+        theme.expense,
+        theme.liability,
+        theme.primary,
+        transactionCount,
+    ]);
+
+    const renderItem = useCallback(({ item }: { item: EnrichedTransaction }) => (
+        <MemoizedTransactionItem
+            transaction={item}
+            onPress={handleTransactionPress}
+        />
+    ), [handleTransactionPress]);
+
+    const listEmpty = useMemo(() => (
+        transactionsLoading ? (
+            <View style={{ padding: Spacing.lg }}>
+                <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+        ) : (
+            <AppCard elevation="sm" padding="lg">
+                <AppText variant="body" color="secondary" style={styles.emptyText}>
+                    No transactions yet
+                </AppText>
+            </AppCard>
+        )
+    ), [theme.primary, transactionsLoading]);
+
+    const keyExtractor = useCallback((item: EnrichedTransaction) => item.id, []);
 
     return (
         <Screen
             title="Account Details"
-            headerActions={HeaderActions}
+            headerActions={headerActions}
         >
             <FlatList
                 data={transactions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TransactionItem
-                        transaction={item as any}
-                        onPress={() => router.push(`/transaction-details?journalId=${item.journalId}` as any)}
-                    />
-                )}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={
-                    transactionsLoading ? (
-                        <View style={{ padding: Spacing.lg }}>
-                            <ActivityIndicator size="small" color={theme.primary} />
-                        </View>
-                    ) : (
-                        <AppCard elevation="sm" padding="lg">
-                            <AppText variant="body" color="secondary" style={styles.emptyText}>
-                                No transactions yet
-                            </AppText>
-                        </AppCard>
-                    )
-                }
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
+                ListHeaderComponent={listHeader}
+                ListEmptyComponent={listEmpty}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
             />
 
             {!isDeleted && (
                 <FloatingActionButton
-                    onPress={() => router.push(`/journal-entry?sourceId=${accountId}` as any)}
+                    onPress={handleAddPress}
                 />
             )}
 
@@ -258,10 +307,7 @@ export default function AccountDetailsScreen() {
                 visible={isDatePickerVisible}
                 onClose={hideDatePicker}
                 currentFilter={periodFilter}
-                onSelect={(range: DateRange | null, filter: PeriodFilter) => {
-                    setFilter(range, filter)
-                    hideDatePicker()
-                }}
+                onSelect={handleDateSelect}
             />
         </Screen>
     )

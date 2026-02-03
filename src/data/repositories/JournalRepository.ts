@@ -8,9 +8,10 @@ import { auditRepository } from '@/src/data/repositories/AuditRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { rebuildQueueService } from '@/src/data/repositories/RebuildQueue'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
-import { JournalPresenter } from '@/src/services/accounting/JournalPresenter'
-import { accountingService } from '@/src/services/AccountingService'
 import { EnrichedJournal, EnrichedTransaction } from '@/src/types/domain'
+import { accountingService } from '@/src/utils/accountingService'
+import { journalPresenter } from '@/src/utils/journalPresenter'
+import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
 import { logger } from '@/src/utils/logger'
 import { roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
@@ -42,8 +43,9 @@ export class JournalRepository {
    */
 
   observeEnrichedJournals(limit: number, dateRange?: { startDate: number, endDate: number }) {
-    const clauses = [
+    const clauses: any[] = [
       Q.where('deleted_at', Q.eq(null)),
+      Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
       Q.sortBy('journal_date', 'desc'),
       Q.take(limit)
     ]
@@ -58,16 +60,28 @@ export class JournalRepository {
       .observe()
 
     const transactionsObservable = this.transactions
-      .query(Q.where('deleted_at', Q.eq(null)))
+      .query(
+        Q.experimentalJoinTables(['journals']),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ])
+      )
       .observe()
 
     return { journalsObservable, transactionsObservable }
   }
 
   observeAccountTransactions(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }) {
-    const clauses = [
+    const clauses: any[] = [
+      Q.experimentalJoinTables(['journals']),
       Q.where('account_id', accountId),
       Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+        Q.where('deleted_at', Q.eq(null))
+      ]),
       Q.sortBy('transaction_date', 'desc'),
       Q.take(limit)
     ]
@@ -85,8 +99,13 @@ export class JournalRepository {
   observeJournalTransactions(journalId: string) {
     return this.transactions
       .query(
+        Q.experimentalJoinTables(['journals']),
         Q.where('journal_id', journalId),
-        Q.where('deleted_at', Q.eq(null))
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ])
       )
       .observe()
   }
@@ -167,7 +186,7 @@ export class JournalRepository {
         j.status = JournalStatus.POSTED
         j.totalAmount = Math.max(Math.abs(validationResult.totalDebits), Math.abs(validationResult.totalCredits))
         j.transactionCount = transactionData.length
-        j.displayType = JournalPresenter.getJournalDisplayType(transactionData, accountTypes)
+        j.displayType = journalPresenter.getJournalDisplayType(transactionData, accountTypes)
       })
 
       // Create all transactions using the rounded amounts
@@ -222,8 +241,9 @@ export class JournalRepository {
    * Repository-owned read model for the Dashboard/Journal history
    */
   async findEnrichedJournals(limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedJournal[]> {
-    const clauses = [
+    const clauses: any[] = [
       Q.where('deleted_at', Q.eq(null)),
+      Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
       Q.sortBy('journal_date', 'desc'),
       Q.take(limit)
     ]
@@ -272,7 +292,7 @@ export class JournalRepository {
       let semanticLabel: string | undefined
 
       if (sourceAcc && destAcc) {
-        const sType = JournalPresenter.getSemanticType(sourceAcc.accountType as AccountType, destAcc.accountType as AccountType)
+        const sType = journalPresenter.getSemanticType(sourceAcc.accountType as AccountType, destAcc.accountType as AccountType)
         semanticType = sType
         semanticLabel = sType // The enum strings are user-friendly
       }
@@ -297,9 +317,14 @@ export class JournalRepository {
    * Fetches enriched transactions for a specific account.
    */
   async findEnrichedTransactionsForAccount(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedTransaction[]> {
-    const clauses = [
+    const clauses: any[] = [
+      Q.experimentalJoinTables(['journals']),
       Q.where('account_id', accountId),
       Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+        Q.where('deleted_at', Q.eq(null))
+      ]),
       Q.sortBy('transaction_date', 'desc'),
       Q.take(limit)
     ]
@@ -316,7 +341,13 @@ export class JournalRepository {
     if (loadedTransactions.length === 0) return []
 
     const journalIds = [...new Set(loadedTransactions.map(t => t.journalId))]
-    const journals = await this.journals.query(Q.where('id', Q.oneOf(journalIds))).fetch()
+    const journals = await this.journals
+      .query(
+        Q.where('id', Q.oneOf(journalIds)),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES]))
+      )
+      .fetch()
     const journalMap = new Map(journals.map(j => [j.id, j]))
 
     const allJournalTxs = await this.transactions
@@ -375,7 +406,7 @@ export class JournalRepository {
         const sourceAcc = accountMap.get(creditLeg.accountId)
         const destAcc = accountMap.get(debitLeg.accountId)
         if (sourceAcc && destAcc) {
-          semanticLabel = JournalPresenter.getSemanticType(sourceAcc.accountType as any, destAcc.accountType as any)
+          semanticLabel = journalPresenter.getSemanticType(sourceAcc.accountType as any, destAcc.accountType as any)
           semanticType = semanticLabel
         }
       }
@@ -387,7 +418,7 @@ export class JournalRepository {
       const acc = accountMap.get(t.accountId)
       if (acc) accountTypesMap.set(t.accountId, acc.accountType as AccountType)
     })
-    const legDisplayType = JournalPresenter.getJournalDisplayType(journalTxs, accountTypesMap)
+    const legDisplayType = journalPresenter.getJournalDisplayType(journalTxs, accountTypesMap)
 
     return {
       id: tx.id,
@@ -419,6 +450,7 @@ export class JournalRepository {
   async findEnrichedTransactionsByJournal(journalId: string): Promise<EnrichedTransaction[]> {
     const journal = await this.find(journalId)
     if (!journal) return []
+    if (!(ACTIVE_JOURNAL_STATUSES as readonly string[]).includes(journal.status)) return []
 
     const journalTxs = await this.transactions
       .query(Q.where('journal_id', journalId), Q.where('deleted_at', Q.eq(null)))
@@ -433,7 +465,10 @@ export class JournalRepository {
 
   async findAll(): Promise<Journal[]> {
     return this.journals
-      .query(Q.where('deleted_at', Q.eq(null)))
+      .query(
+        Q.where('deleted_at', Q.eq(null)),
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES]))
+      )
       .extend(Q.sortBy('journal_date', 'desc'))
       .fetch()
   }
@@ -449,11 +484,10 @@ export class JournalRepository {
   async findByDateRange(startDate: number, endDate: number): Promise<Journal[]> {
     return this.journals
       .query(
-        Q.and(
-          Q.where('journal_date', Q.gte(startDate)),
-          Q.where('journal_date', Q.lte(endDate)),
-          Q.where('deleted_at', Q.eq(null))
-        )
+        Q.where('journal_date', Q.gte(startDate)),
+        Q.where('journal_date', Q.lte(endDate)),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES]))
       )
       .fetch()
   }
@@ -557,7 +591,7 @@ export class JournalRepository {
       // 3. Calculate new denormalized fields
       const newTotalAmount = Math.max(Math.abs(validationResult.totalDebits), Math.abs(validationResult.totalCredits))
       const newTransactionCount = transactionData.length
-      const newDisplayType = JournalPresenter.getJournalDisplayType(transactionData, accountTypes)
+      const newDisplayType = journalPresenter.getJournalDisplayType(transactionData, accountTypes)
 
       // 4. Update journal
       await existingJournal.update((j: Journal) => {
@@ -660,6 +694,12 @@ export class JournalRepository {
         j.totalAmount = originalJournal.totalAmount
         j.transactionCount = originalJournal.transactionCount
         j.displayType = originalJournal.displayType
+        j.originalJournalId = originalJournal.id
+      })
+
+      await originalJournal.update((j) => {
+        j.reversingJournalId = revJ.id
+        j.status = JournalStatus.REVERSED
       })
 
       await Promise.all(originalTransactions.map(tx => {
@@ -736,42 +776,14 @@ export class JournalRepository {
     rebuildQueueService.enqueueMany(accountIdsToRebuild, journal.journalDate)
   }
 
-  async getMonthlySummary(month: number, year: number): Promise<{ income: number, expense: number }> {
-    const startOfMonth = new Date(year, month, 1).getTime()
-    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime()
-
-    const txs = await this.transactions.query(
-      Q.and(
-        Q.where('transaction_date', Q.gte(startOfMonth)),
-        Q.where('transaction_date', Q.lte(endOfMonth)),
-        Q.where('deleted_at', Q.eq(null))
-      )
-    ).fetch()
-
-    if (txs.length === 0) return { income: 0, expense: 0 }
-
-    const accountIds = [...new Set(txs.map(t => t.accountId))]
-    const accounts = await accountRepository.findAllByIds(accountIds)
-    const accountTypeMap = new Map(accounts.map(a => [a.id, a.accountType as AccountType]))
-
-    let totalIncome = 0
-    let totalExpense = 0
-
-    txs.forEach(t => {
-      const type = accountTypeMap.get(t.accountId)
-      if (type === AccountType.INCOME) {
-        totalIncome += t.amount
-      } else if (type === AccountType.EXPENSE) {
-        totalExpense += t.amount
-      }
-    })
-
-    return { income: totalIncome, expense: totalExpense }
-  }
-
   async backfillTotals(): Promise<void> {
     logger.info('Starting journal totals backfill...')
-    const journals = await this.journals.query(Q.where('deleted_at', Q.eq(null))).fetch()
+    const journals = await this.journals
+      .query(
+        Q.where('deleted_at', Q.eq(null)),
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES]))
+      )
+      .fetch()
     let updatedCount = 0
 
     for (const journal of journals) {
@@ -783,7 +795,7 @@ export class JournalRepository {
       const totalDebits = txs.filter(t => t.transactionType === TransactionType.DEBIT).reduce((sum, t) => sum + t.amount, 0)
       const totalCredits = txs.filter(t => t.transactionType === TransactionType.CREDIT).reduce((sum, t) => sum + t.amount, 0)
       const magnitude = Math.max(totalDebits, totalCredits)
-      const displayType = JournalPresenter.getJournalDisplayType(txs, accountTypeMap)
+      const displayType = journalPresenter.getJournalDisplayType(txs, accountTypeMap)
 
       if (
         Math.abs((journal.totalAmount || 0) - magnitude) > 0.001 ||

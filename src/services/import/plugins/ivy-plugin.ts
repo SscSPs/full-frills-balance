@@ -86,7 +86,7 @@ export const ivyPlugin: ImportPlugin = {
 
         // 1. Wipe existing data for clean import
         logger.warn('[IvyPlugin] Wiping database before import...');
-        await integrityService.resetDatabase();
+        await integrityService.resetDatabase({ seedDefaults: false });
         const accountActions: any[] = [];
 
         // 2. Pre-Scan Transactions for Category Usage (Per Currency)
@@ -390,6 +390,7 @@ export const ivyPlugin: ImportPlugin = {
             accounts: accountActions.length,
             journals: journalActions.length,
             transactions: transactionActions.length,
+            auditLogs: 0,
             skippedTransactions: skippedItems.length,
             skippedItems
         };

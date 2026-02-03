@@ -1,2 +1,1 @@
-import SimpleModal from '@/src/components/common/SimpleModal';
-export default SimpleModal;
+export { ModalScreen as default } from '@/src/features/app';

@@ -13,7 +13,6 @@
  */
 
 import { ThemeMode } from '@/src/constants'
-import { integrityService } from '@/src/services/integrity-service'
 import { logger } from '@/src/utils/logger'
 import { preferences } from '@/src/utils/preferences'
 import React, { createContext, useContext, useEffect, useState } from 'react'
@@ -44,19 +43,16 @@ interface UIState {
   // App Lifecycle
   isRestartRequired: boolean
   restartType: 'IMPORT' | 'RESET' | null
-  importStats: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } | null
+  importStats: { accounts: number; journals: number; transactions: number; auditLogs?: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } | null
 }
 
 interface UIContextType extends UIState {
   // Actions for UI state only
   completeOnboarding: (name: string, currency: string) => Promise<void>
   setThemePreference: (theme: 'light' | 'dark' | 'system') => Promise<void>
-  setLoading: (loading: boolean) => void
-  resetApp: () => Promise<void>
-  cleanupDatabase: () => Promise<{ deletedCount: number }>
   updateUserDetails: (name: string, currency: string) => Promise<void>
   setPrivacyMode: (isPrivacyMode: boolean) => Promise<void>
-  requireRestart: (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] }) => void
+  requireRestart: (options: { type: 'IMPORT' | 'RESET'; stats?: { accounts: number; journals: number; transactions: number; auditLogs?: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } }) => void
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined)
@@ -115,19 +111,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           isInitialized: true,
         })
 
-        // Initialize currencies if needed (async, don't block UI)
-        import('@/src/services/currency-init-service').then(({ currencyInitService }) => {
-          currencyInitService.initialize().catch(err => {
-            // Silent fail - currencies are optional initialization
-          })
-        })
-
-        // Run integrity check on startup (async, don't block UI)
-        import('@/src/services/integrity-service').then(({ integrityService }) => {
-          integrityService.runStartupCheck().catch(err => {
-            logger.warn('Failed to run integrity check', { error: err })
-          })
-        })
       } catch (error) {
         logger.warn('Failed to load preferences', { error })
         setUIState(prev => ({ ...prev, isLoading: false, isInitialized: true }))
@@ -190,69 +173,14 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const setLoading = (loading: boolean) => {
-    setUIState(prev => ({ ...prev, isLoading: loading }))
-  }
-
-  const resetApp = async () => {
-    try {
-      logger.warn('[UIContext] resetApp called. Starting process...')
-      setLoading(true)
-
-      logger.debug('[UIContext] Calling integrityService.resetDatabase()...')
-      await integrityService.resetDatabase()
-
-      logger.debug('[UIContext] Clearing preferences...')
-      await preferences.clearPreferences()
-
-      logger.info('[UIContext] Reset complete. Updating state...')
-      setUIState({
-        hasCompletedOnboarding: false,
-        themePreference: 'system',
-        themeMode: systemColorScheme === 'dark' ? 'dark' : 'light',
-        userName: '',
-        defaultCurrency: 'USD',
-        isPrivacyMode: false,
-        isLoading: false,
-        isInitialized: true,
-        isRestartRequired: true, // Block the app
-        restartType: 'RESET',
-        importStats: null,
-      })
-    } catch (error) {
-      logger.error('[UIContext] Failed to reset app:', error)
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const cleanupDatabase = async () => {
-    try {
-      logger.info('[UIContext] cleanupDatabase called.')
-      setLoading(true)
-      const result = await integrityService.cleanupDatabase()
-      logger.info(`[UIContext] cleanupDatabase successful. Deleted ${result.deletedCount} records.`)
-      return result
-    } catch (error) {
-      logger.error('[UIContext] Failed to cleanup database:', error)
-      throw error
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const requireRestart = (stats?: { accounts: number; journals: number; transactions: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] }) => {
-    setUIState(prev => ({ ...prev, isRestartRequired: true, restartType: 'IMPORT', importStats: stats || null }))
+  const requireRestart = (options: { type: 'IMPORT' | 'RESET'; stats?: { accounts: number; journals: number; transactions: number; auditLogs?: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } }) => {
+    setUIState(prev => ({ ...prev, isRestartRequired: true, restartType: options.type, importStats: options.stats || null }))
   }
 
   const value: UIContextType = {
     ...uiState,
     completeOnboarding,
     setThemePreference,
-    setLoading,
-    resetApp,
-    cleanupDatabase,
     updateUserDetails,
     setPrivacyMode,
     requireRestart,

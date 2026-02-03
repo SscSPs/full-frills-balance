@@ -3,7 +3,7 @@ import { AppConfig, Shape, Spacing } from '@/src/constants';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { useTheme } from '@/src/hooks/use-theme';
-import { exchangeRateService } from '@/src/services/exchange-rate-service';
+import { useExchangeRate } from '@/src/hooks/useExchangeRate';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';
@@ -44,6 +44,7 @@ export function JournalLineItem({
     getLineBaseAmount,
 }: JournalLineItemProps) {
     const { theme } = useTheme();
+    const { fetchRate } = useExchangeRate();
 
     return (
         <Box
@@ -157,7 +158,7 @@ export function JournalLineItem({
                             onPress={async () => {
                                 try {
                                     const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
-                                    const rate = await exchangeRateService.getRate(
+                                    const rate = await fetchRate(
                                         line.accountCurrency!,
                                         defaultCurrency
                                     )

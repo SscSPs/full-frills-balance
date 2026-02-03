@@ -12,12 +12,13 @@ import { AppText, FloatingActionButton } from '@/src/components/core';
 import { Spacing } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { DashboardHeader } from '@/src/features/dashboard/components/DashboardHeader';
-import { useSummary } from '@/src/features/dashboard/hooks/useSummary';
-import { JournalCard } from '@/src/features/journal/components/JournalCard';
+import { useSummary } from '@/src/hooks/useSummary';
+import { MemoizedJournalCard } from '@/src/components/common/JournalCard';
 import { useJournals } from '@/src/features/journal/hooks/useJournals';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
 import { EnrichedJournal } from '@/src/types/domain';
+import { DateRange, PeriodFilter } from '@/src/utils/dateUtils';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -54,6 +55,23 @@ export default function DashboardScreen() {
     const handleJournalPress = useCallback((journal: EnrichedJournal) => {
         router.push(`/transaction-details?journalId=${journal.id}`);
     }, [router]);
+
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchQuery(value);
+    }, []);
+
+    const handleToggleHidden = useCallback((hidden: boolean) => {
+        setIsDashboardHidden(hidden);
+    }, []);
+
+    const handleAddPress = useCallback(() => {
+        router.push('/journal-entry' as any);
+    }, [router]);
+
+    const handleDateSelect = useCallback((range: DateRange | null, filter: PeriodFilter) => {
+        setFilter(range, filter);
+        hideDatePicker();
+    }, [hideDatePicker, setFilter]);
 
     const greeting = useMemo(() => `Hello, ${userName || 'there'}!`, [userName]);
 
@@ -119,17 +137,21 @@ export default function DashboardScreen() {
         return null;
     }
 
+    const renderItem = useCallback(({ item }: { item: EnrichedJournal }) => (
+        <MemoizedJournalCard
+            journal={item}
+            onPress={handleJournalPress}
+        />
+    ), [handleJournalPress]);
+
+    const keyExtractor = useCallback((item: EnrichedJournal) => item.id, []);
+
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <TypedFlashList
                 data={filteredJournals}
-                renderItem={({ item }: { item: EnrichedJournal }) => (
-                    <JournalCard
-                        journal={item}
-                        onPress={handleJournalPress}
-                    />
-                )}
-                keyExtractor={(item: EnrichedJournal) => item.id}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
                 estimatedItemSize={120}
                 contentContainerStyle={styles.listContent}
                 ListHeaderComponent={
@@ -140,11 +162,11 @@ export default function DashboardScreen() {
                         totalLiabilities={totalLiabilities}
                         isSummaryLoading={isSummaryLoading}
                         isDashboardHidden={isDashboardHidden}
-                        onToggleHidden={setIsDashboardHidden}
+                        onToggleHidden={handleToggleHidden}
                         income={income}
                         expense={expense}
                         searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
+                        onSearchChange={handleSearchChange}
                         dateRange={dateRange}
                         showDatePicker={showDatePicker}
                         navigatePrevious={navigatePrevious}
@@ -157,16 +179,13 @@ export default function DashboardScreen() {
                 onEndReachedThreshold={0.5}
             />
             <FloatingActionButton
-                onPress={() => router.push('/journal-entry' as any)}
+                onPress={handleAddPress}
             />
             <DateRangePicker
                 visible={isDatePickerVisible}
                 onClose={hideDatePicker}
                 currentFilter={periodFilter}
-                onSelect={(range, filter) => {
-                    setFilter(range, filter);
-                    hideDatePicker();
-                }}
+                onSelect={handleDateSelect}
             />
         </View>
     );

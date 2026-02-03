@@ -10,14 +10,14 @@
 
 import { database } from '@/src/data/database/Database'
 import Account, { AccountType } from '@/src/data/models/Account'
-import { JournalStatus } from '@/src/data/models/Journal'
 import Transaction from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
-import { accountingService } from '@/src/services/AccountingService'
+import { accountingService } from '@/src/utils/accountingService'
 import { logger } from '@/src/utils/logger'
 import { amountsAreEqual, roundToPrecision } from '@/src/utils/money'
+import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
 import { Q } from '@nozbe/watermelondb'
 
 export interface BalanceVerificationResult {
@@ -82,7 +82,7 @@ export class IntegrityService {
                 Q.where('account_id', accountId),
                 Q.where('deleted_at', Q.eq(null)),
                 Q.on('journals', Q.and(
-                    Q.where('status', JournalStatus.POSTED),
+                    Q.where('status', Q.oneOf(ACTIVE_JOURNAL_STATUSES)),
                     Q.where('deleted_at', Q.eq(null))
                 ))
             )
@@ -210,14 +210,19 @@ export class IntegrityService {
     /**
      * Factory Reset.
      */
-    async resetDatabase(): Promise<void> {
+    async resetDatabase(options?: { seedDefaults?: boolean }): Promise<void> {
         logger.warn('[IntegrityService] STARTING FACTORY RESET...')
         try {
             await database.write(async () => {
                 await database.unsafeResetDatabase()
             })
-            logger.info('[IntegrityService] Database reset successful. Seeding defaults...')
-            await this.seedDefaultAccounts()
+            const shouldSeed = options?.seedDefaults !== false
+            if (shouldSeed) {
+                logger.info('[IntegrityService] Database reset successful. Seeding defaults...')
+                await this.seedDefaultAccounts()
+            } else {
+                logger.info('[IntegrityService] Database reset successful. Skipping default seed...')
+            }
         } catch (error) {
             logger.error('[IntegrityService] CRITICAL: Factory reset failed:', error)
             throw error

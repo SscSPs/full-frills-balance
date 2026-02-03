@@ -1,5 +1,6 @@
 
 import { useTheme } from '@/src/hooks/use-theme';
+import { logger } from '@/src/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
@@ -22,10 +23,10 @@ export const WithSkiaWeb = <P extends object>(
                     try {
                         // Dynamically import Skia for Web
                         const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
-                        await LoadSkiaWeb({ locateFile: () => 'https://unpkg.com/canvaskit-wasm@0.40.0/bin/canvaskit.wasm' });
+                        await LoadSkiaWeb({ locateFile: () => '/canvaskit.wasm' });
                         setReady(true);
                     } catch (e) {
-                        console.error("Failed to load Skia Web:", e);
+                        logger.error('[WithSkiaWeb] Failed to load Skia Web', e);
                     }
                 };
                 loadSkia();

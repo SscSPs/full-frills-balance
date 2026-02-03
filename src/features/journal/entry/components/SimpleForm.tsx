@@ -9,8 +9,8 @@ import { Stack } from '@/src/components/core/Stack';
 import { Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants/design-tokens';
 import Account, { AccountType } from '@/src/data/models/Account';
 import { useJournalActions } from '@/src/features/journal/hooks/useJournalActions';
+import { useExchangeRate } from '@/src/hooks/useExchangeRate';
 import { useTheme } from '@/src/hooks/use-theme';
-import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';
 import { FlashList } from '@shopify/flash-list';
@@ -47,6 +47,7 @@ export const SimpleForm = ({
 }: SimpleFormProps) => {
     const { theme } = useTheme();
     const { createJournal, updateJournal } = useJournalActions();
+    const { fetchRate } = useExchangeRate();
 
     const transactionAccounts = useMemo(() => {
         const filtered = accounts.filter(a => a.accountType === AccountType.ASSET || a.accountType === AccountType.LIABILITY);
@@ -91,7 +92,7 @@ export const SimpleForm = ({
             setIsLoadingRate(true);
             setRateError(null);
             try {
-                const rate = await exchangeRateService.getRate(sourceCurrency, destCurrency);
+                const rate = await fetchRate(sourceCurrency, destCurrency);
                 if (rate <= 0) {
                     setRateError(`No exchange rate available for ${sourceCurrency} → ${destCurrency}`);
                     setExchangeRate(null);

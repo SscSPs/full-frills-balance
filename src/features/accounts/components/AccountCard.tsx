@@ -1,11 +1,11 @@
 import { AppCard, AppText, IvyIcon } from '@/src/components/core';
-import { Opacity, Palette, Shape, Spacing, Typography, withOpacity } from '@/src/constants';
+import { Opacity, Palette, Shape, Spacing, Typography } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { getContrastColor } from '@/src/utils/colorUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { AccountBalance } from '@/src/types/domain';
@@ -41,7 +41,10 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
 
     const contrastColor = getContrastColor(accentColor);
     const textColor = contrastColor === 'white' ? Palette.pureWhite : Palette.trueBlack;
-    const subTextColor = withOpacity(textColor, Opacity.heavy);
+
+    const handlePress = useCallback(() => {
+        onPress(account);
+    }, [account, onPress]);
 
     return (
         <AppCard
@@ -49,7 +52,7 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
             style={[styles.container, { backgroundColor: theme.surface }]}
             padding="none"
         >
-            <TouchableOpacity onPress={() => onPress(account)}>
+            <TouchableOpacity onPress={handlePress}>
                 {/* Ivy-style Header: Full colored background */}
                 <View style={[styles.headerSection, { backgroundColor: accentColor }]}>
                     <View style={styles.headerTop}>

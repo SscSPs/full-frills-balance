@@ -1,8 +1,14 @@
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
-import { JournalDisplayType } from '@/src/services/accounting/JournalPresenter';
 
-export { AccountType, JournalDisplayType, TransactionType };
+export enum JournalDisplayType {
+    INCOME = 'INCOME',
+    EXPENSE = 'EXPENSE',
+    TRANSFER = 'TRANSFER',
+    MIXED = 'MIXED',
+}
+
+export { AccountType, TransactionType };
 
 /**
  * Domain-owned models and read models for UI consumption.
@@ -194,4 +200,3 @@ export interface AccountSummary {
     totalExpenses: number;
     netWorth: number;
 }
-

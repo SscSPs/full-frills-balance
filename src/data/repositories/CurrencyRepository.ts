@@ -40,6 +40,13 @@ export class CurrencyRepository {
     }
 
     /**
+     * Observe all currencies reactively
+     */
+    observeAll() {
+        return this.currencies.query().observe()
+    }
+
+    /**
      * Get count of currencies
      */
     async count(): Promise<number> {

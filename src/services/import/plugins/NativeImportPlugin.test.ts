@@ -33,11 +33,12 @@ jest.mock('@/src/utils/preferences', () => ({
 
 describe('NativeImportPlugin', () => {
     const validNativeData = {
-        version: '1.0.0',
+        version: '1.1.0',
         preferences: { userName: 'Test User' },
         accounts: [{ id: 'a1', name: 'Acc 1' }],
         journals: [{ id: 'j1', journalDate: Date.now() }],
-        transactions: [{ id: 't1', accountId: 'a1', journalId: 'j1' }]
+        transactions: [{ id: 't1', accountId: 'a1', journalId: 'j1' }],
+        auditLogs: [],
     };
 
     describe('detect', () => {
@@ -74,7 +75,7 @@ describe('NativeImportPlugin', () => {
         it('performs full import process', async () => {
             const stats = await nativePlugin.import(JSON.stringify(validNativeData));
 
-            expect(integrityService.resetDatabase).toHaveBeenCalled();
+            expect(integrityService.resetDatabase).toHaveBeenCalledWith({ seedDefaults: false });
             expect(preferences.clearPreferences).toHaveBeenCalled();
             expect(preferences.setUserName).toHaveBeenCalledWith('Test User');
             expect(database.batch).toHaveBeenCalled();
@@ -82,6 +83,7 @@ describe('NativeImportPlugin', () => {
             expect(stats.accounts).toBe(1);
             expect(stats.journals).toBe(1);
             expect(stats.transactions).toBe(1);
+            expect(stats.auditLogs).toBe(0);
         });
 
         it('throws error for invalid JSON', async () => {

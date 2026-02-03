@@ -10,7 +10,7 @@ import { useTheme } from '@/src/hooks/use-theme';
 import type { DailyNetWorth, ExpenseCategory } from '@/src/services/report-service';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { DateRange, PeriodFilter, formatDate } from '@/src/utils/dateUtils';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ReportsScreen() {
@@ -22,19 +22,30 @@ export default function ReportsScreen() {
         expenses,
         incomeVsExpense,
         loading,
-        error,
         dateRange,
         periodFilter,
         loadData,
         updateFilter
     } = useReports();
 
-    const handleDateSelect = (range: DateRange | null, filter: PeriodFilter) => {
+    const handleDateSelect = useCallback((range: DateRange | null, filter: PeriodFilter) => {
         if (range) {
             updateFilter(range, filter);
         }
         setShowDatePicker(false);
-    };
+    }, [updateFilter]);
+
+    const handleOpenDatePicker = useCallback(() => {
+        setShowDatePicker(true);
+    }, []);
+
+    const handleCloseDatePicker = useCallback(() => {
+        setShowDatePicker(false);
+    }, []);
+
+    const handleRefresh = useCallback(() => {
+        loadData();
+    }, [loadData]);
 
     const currentNetWorth = netWorthHistory.length > 0 ? netWorthHistory[netWorthHistory.length - 1].netWorth : 0;
 
@@ -44,7 +55,7 @@ export default function ReportsScreen() {
             <View style={styles.filterBar}>
                 <TouchableOpacity
                     style={[styles.filterButton, { borderColor: theme.border, backgroundColor: theme.surface }]}
-                    onPress={() => setShowDatePicker(true)}
+                    onPress={handleOpenDatePicker}
                 >
                     <AppIcon name="calendar" size={16} color={theme.textSecondary} />
                     <AppText variant="caption" style={{ marginLeft: Spacing.xs }}>
@@ -57,7 +68,7 @@ export default function ReportsScreen() {
             <ScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={
-                    <RefreshControl refreshing={loading} onRefresh={loadData} tintColor={theme.primary} />
+                    <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={theme.primary} />
                 }
             >
                 <AppCard style={styles.chartCard} padding="lg">
@@ -91,7 +102,7 @@ export default function ReportsScreen() {
                                 {CurrencyFormatter.formatWithPreference(incomeVsExpense.income)}
                             </AppText>
                         </View>
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
                         <View style={styles.balanceItem}>
                             <AppText variant="caption" color="secondary">TOTAL EXPENSE</AppText>
                             <AppText variant="subheading" style={{ color: theme.error }}>
@@ -139,7 +150,7 @@ export default function ReportsScreen() {
 
             <DateRangePicker
                 visible={showDatePicker}
-                onClose={() => setShowDatePicker(false)}
+                onClose={handleCloseDatePicker}
                 onSelect={handleDateSelect}
                 currentFilter={periodFilter}
             />
@@ -210,7 +221,6 @@ const styles = StyleSheet.create({
     },
     divider: {
         width: 1,
-        backgroundColor: '#E0E0E0',
         marginHorizontal: Spacing.md,
     },
     barContainer: {

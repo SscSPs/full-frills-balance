@@ -1,27 +1,25 @@
 import Currency from '@/src/data/models/Currency';
-import { useDatabase } from '@nozbe/watermelondb/react';
-import { useEffect, useState } from 'react';
+import { currencyRepository } from '@/src/data/repositories/CurrencyRepository';
+import { useObservable } from '@/src/hooks/useObservable';
+import { currencyInitService } from '@/src/services/currency-init-service';
+import { logger } from '@/src/utils/logger';
+import { useEffect } from 'react';
 
 /**
  * Hook to reactively get all available currencies
  */
 export function useCurrencies() {
-    const database = useDatabase();
-    const [currencies, setCurrencies] = useState<Currency[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data: currencies, isLoading } = useObservable(
+        () => currencyRepository.observeAll(),
+        [],
+        [] as Currency[]
+    );
 
     useEffect(() => {
-        const collection = database.collections.get<Currency>('currencies');
-        const subscription = collection
-            .query()
-            .observe()
-            .subscribe((data) => {
-                setCurrencies(data);
-                setIsLoading(false);
-            });
-
-        return () => subscription.unsubscribe();
-    }, [database]);
+        currencyInitService.initialize().catch((error) => {
+            logger.warn('[useCurrencies] Failed to initialize currencies', { error });
+        });
+    }, []);
 
     return { currencies, isLoading };
 }

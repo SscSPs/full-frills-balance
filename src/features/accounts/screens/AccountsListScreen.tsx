@@ -3,12 +3,12 @@ import { Shape, Size, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { AccountCard } from '@/src/features/accounts/components/AccountCard';
 import { useAccounts } from '@/src/features/accounts/hooks/useAccounts';
-import { useSummary } from '@/src/features/dashboard/hooks/useSummary';
+import { useSummary } from '@/src/hooks/useSummary';
 import { useTheme } from '@/src/hooks/use-theme';
 import { getAccountSections } from '@/src/utils/accountUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView, SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function AccountsScreen() {
@@ -19,22 +19,28 @@ export default function AccountsScreen() {
 
     const [collapsedSections, setCollapsedSections] = React.useState<Set<string>>(new Set())
 
-    const handleAccountPress = (account: Account) => {
+    const handleAccountPress = useCallback((account: Account) => {
         router.push(`/account-details?accountId=${account.id}` as any)
-    }
+    }, [router])
 
-    const toggleSection = (title: string) => {
+    const toggleSection = useCallback((title: string) => {
         setCollapsedSections(prev => {
             const next = new Set(prev)
             if (next.has(title)) next.delete(title)
             else next.add(title)
             return next
         })
-    }
+    }, [])
 
-    const handleCreateAccount = () => {
+    const handleCreateAccount = useCallback(() => {
         router.push('/account-creation' as any)
-    }
+    }, [router])
+
+    const handleReorderPress = useCallback(() => {
+        router.push('/account-reorder' as any)
+    }, [router])
+
+    const handleRefresh = useCallback(() => { }, [])
 
     // Combine accounts with their balances and group by type
     const sections = useMemo(() => {
@@ -51,7 +57,7 @@ export default function AccountsScreen() {
         isPrivacyMode
     } = useSummary()
 
-    const renderHeader = () => {
+    const renderHeader = useMemo(() => {
         const categories = [
             { label: 'Assets', value: totalAssets, color: theme.asset },
             { label: 'Liabilities', value: totalLiabilities, color: theme.liability },
@@ -65,7 +71,7 @@ export default function AccountsScreen() {
                 <Box direction="row" align="center" justify="space-between" style={styles.headerTop}>
                     <AppText variant="title" weight="bold">Accounts</AppText>
                     <TouchableOpacity
-                        onPress={() => router.push('/account-reorder' as any)}
+                        onPress={handleReorderPress}
                         style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
                     >
                         <AppIcon name="reorder" size={Size.iconSm} color={theme.text} />
@@ -85,63 +91,85 @@ export default function AccountsScreen() {
                                     {isPrivacyMode ? '••••' : CurrencyFormatter.formatShort(cat.value)}
                                 </AppText>
                             </View>
-                            {index < categories.length - 1 && <View style={styles.summaryDivider} />}
+                            {index < categories.length - 1 && <View style={[styles.summaryDivider, { backgroundColor: theme.border }]} />}
                         </React.Fragment>
                     ))}
                 </ScrollView>
             </View>
         )
-    }
+    }, [
+        handleReorderPress,
+        isPrivacyMode,
+        theme.asset,
+        theme.border,
+        theme.equity,
+        theme.expense,
+        theme.income,
+        theme.liability,
+        theme.surfaceSecondary,
+        theme.text,
+        totalAssets,
+        totalEquity,
+        totalExpense,
+        totalIncome,
+        totalLiabilities,
+    ])
+
+    const renderSectionHeader = useCallback(({ section: { title, data } }: { section: { title: string; data: Account[] } }) => {
+        const isCollapsed = collapsedSections.has(title)
+        return (
+            <TouchableOpacity
+                onPress={() => toggleSection(title)}
+                activeOpacity={0.7}
+                style={styles.sectionHeaderContainer}
+            >
+                <Box direction="row" align="center" justify="space-between" style={{ flex: 1 }}>
+                    <Box direction="row" align="center" gap="sm">
+                        <AppText
+                            variant="subheading"
+                            weight="bold"
+                            color="secondary"
+                        >
+                            {title}
+                        </AppText>
+                        <View style={[styles.countBadge, { backgroundColor: theme.surfaceSecondary }]}>
+                            <AppText variant="caption" weight="bold" color="tertiary">
+                                {data.length}
+                            </AppText>
+                        </View>
+                    </Box>
+                    <AppIcon
+                        name={isCollapsed ? "chevronRight" : "chevronDown"}
+                        size={Size.iconSm}
+                        color={theme.textSecondary}
+                    />
+                </Box>
+            </TouchableOpacity>
+        )
+    }, [collapsedSections, theme.surfaceSecondary, theme.textSecondary, toggleSection])
+
+    const renderItem = useCallback(({ item, section }: { item: Account; section: { title: string } }) => {
+        if (collapsedSections.has(section.title)) return null
+        return (
+            <AccountCard
+                account={item}
+                onPress={handleAccountPress}
+            />
+        )
+    }, [collapsedSections, handleAccountPress])
+
+    const keyExtractor = useCallback((item: Account) => item.id, [])
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <SectionList
                 sections={sections}
                 refreshing={accountsLoading}
-                onRefresh={() => { }} // Reactivity handles updates, but need prop for PullToRefresh visual
-                keyExtractor={(item) => item.id}
-                renderSectionHeader={({ section: { title, data } }) => {
-                    const isCollapsed = collapsedSections.has(title)
-                    return (
-                        <TouchableOpacity
-                            onPress={() => toggleSection(title)}
-                            activeOpacity={0.7}
-                            style={styles.sectionHeaderContainer}
-                        >
-                            <Box direction="row" align="center" justify="space-between" style={{ flex: 1 }}>
-                                <Box direction="row" align="center" gap="sm">
-                                    <AppText
-                                        variant="subheading"
-                                        weight="bold"
-                                        color="secondary"
-                                    >
-                                        {title}
-                                    </AppText>
-                                    <View style={[styles.countBadge, { backgroundColor: theme.surfaceSecondary }]}>
-                                        <AppText variant="caption" weight="bold" color="tertiary">
-                                            {data.length}
-                                        </AppText>
-                                    </View>
-                                </Box>
-                                <AppIcon
-                                    name={isCollapsed ? "chevronRight" : "chevronDown"}
-                                    size={Size.iconSm}
-                                    color={theme.textSecondary}
-                                />
-                            </Box>
-                        </TouchableOpacity>
-                    )
-                }}
-                renderItem={({ item, section }) => {
-                    if (collapsedSections.has(section.title)) return null
-                    return (
-                        <AccountCard
-                            account={item}
-                            onPress={handleAccountPress}
-                        />
-                    )
-                }}
-                ListHeaderComponent={renderHeader()}
+                onRefresh={handleRefresh} // Reactivity handles updates, but need prop for PullToRefresh visual
+                keyExtractor={keyExtractor}
+                renderSectionHeader={renderSectionHeader}
+                renderItem={renderItem}
+                ListHeaderComponent={renderHeader}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <AppText variant="body" color="secondary">
@@ -198,7 +226,6 @@ const styles = StyleSheet.create({
     summaryDivider: {
         width: 1,
         height: 30,
-        backgroundColor: '#333',
         marginHorizontal: Spacing.md,
         alignSelf: 'center',
     },

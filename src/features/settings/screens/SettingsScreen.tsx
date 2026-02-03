@@ -2,10 +2,9 @@ import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
+import { useSettingsActions } from '@/src/features/settings/hooks/useSettingsActions';
 import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
-import { exportService } from '@/src/services/export-service';
-import { integrityService } from '@/src/services/integrity-service';
 import { logger } from '@/src/utils/logger';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -21,18 +20,18 @@ export default function SettingsScreen() {
         setThemePreference,
         isPrivacyMode,
         setPrivacyMode,
-        resetApp,
-        cleanupDatabase,
-        isLoading,
     } = useUI();
+    const { exportToJSON, runIntegrityCheck, cleanupDatabase, resetApp } = useSettingsActions();
     const { isImporting: isImportingData } = useImport();
     const [isExporting, setIsExporting] = useState(false);
     const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+    const [isCleaning, setIsCleaning] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            const jsonData = await exportService.exportToJSON();
+            const jsonData = await exportToJSON();
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             const filename = `balance-export-${timestamp}.json`;
 
@@ -72,7 +71,7 @@ export default function SettingsScreen() {
     const handleFixIntegrity = async () => {
         setIsMaintenanceMode(true);
         try {
-            const result = await integrityService.runStartupCheck();
+            const result = await runIntegrityCheck();
             Alert.alert(
                 'Integrity Check Complete',
                 `Checked ${result.totalAccounts} accounts.\nFound ${result.discrepanciesFound} issues.\nRepaired ${result.repairsSuccessful} successfully.`
@@ -102,11 +101,14 @@ export default function SettingsScreen() {
         if (!proceed) return;
 
         try {
+            setIsCleaning(true);
             const result = await cleanupDatabase();
             Alert.alert('Cleanup Complete', `Permanently removed ${result.deletedCount} records.`);
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             Alert.alert('Error', `Cleanup failed: ${msg}`);
+        } finally {
+            setIsCleaning(false);
         }
     };
 
@@ -127,11 +129,14 @@ export default function SettingsScreen() {
         if (!proceed) return;
 
         try {
+            setIsResetting(true);
             await resetApp();
             // Should not be reached if blocking UI works, but just in case
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             Alert.alert('Error', `Reset failed: ${msg}`);
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -245,7 +250,7 @@ export default function SettingsScreen() {
                         variant="outline"
                         onPress={handleCleanup}
                         style={{ borderColor: theme.error }}
-                        loading={isLoading}
+                        loading={isCleaning}
                     >
                         Cleanup Deleted Data
                     </AppButton>
@@ -259,7 +264,7 @@ export default function SettingsScreen() {
                         variant="primary"
                         onPress={handleFactoryReset}
                         style={{ backgroundColor: theme.error }}
-                        loading={isLoading}
+                        loading={isResetting}
                     >
                         Factory Reset
                     </AppButton>

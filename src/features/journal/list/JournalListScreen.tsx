@@ -11,11 +11,12 @@ import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { AppText, ExpandableSearchButton } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
-import { JournalCard } from '@/src/features/journal/components/JournalCard';
+import { MemoizedJournalCard } from '@/src/components/common/JournalCard';
 import { useJournals } from '@/src/features/journal/hooks/useJournals';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
 import { EnrichedJournal } from '@/src/types/domain';
+import { DateRange, PeriodFilter } from '@/src/utils/dateUtils';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -43,6 +44,15 @@ export function JournalListScreen() {
     const handleJournalPress = useCallback((journal: EnrichedJournal) => {
         router.push(`/transaction-details?journalId=${journal.id}`);
     }, [router]);
+
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchQuery(value);
+    }, []);
+
+    const handleDateSelect = useCallback((range: DateRange | null, filter: PeriodFilter) => {
+        setFilter(range, filter);
+        hideDatePicker();
+    }, [hideDatePicker, setFilter]);
 
     // Filter journals based on search query
     const filteredJournals = useMemo(() => {
@@ -73,13 +83,13 @@ export function JournalListScreen() {
                     />
                     <ExpandableSearchButton
                         value={searchQuery}
-                        onChangeText={setSearchQuery}
+                        onChangeText={handleSearchChange}
                         placeholder="Search..."
                     />
                 </View>
             </View>
         </View>
-    ), [dateRange, searchQuery, showDatePicker, navigatePrevious, navigateNext]);
+    ), [dateRange, searchQuery, showDatePicker, navigatePrevious, navigateNext, handleSearchChange]);
 
     const ListEmpty = useMemo(() => (
         isLoading ? (
@@ -116,18 +126,22 @@ export function JournalListScreen() {
         ) : null
     ), [isLoadingMore]);
 
+    const renderItem = useCallback(({ item }: { item: EnrichedJournal }) => (
+        <MemoizedJournalCard
+            journal={item}
+            onPress={handleJournalPress}
+        />
+    ), [handleJournalPress]);
+
+    const keyExtractor = useCallback((item: EnrichedJournal) => item.id, []);
+
     return (
         <Screen title="Transactions">
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <TypedFlashList
                     data={filteredJournals}
-                    renderItem={({ item }: { item: EnrichedJournal }) => (
-                        <JournalCard
-                            journal={item}
-                            onPress={handleJournalPress}
-                        />
-                    )}
-                    keyExtractor={(item: EnrichedJournal) => item.id}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
                     estimatedItemSize={120}
                     contentContainerStyle={styles.listContent}
                     ListHeaderComponent={ListHeader}
@@ -140,10 +154,7 @@ export function JournalListScreen() {
                     visible={isDatePickerVisible}
                     onClose={hideDatePicker}
                     currentFilter={periodFilter}
-                    onSelect={(range, filter) => {
-                        setFilter(range, filter);
-                        hideDatePicker();
-                    }}
+                    onSelect={handleDateSelect}
                 />
             </View>
         </Screen>

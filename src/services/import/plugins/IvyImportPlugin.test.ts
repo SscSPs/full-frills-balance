@@ -74,7 +74,7 @@ describe('IvyImportPlugin', () => {
         it('transforms and imports Ivy data correctly', async () => {
             const stats = await ivyPlugin.import(JSON.stringify(validIvyData));
 
-            expect(integrityService.resetDatabase).toHaveBeenCalled();
+            expect(integrityService.resetDatabase).toHaveBeenCalledWith({ seedDefaults: false });
             expect(database.batch).toHaveBeenCalled();
 
             // Should create 2 accounts (1 original + 1 category-currency specific)
@@ -82,6 +82,7 @@ describe('IvyImportPlugin', () => {
             expect(stats.journals).toBe(1);
             expect(stats.transactions).toBe(2); // 1 Expense = 2 legs
             expect(stats.skippedTransactions).toBe(0);
+            expect(stats.auditLogs).toBe(0);
         });
 
         it('handles multi-currency transfers correctly', async () => {

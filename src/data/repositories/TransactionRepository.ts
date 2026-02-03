@@ -1,8 +1,8 @@
 import { database } from '@/src/data/database/Database'
-import { JournalStatus } from '@/src/data/models/Journal'
 import Transaction from '@/src/data/models/Transaction'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { TransactionType } from '@/src/types/domain'
+import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
 import { roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
 
@@ -109,23 +109,25 @@ export class TransactionRepository {
     // 3. Determine starting balance and start date
     let runningBalance = 0
     let query = this.transactions.query(
+      Q.experimentalJoinTables(['journals']),
       Q.where('account_id', accountId),
       Q.where('deleted_at', Q.eq(null)),
-      Q.on('journals', Q.and(
-        Q.where('status', 'POSTED'),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
         Q.where('deleted_at', Q.eq(null))
-      ))
+      ])
     )
 
     if (fromDate) {
       // Find the LATEST transaction BEFORE this date to get starting point
       const previousTx = await this.transactions.query(
+        Q.experimentalJoinTables(['journals']),
         Q.where('account_id', accountId),
         Q.where('deleted_at', Q.eq(null)),
-        Q.on('journals', Q.and(
-          Q.where('status', 'POSTED'),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )),
+        ]),
         Q.where('transaction_date', Q.lt(fromDate))
       )
         .extend(Q.sortBy('transaction_date', 'desc'))
@@ -181,10 +183,13 @@ export class TransactionRepository {
   async findByAccount(accountId: string): Promise<Transaction[]> {
     return this.transactions
       .query(
-        Q.and(
-          Q.where('account_id', accountId),
+        Q.experimentalJoinTables(['journals']),
+        Q.where('account_id', accountId),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )
+        ])
       )
       .extend(Q.sortBy('transaction_date', 'desc'))
       .extend(Q.sortBy('created_at', 'desc'))
@@ -194,10 +199,13 @@ export class TransactionRepository {
   observeByJournal(journalId: string) {
     return this.transactions
       .query(
-        Q.and(
-          Q.where('journal_id', journalId),
+        Q.experimentalJoinTables(['journals']),
+        Q.where('journal_id', journalId),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )
+        ])
       )
       .extend(Q.sortBy('transaction_date', 'asc'))
       .extend(Q.sortBy('created_at', 'asc'))
@@ -210,7 +218,14 @@ export class TransactionRepository {
    */
   observeActive() {
     return this.transactions
-      .query(Q.where('deleted_at', Q.eq(null)))
+      .query(
+        Q.experimentalJoinTables(['journals']),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ])
+      )
       .observe()
   }
 
@@ -272,10 +287,11 @@ export class TransactionRepository {
   ): Promise<Transaction | null> {
     const transactions = await this.transactions
       .query(
-        Q.on('journals', Q.and(
-          Q.where('status', JournalStatus.POSTED),
+        Q.experimentalJoinTables(['journals']),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )),
+        ]),
         Q.where('account_id', accountId),
         Q.where('transaction_date', Q.lt(date)),
         Q.where('deleted_at', Q.eq(null)),
@@ -297,12 +313,15 @@ export class TransactionRepository {
   ): Promise<Transaction[]> {
     return this.transactions
       .query(
-        Q.and(
-          Q.where('account_id', Q.oneOf(accountIds)),
-          Q.where('transaction_date', Q.gte(startDate)),
-          Q.where('transaction_date', Q.lte(endDate)),
+        Q.experimentalJoinTables(['journals']),
+        Q.where('account_id', Q.oneOf(accountIds)),
+        Q.where('transaction_date', Q.gte(startDate)),
+        Q.where('transaction_date', Q.lte(endDate)),
+        Q.where('deleted_at', Q.eq(null)),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )
+        ])
       )
       .extend(Q.sortBy('transaction_date', 'desc'))
       .fetch()

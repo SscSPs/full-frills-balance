@@ -7,6 +7,7 @@
 
 import { database } from '@/src/data/database/Database';
 import Account from '@/src/data/models/Account';
+import AuditLog from '@/src/data/models/AuditLog';
 import Journal from '@/src/data/models/Journal';
 import Transaction from '@/src/data/models/Transaction';
 import { logger } from '@/src/utils/logger';
@@ -20,6 +21,7 @@ export interface ExportData {
     accounts: AccountExport[];
     journals: JournalExport[];
     transactions: TransactionExport[];
+    auditLogs: AuditLogExport[];
 }
 
 interface AccountExport {
@@ -57,6 +59,16 @@ interface TransactionExport {
     createdAt: string;
 }
 
+interface AuditLogExport {
+    id: string;
+    entityType: string;
+    entityId: string;
+    action: string;
+    changes: string;
+    timestamp: number;
+    createdAt: string;
+}
+
 class ExportService {
     /**
      * Exports all data as JSON
@@ -77,11 +89,15 @@ class ExportService {
                 .query(Q.where('deleted_at', Q.eq(null)))
                 .fetch();
 
+            const auditLogs = await database.collections.get<AuditLog>('audit_logs')
+                .query()
+                .fetch();
+
             const userPreferences = await preferences.loadPreferences();
 
             const exportData: ExportData = {
                 exportDate: new Date().toISOString(),
-                version: '1.0.0',
+                version: '1.1.0',
                 preferences: userPreferences,
                 accounts: accounts.map(a => ({
                     id: a.id,
@@ -115,6 +131,15 @@ class ExportService {
                     exchangeRate: t.exchangeRate,
                     createdAt: t.createdAt.toISOString(),
                 })),
+                auditLogs: auditLogs.map(log => ({
+                    id: log.id,
+                    entityType: log.entityType,
+                    entityId: log.entityId,
+                    action: log.action,
+                    changes: log.changes,
+                    timestamp: log.timestamp,
+                    createdAt: log.createdAt.toISOString(),
+                })),
             };
 
             const json = JSON.stringify(exportData, null, 2);
@@ -123,6 +148,7 @@ class ExportService {
                 accounts: accounts.length,
                 journals: journals.length,
                 transactions: transactions.length,
+                auditLogs: auditLogs.length,
             });
 
             return json;
@@ -135,7 +161,7 @@ class ExportService {
     /**
      * Get a summary of exportable data counts
      */
-    async getExportSummary(): Promise<{ accounts: number; journals: number; transactions: number }> {
+    async getExportSummary(): Promise<{ accounts: number; journals: number; transactions: number; auditLogs: number }> {
         const accounts = await database.collections.get<Account>('accounts')
             .query(Q.where('deleted_at', Q.eq(null)))
             .fetchCount();
@@ -148,7 +174,11 @@ class ExportService {
             .query(Q.where('deleted_at', Q.eq(null)))
             .fetchCount();
 
-        return { accounts, journals, transactions };
+        const auditLogs = await database.collections.get<AuditLog>('audit_logs')
+            .query()
+            .fetchCount();
+
+        return { accounts, journals, transactions, auditLogs };
     }
 }
 

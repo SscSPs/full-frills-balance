@@ -5,7 +5,7 @@ import { DashboardSummary } from '@/src/features/dashboard/components/DashboardS
 import { NetWorthCard } from '@/src/features/dashboard/components/NetWorthCard';
 import { useTheme } from '@/src/hooks/use-theme';
 import { DateRange } from '@/src/utils/dateUtils';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { LayoutAnimation, Platform, StyleSheet, TouchableOpacity, UIManager, View } from 'react-native';
 
 // Enable LayoutAnimation on Android
@@ -51,10 +51,10 @@ export function DashboardHeader({
     const { theme } = useTheme();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    const handleToggleCollapse = () => {
+    const handleToggleCollapse = useCallback(() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setIsCollapsed(!isCollapsed);
-    };
+    }, [isCollapsed]);
 
     return (
         <View style={styles.container}>

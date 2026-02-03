@@ -15,7 +15,7 @@ import {
 } from '@/src/services/import';
 import { logger } from '@/src/utils/logger';
 import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 
 export type ImportFormat = string; // Plugin IDs: 'native' | 'ivy' | future formats
@@ -24,7 +24,7 @@ export function useImport() {
     const { requireRestart } = useUI();
     const [isImporting, setIsImporting] = useState(false);
 
-    const handleImport = async (expectedType?: ImportFormat) => {
+    const handleImport = useCallback(async (expectedType?: ImportFormat) => {
         let didSetImporting = false;
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -113,7 +113,7 @@ export function useImport() {
 
             // 7. Execute import
             const stats = await plugin.import(content);
-            requireRestart(stats);
+            requireRestart({ type: 'IMPORT', stats });
 
         } catch (error) {
             logger.error('[useImport] Import failed', error);
@@ -123,7 +123,7 @@ export function useImport() {
                 setIsImporting(false);
             }
         }
-    };
+    }, [requireRestart]);
 
     return {
         handleImport,

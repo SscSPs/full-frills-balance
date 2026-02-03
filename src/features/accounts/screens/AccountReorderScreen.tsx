@@ -1,11 +1,11 @@
 import { AppCard, AppIcon, AppText, Stack } from '@/src/components/core';
-import { Palette, Shape, Spacing } from '@/src/constants';
+import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { useAccountActions, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
@@ -25,7 +25,7 @@ export default function AccountReorderScreen() {
         }
     }, [initialAccounts, isLoading]);
 
-    const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const handleMove = useCallback(async (index: number, direction: 'up' | 'down') => {
         const newIndex = direction === 'up' ? index - 1 : index + 1;
         if (newIndex < 0 || newIndex >= accounts.length) return;
 
@@ -62,7 +62,11 @@ export default function AccountReorderScreen() {
             // Revert if failed
             setAccounts([...initialAccounts]);
         }
-    };
+    }, [accounts, initialAccounts, updateAccountOrder]);
+
+    const handleBack = useCallback(() => {
+        router.back();
+    }, [router]);
 
     if (isLoading) return null;
 
@@ -70,7 +74,7 @@ export default function AccountReorderScreen() {
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={theme.text} />
                 </TouchableOpacity>
                 <AppText variant="subheading" weight="bold">Reorder Accounts</AppText>
@@ -103,14 +107,14 @@ export default function AccountReorderScreen() {
                                     <TouchableOpacity
                                         onPress={() => handleMove(index, 'up')}
                                         disabled={index === 0}
-                                        style={[styles.actionButton, index === 0 && { opacity: 0.3 }]}
+                                        style={[styles.actionButton, { backgroundColor: withOpacity(theme.text, Opacity.soft) }, index === 0 && { opacity: 0.3 }]}
                                     >
                                         <AppIcon name="chevronUp" size={20} color={theme.text} />
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => handleMove(index, 'down')}
                                         disabled={index === accounts.length - 1}
-                                        style={[styles.actionButton, index === accounts.length - 1 && { opacity: 0.3 }]}
+                                        style={[styles.actionButton, { backgroundColor: withOpacity(theme.text, Opacity.soft) }, index === accounts.length - 1 && { opacity: 0.3 }]}
                                     >
                                         <AppIcon name="chevronDown" size={20} color={theme.text} />
                                     </TouchableOpacity>
@@ -167,7 +171,6 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         padding: Spacing.xs,
-        backgroundColor: Palette.trueBlack + '05', // Subtle overlay
         borderRadius: Shape.radius.sm,
     }
 });

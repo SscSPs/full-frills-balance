@@ -4,7 +4,7 @@ import { useUI } from '@/src/contexts/UIContext';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import * as Updates from 'expo-updates';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,7 +16,7 @@ export const RestartRequiredScreen = () => {
     const { theme } = useTheme();
     const { restartType, importStats } = useUI();
 
-    const handleRestart = async () => {
+    const handleRestart = useCallback(async () => {
         if (Platform.OS === 'web') {
             window.location.reload();
         } else {
@@ -27,7 +27,7 @@ export const RestartRequiredScreen = () => {
                 logger.error('Failed to reload app', e);
             }
         }
-    };
+    }, []);
 
     const isImport = restartType === 'IMPORT';
 
@@ -67,6 +67,12 @@ export const RestartRequiredScreen = () => {
                                 <AppText variant="body" weight="medium">Transactions</AppText>
                                 <AppText variant="body" color="success" weight="bold">{importStats.transactions}</AppText>
                             </View>
+                            {typeof importStats.auditLogs === 'number' && importStats.auditLogs > 0 && (
+                                <View style={styles.statRow}>
+                                    <AppText variant="body" weight="medium">Audit Logs</AppText>
+                                    <AppText variant="body" color="success" weight="bold">{importStats.auditLogs}</AppText>
+                                </View>
+                            )}
                             {importStats.skippedTransactions > 0 && (
                                 <View style={styles.statRow}>
                                     <AppText variant="body" color="warning">Skipped Items</AppText>

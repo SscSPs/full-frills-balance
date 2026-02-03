@@ -1,3 +1,3 @@
 
-import ImportSelectionScreen from '@/src/features/settings/screens/ImportSelectionScreen';
+import { ImportSelectionScreen } from '@/src/features/settings';
 export default ImportSelectionScreen;

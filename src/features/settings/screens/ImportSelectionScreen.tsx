@@ -1,16 +1,57 @@
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Shape, Size, Spacing, Typography } from '@/src/constants';
+import { useImportPlugins } from '@/src/features/settings/hooks/useImportPlugins';
 import { useImport } from '@/src/hooks/use-import';
-import { importRegistry } from '@/src/services/import';
-import React from 'react';
+import { useTheme } from '@/src/hooks/use-theme';
+import type { ImportPlugin } from '@/src/services/import/types';
+import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
+
+interface ImportPluginCardProps {
+    plugin: ImportPlugin;
+    index: number;
+    isImporting: boolean;
+    onSelect: (id: string) => void;
+}
+
+const ImportPluginCard = ({ plugin, index, isImporting, onSelect }: ImportPluginCardProps) => {
+    const { theme } = useTheme();
+    const handleSelect = useCallback(() => {
+        onSelect(plugin.id);
+    }, [onSelect, plugin.id]);
+
+    return (
+        <AppCard key={plugin.id} elevation="sm" padding="md" style={styles.card}>
+            <View style={styles.headerRow}>
+                <View style={[styles.iconPlaceholder, { backgroundColor: theme.surfaceSecondary }]}>
+                    <AppText variant="heading" style={{ fontSize: Typography.sizes.xxl }}>{plugin.icon}</AppText>
+                </View>
+                <View style={styles.textCol}>
+                    <AppText variant="subheading">{plugin.name}</AppText>
+                    <AppText variant="caption" color="secondary" style={styles.desc}>
+                        {plugin.description}
+                    </AppText>
+                </View>
+            </View>
+            <AppButton
+                variant={index === 0 ? 'primary' : 'outline'}
+                onPress={handleSelect}
+                loading={isImporting}
+                style={styles.button}
+            >
+                {`Select ${plugin.name.split(' ')[0]} File`}
+            </AppButton>
+        </AppCard>
+    );
+};
 
 export default function ImportSelectionScreen() {
     const { handleImport, isImporting } = useImport();
-
-    // Get all registered plugins dynamically
-    const plugins = importRegistry.getAll();
+    const plugins = useImportPlugins();
+    const handleSelect = useCallback((id: string) => {
+        handleImport(id);
+    }, [handleImport]);
 
     return (
         <Screen
@@ -25,27 +66,13 @@ export default function ImportSelectionScreen() {
                 </AppText>
 
                 {plugins.map((plugin, index) => (
-                    <AppCard key={plugin.id} elevation="sm" padding="md" style={styles.card}>
-                        <View style={styles.headerRow}>
-                            <View style={styles.iconPlaceholder}>
-                                <AppText variant="heading" style={{ fontSize: Typography.sizes.xxl }}>{plugin.icon}</AppText>
-                            </View>
-                            <View style={styles.textCol}>
-                                <AppText variant="subheading">{plugin.name}</AppText>
-                                <AppText variant="caption" color="secondary" style={styles.desc}>
-                                    {plugin.description}
-                                </AppText>
-                            </View>
-                        </View>
-                        <AppButton
-                            variant={index === 0 ? 'primary' : 'outline'}
-                            onPress={() => handleImport(plugin.id)}
-                            loading={isImporting}
-                            style={styles.button}
-                        >
-                            {`Select ${plugin.name.split(' ')[0]} File`}
-                        </AppButton>
-                    </AppCard>
+                    <ImportPluginCard
+                        key={plugin.id}
+                        plugin={plugin}
+                        index={index}
+                        onSelect={handleSelect}
+                        isImporting={isImporting}
+                    />
                 ))}
 
                 <View style={styles.note}>
@@ -78,7 +105,6 @@ const styles = StyleSheet.create({
         width: Size.xxl,
         height: Size.xxl,
         borderRadius: Shape.radius.full,
-        backgroundColor: 'rgba(0,0,0,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: Spacing.md,

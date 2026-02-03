@@ -40,6 +40,7 @@ import {
 } from 'lucide-react-native';
 import React from 'react';
 import { ViewStyle } from 'react-native';
+import { logger } from '@/src/utils/logger';
 
 // Map internal names to Lucide components
 export const IconMap = {
@@ -107,7 +108,7 @@ export const AppIcon = ({
     const IconComponent = IconMap[name];
 
     if (!IconComponent) {
-        console.warn(`Icon "${name}" not found in IconMap`);
+        logger.warn(`Icon "${name}" not found in IconMap`);
         return null;
     }
 

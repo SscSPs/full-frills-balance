@@ -1,12 +1,12 @@
 import { database } from '@/src/data/database/Database'
 import Account, { AccountType } from '@/src/data/models/Account'
 import { AuditAction } from '@/src/data/models/AuditLog'
-import { JournalStatus } from '@/src/data/models/Journal'
 import Transaction, { TransactionType } from '@/src/data/models/Transaction'
 import { auditRepository } from '@/src/data/repositories/AuditRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { rebuildQueueService } from '@/src/data/repositories/RebuildQueue'
 import { AccountBalance, AccountCreateInput, AccountUpdateInput } from '@/src/types/domain'
+import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
 import { getEpsilon, roundToPrecision } from '@/src/utils/money'
 import { Q } from '@nozbe/watermelondb'
 
@@ -99,10 +99,11 @@ export class AccountRepository {
     // 1. Get running balance from latest transaction before cutoff
     const latestTxs = await this.transactions
       .query(
-        Q.on('journals', Q.and(
-          Q.where('status', JournalStatus.POSTED),
+        Q.experimentalJoinTables(['journals']),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )),
+        ]),
         Q.where('account_id', accountId),
         Q.where('deleted_at', Q.eq(null)),
         // Use transaction_date which maps to journal_date
@@ -118,10 +119,11 @@ export class AccountRepository {
     // 2. Get transaction count (Fast Count)
     const transactionCount = await this.transactions
       .query(
-        Q.on('journals', Q.and(
-          Q.where('status', JournalStatus.POSTED),
+        Q.experimentalJoinTables(['journals']),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
           Q.where('deleted_at', Q.eq(null))
-        )),
+        ]),
         Q.where('account_id', accountId),
         Q.where('deleted_at', Q.eq(null)),
         Q.where('transaction_date', Q.lte(cutoffDate))
@@ -153,10 +155,11 @@ export class AccountRepository {
       // Get latest transaction for this account
       const latestTxs = await this.transactions
         .query(
-          Q.on('journals', Q.and(
-            Q.where('status', JournalStatus.POSTED),
+          Q.experimentalJoinTables(['journals']),
+          Q.on('journals', [
+            Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
             Q.where('deleted_at', Q.eq(null))
-          )),
+          ]),
           Q.where('account_id', account.id),
           Q.where('deleted_at', Q.eq(null)),
           Q.where('transaction_date', Q.lte(cutoffDate))
@@ -169,10 +172,11 @@ export class AccountRepository {
       // Get transaction count (fast count query)
       const transactionCount = await this.transactions
         .query(
-          Q.on('journals', Q.and(
-            Q.where('status', JournalStatus.POSTED),
+          Q.experimentalJoinTables(['journals']),
+          Q.on('journals', [
+            Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
             Q.where('deleted_at', Q.eq(null))
-          )),
+          ]),
           Q.where('account_id', account.id),
           Q.where('deleted_at', Q.eq(null)),
           Q.where('transaction_date', Q.lte(cutoffDate))

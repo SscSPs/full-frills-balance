@@ -1,11 +1,8 @@
-import Account from '@/src/data/models/Account'
-import Transaction from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
+import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
 import { wealthService } from '@/src/services/wealth-service'
 import { AccountBalance } from '@/src/types/domain'
 import { logger } from '@/src/utils/logger'
-import { Q } from '@nozbe/watermelondb'
-import { useDatabase } from '@nozbe/watermelondb/react'
 import { useEffect, useRef, useState } from 'react'
 
 /**
@@ -17,7 +14,6 @@ import { useEffect, useRef, useState } from 'react'
  * - Also subscribes to transactions to catch balance changes
  */
 export function useNetWorth() {
-    const database = useDatabase()
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [data, setData] = useState<{
         balances: AccountBalance[]
@@ -60,18 +56,14 @@ export function useNetWorth() {
         }
 
         // Subscribe to account changes (account creation/deletion)
-        const accountsCollection = database.collections.get<Account>('accounts')
-        const accountSubscription = accountsCollection
-            .query(Q.where('deleted_at', Q.eq(null)))
-            .observe()
+        const accountSubscription = accountRepository
+            .observeAll()
             .subscribe(debouncedCalculate)
 
         // Subscribe to transaction changes (balance updates)
         // This is more targeted than journals - only fires when transactions change
-        const transactionsCollection = database.collections.get<Transaction>('transactions')
-        const transactionSubscription = transactionsCollection
-            .query(Q.where('deleted_at', Q.eq(null)))
-            .observe()
+        const transactionSubscription = transactionRepository
+            .observeActive()
             .subscribe(debouncedCalculate)
 
         // Initial load (immediate, no debounce)
@@ -84,7 +76,7 @@ export function useNetWorth() {
                 clearTimeout(timeoutRef.current)
             }
         }
-    }, [database])
+    }, [])
 
     return data
 }

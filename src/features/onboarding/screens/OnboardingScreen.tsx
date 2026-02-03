@@ -1,34 +1,23 @@
 import { AppButton, AppCard, AppIcon, AppInput, AppText } from '@/src/components/core';
 import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
-import Currency from '@/src/data/models/Currency';
+import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
-import { currencyInitService } from '@/src/services/currency-init-service';
 import { logger } from '@/src/utils/logger';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function OnboardingScreen() {
     const [step, setStep] = useState(1)
     const [name, setName] = useState('')
     const [selectedCurrency, setSelectedCurrency] = useState('USD')
-    const [currencies, setCurrencies] = useState<Currency[]>([])
+    const { currencies } = useCurrencies()
     const [isCompleting, setIsCompleting] = useState(false)
     const { theme } = useTheme()
     const { completeOnboarding } = useUI()
     const { isImporting } = useImport()
-
-    useEffect(() => {
-        const loadCurrencies = async () => {
-            // Ensure currencies are initialized
-            await currencyInitService.initialize()
-            const all = await currencyInitService.getAllCurrencies()
-            setCurrencies(all)
-        }
-        loadCurrencies()
-    }, [])
 
     const handleContinue = async () => {
         if (step === 1) {

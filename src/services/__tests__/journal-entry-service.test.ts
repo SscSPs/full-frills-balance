@@ -1,12 +1,12 @@
 import { TransactionType } from '@/src/data/models/Transaction';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
-import { accountingService } from '@/src/services/AccountingService';
+import { accountingService } from '@/src/utils/accountingService';
 import { JournalEntryService } from '@/src/services/journal-entry-service';
 import { logger } from '@/src/utils/logger';
 
 // Mock dependencies
 jest.mock('@/src/data/repositories/JournalRepository');
-jest.mock('@/src/services/AccountingService');
+jest.mock('@/src/utils/accountingService');
 jest.mock('@/src/utils/logger');
 jest.mock('@/src/utils/preferences', () => ({
     preferences: { defaultCurrencyCode: 'USD' }

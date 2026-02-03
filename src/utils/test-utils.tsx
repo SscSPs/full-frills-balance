@@ -2,7 +2,7 @@ import { render, RenderOptions } from '@testing-library/react-native';
 import React, { ReactElement } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Colors } from '@/src/constants/theme';
+import { Colors } from '@/src/constants';
 import { UIContext } from '@/src/contexts/UIContext';
 import { Theme } from '@react-navigation/native';
 
@@ -39,9 +39,6 @@ const mockUIContext: any = {
     importStats: null,
     completeOnboarding: async () => Promise.resolve(),
     setThemePreference: async () => Promise.resolve(),
-    setLoading: () => { },
-    resetApp: async () => Promise.resolve(),
-    cleanupDatabase: async () => Promise.resolve({ deletedCount: 0 }),
     updateUserDetails: async () => Promise.resolve(),
     setPrivacyMode: async () => Promise.resolve(),
     requireRestart: () => { },
@@ -68,4 +65,3 @@ const customRender = (
 
 export * from '@testing-library/react-native';
 export { customRender as render };
-

@@ -1,2 +1,2 @@
-import AuditLogScreen from '@/src/features/audit/screens/AuditLogScreen';
+import { AuditLogScreen } from '@/src/features/audit';
 export default AuditLogScreen;

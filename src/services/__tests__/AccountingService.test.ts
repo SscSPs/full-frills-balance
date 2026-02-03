@@ -1,6 +1,6 @@
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
-import { AccountingService } from '@/src/services/AccountingService';
+import { AccountingService } from '@/src/utils/accountingService';
 
 describe('AccountingService', () => {
     let service: AccountingService;
