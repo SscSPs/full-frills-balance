@@ -1,8 +1,8 @@
 import { DateRangeFilter } from '@/src/components/common/DateRangeFilter';
 import { AppIcon, AppText, ExpandableSearchButton } from '@/src/components/core';
 import { Size, Spacing } from '@/src/constants';
+import { DashboardSummary } from '@/src/features/dashboard/components/DashboardSummary';
 import { NetWorthCard } from '@/src/features/dashboard/components/NetWorthCard';
-import { DashboardSummary } from '@/src/features/journal/components/DashboardSummary';
 import { useTheme } from '@/src/hooks/use-theme';
 import { DateRange } from '@/src/utils/dateUtils';
 import React, { useState } from 'react';

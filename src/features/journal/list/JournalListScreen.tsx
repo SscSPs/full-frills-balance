@@ -1,10 +1,16 @@
+/**
+ * JournalListScreen - Standalone journal list page
+ * 
+ * Used for viewing journal history without dashboard widgets.
+ * Typically accessed from account details to view filtered transactions.
+ * 
+ * For the main dashboard experience, see DashboardScreen.
+ */
+import { DateRangeFilter } from '@/src/components/common/DateRangeFilter';
 import { DateRangePicker } from '@/src/components/common/DateRangePicker';
-import { AppText, FloatingActionButton } from '@/src/components/core';
+import { AppText, ExpandableSearchButton } from '@/src/components/core';
+import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
-import { useUI } from '@/src/contexts/UIContext';
-// Direct import to avoid require cycle through dashboard/index.ts (which exports DashboardScreen)
-import { DashboardHeader } from '@/src/features/dashboard/components/DashboardHeader';
-import { useSummary } from '@/src/features/dashboard/hooks/useSummary';
 import { JournalCard } from '@/src/features/journal/components/JournalCard';
 import { useJournals } from '@/src/features/journal/hooks/useJournals';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -12,16 +18,15 @@ import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
 import { EnrichedJournal } from '@/src/types/domain';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export function JournalListScreen() {
-    const router = useRouter()
-    const { userName } = useUI()
+    const router = useRouter();
     const { theme } = useTheme();
-    const [searchQuery, setSearchQuery] = React.useState('')
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // Date range filter state (from shared hook)
+    // Date range filter state
     const {
         dateRange,
         periodFilter,
@@ -33,20 +38,11 @@ export function JournalListScreen() {
         navigateNext,
     } = useDateRangeFilter({ defaultToCurrentMonth: true });
 
-    const { journals, isLoading, isLoadingMore, loadMore } = useJournals(50, dateRange || undefined)
-    const { income, expense, netWorth, totalAssets, totalLiabilities, isPrivacyMode, isLoading: isSummaryLoading } = useSummary()
-    const [isDashboardHidden, setIsDashboardHidden] = React.useState(isPrivacyMode)
-
-    // Sync with global privacy mode when it changes
-    React.useEffect(() => {
-        setIsDashboardHidden(isPrivacyMode)
-    }, [isPrivacyMode])
+    const { journals, isLoading, isLoadingMore, loadMore } = useJournals(50, dateRange || undefined);
 
     const handleJournalPress = useCallback((journal: EnrichedJournal) => {
         router.push(`/transaction-details?journalId=${journal.id}`);
     }, [router]);
-
-    const greeting = useMemo(() => `Hello, ${userName || 'there'}!`, [userName]);
 
     // Filter journals based on search query
     const filteredJournals = useMemo(() => {
@@ -59,8 +55,31 @@ export function JournalListScreen() {
     }, [journals, searchQuery]);
 
     // WORKAROUND: FlashList 2.0.2 types are currently incompatible with React 19/RN 0.81 JSX checks.
-    // We use 'any' here to unblock the build while keeping the core logic intact.
     const TypedFlashList = FlashList as any;
+
+    const ListHeader = useMemo(() => (
+        <View style={styles.headerContainer}>
+            <View style={styles.headerRow}>
+                <AppText variant="subheading">
+                    {searchQuery ? 'Search Results' : 'Transactions'}
+                </AppText>
+                <View style={styles.headerActions}>
+                    <DateRangeFilter
+                        range={dateRange}
+                        onPress={showDatePicker}
+                        onPrevious={navigatePrevious}
+                        onNext={navigateNext}
+                        showNavigationArrows={false}
+                    />
+                    <ExpandableSearchButton
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search..."
+                    />
+                </View>
+            </View>
+        </View>
+    ), [dateRange, searchQuery, showDatePicker, navigatePrevious, navigateNext]);
 
     const ListEmpty = useMemo(() => (
         isLoading ? (
@@ -73,14 +92,14 @@ export function JournalListScreen() {
         ) : (
             <View style={styles.emptyContainer}>
                 <AppText variant="heading" style={styles.emptyText}>
-                    No transactions yet
+                    No transactions found
                 </AppText>
                 <AppText
                     variant="body"
                     color="secondary"
                     style={styles.emptySubtext}
                 >
-                    Tap the + button to add your first transaction
+                    Try adjusting your search or date filter
                 </AppText>
             </View>
         )
@@ -98,55 +117,36 @@ export function JournalListScreen() {
     ), [isLoadingMore]);
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <TypedFlashList
-                data={filteredJournals}
-                renderItem={({ item }: { item: EnrichedJournal }) => (
-                    <JournalCard
-                        journal={item}
-                        onPress={handleJournalPress}
-                    />
-                )}
-                keyExtractor={(item: EnrichedJournal) => item.id}
-                estimatedItemSize={120}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={
-                    <DashboardHeader
-                        greeting={greeting}
-                        netWorth={netWorth}
-                        totalAssets={totalAssets}
-                        totalLiabilities={totalLiabilities}
-                        isSummaryLoading={isSummaryLoading}
-                        isDashboardHidden={isDashboardHidden}
-                        onToggleHidden={setIsDashboardHidden}
-                        income={income}
-                        expense={expense}
-                        searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
-                        dateRange={dateRange}
-                        showDatePicker={showDatePicker}
-                        navigatePrevious={navigatePrevious}
-                        navigateNext={navigateNext}
-                    />
-                }
-                ListEmptyComponent={ListEmpty}
-                ListFooterComponent={ListFooter}
-                onEndReached={!searchQuery ? loadMore : undefined}
-                onEndReachedThreshold={0.5}
-            />
-            <FloatingActionButton
-                onPress={() => router.push('/journal-entry' as any)}
-            />
-            <DateRangePicker
-                visible={isDatePickerVisible}
-                onClose={hideDatePicker}
-                currentFilter={periodFilter}
-                onSelect={(range, filter) => {
-                    setFilter(range, filter)
-                    hideDatePicker()
-                }}
-            />
-        </View>
+        <Screen title="Transactions">
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
+                <TypedFlashList
+                    data={filteredJournals}
+                    renderItem={({ item }: { item: EnrichedJournal }) => (
+                        <JournalCard
+                            journal={item}
+                            onPress={handleJournalPress}
+                        />
+                    )}
+                    keyExtractor={(item: EnrichedJournal) => item.id}
+                    estimatedItemSize={120}
+                    contentContainerStyle={styles.listContent}
+                    ListHeaderComponent={ListHeader}
+                    ListEmptyComponent={ListEmpty}
+                    ListFooterComponent={ListFooter}
+                    onEndReached={!searchQuery ? loadMore : undefined}
+                    onEndReachedThreshold={0.5}
+                />
+                <DateRangePicker
+                    visible={isDatePickerVisible}
+                    onClose={hideDatePicker}
+                    currentFilter={periodFilter}
+                    onSelect={(range, filter) => {
+                        setFilter(range, filter);
+                        hideDatePicker();
+                    }}
+                />
+            </View>
+        </Screen>
     );
 }
 
@@ -156,6 +156,20 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: Spacing.lg,
+    },
+    headerContainer: {
+        marginBottom: Spacing.md,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: Spacing.sm,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
     loadingContainer: {
         flex: 1,
