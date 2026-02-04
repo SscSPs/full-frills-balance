@@ -73,5 +73,16 @@ export const migrations = schemaMigrations({
                 }),
             ],
         },
+        {
+            toVersion: 6,
+            steps: [
+                addColumns({
+                    table: 'accounts',
+                    columns: [
+                        { name: 'icon', type: 'string', isOptional: true },
+                    ],
+                }),
+            ],
+        },
     ],
 })

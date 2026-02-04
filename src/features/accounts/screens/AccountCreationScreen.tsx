@@ -1,4 +1,4 @@
-import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
+import { AppButton, AppCard, AppInput, AppText, IconName, IvyIcon } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { AppConfig, Shape, Spacing, Typography } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
@@ -6,6 +6,7 @@ import { AccountType } from '@/src/data/models/Account';
 import { AccountTypeSelector } from '@/src/features/accounts/components/AccountTypeSelector';
 import { CurrencySelector } from '@/src/features/accounts/components/CurrencySelector';
 import { useAccount, useAccountActions, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { IconPickerModal } from '@/src/features/onboarding/components/IconPickerModal';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import { showErrorAlert } from '@/src/utils/alerts';
@@ -14,7 +15,7 @@ import { logger } from '@/src/utils/logger';
 import { sanitizeInput, validateAccountName } from '@/src/utils/validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function AccountCreationScreen() {
     const router = useRouter()
@@ -51,6 +52,8 @@ export default function AccountCreationScreen() {
     const [accountName, setAccountName] = useState('')
     const [accountType, setAccountType] = useState<AccountType>(getInitialAccountType())
     const [selectedCurrency, setSelectedCurrency] = useState<string>(defaultCurrency || AppConfig.defaultCurrency)
+    const [selectedIcon, setSelectedIcon] = useState<string>('wallet')
+    const [isIconPickerVisible, setIsIconPickerVisible] = useState(false)
     const [initialBalance, setInitialBalance] = useState('')
     const [isCreating, setIsCreating] = useState(false)
     const [hasExistingAccounts, setHasExistingAccounts] = useState(false)
@@ -62,6 +65,9 @@ export default function AccountCreationScreen() {
             setAccountName(existingAccount.name)
             setAccountType(existingAccount.accountType)
             setSelectedCurrency(existingAccount.currencyCode)
+            if (existingAccount.icon) {
+                setSelectedIcon(existingAccount.icon)
+            }
         }
     }, [existingAccount])
 
@@ -112,6 +118,7 @@ export default function AccountCreationScreen() {
                 await updateAccount(existingAccount, {
                     name: sanitizedName,
                     accountType: accountType,
+                    icon: selectedIcon,
                 })
 
                 if (Platform.OS !== 'web') {
@@ -131,6 +138,7 @@ export default function AccountCreationScreen() {
                     accountType: accountType,
                     currencyCode: selectedCurrency,
                     initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
+                    icon: selectedIcon,
                 })
 
                 // On web, window.alert blocks. We use logs for E2E and then navigate.
@@ -148,6 +156,7 @@ export default function AccountCreationScreen() {
                 setAccountName('')
                 setAccountType(AccountType.ASSET)
                 setSelectedCurrency(defaultCurrency || AppConfig.defaultCurrency)
+                setSelectedIcon('wallet')
                 setInitialBalance('')
 
                 if (hasExistingAccounts) {
@@ -195,15 +204,29 @@ export default function AccountCreationScreen() {
                     )}
 
                     <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                        <AppInput
-                            label="Account Name"
-                            value={accountName}
-                            onChangeText={setAccountName}
-                            placeholder="e.g., Checking Account"
-                            autoFocus
-                            maxLength={100}
-                            returnKeyType="next"
-                        />
+                        <View style={styles.nameRow}>
+                            <TouchableOpacity
+                                onPress={() => setIsIconPickerVisible(true)}
+                                style={styles.iconButton}
+                            >
+                                <IvyIcon
+                                    name={selectedIcon as IconName}
+                                    color={theme.primary}
+                                    size={40}
+                                />
+                            </TouchableOpacity>
+                            <View style={{ flex: 1 }}>
+                                <AppInput
+                                    label="Account Name"
+                                    value={accountName}
+                                    onChangeText={setAccountName}
+                                    placeholder="e.g., Checking Account"
+                                    autoFocus
+                                    maxLength={100}
+                                    returnKeyType="next"
+                                />
+                            </View>
+                        </View>
                     </AppCard>
 
                     {!isEditMode && (
@@ -250,6 +273,16 @@ export default function AccountCreationScreen() {
                     <View style={{ height: Spacing.xxxl }} />
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <IconPickerModal
+                visible={isIconPickerVisible}
+                onClose={() => setIsIconPickerVisible(false)}
+                onSelect={(icon) => {
+                    setSelectedIcon(icon)
+                    setIsIconPickerVisible(false)
+                }}
+                selectedIcon={selectedIcon as any}
+            />
         </Screen>
     )
 }
@@ -284,5 +317,13 @@ const styles = StyleSheet.create({
         borderRadius: Shape.radius.sm,
         borderWidth: 1,
         marginBottom: Spacing.lg,
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+    },
+    iconButton: {
+        marginTop: Spacing.md, // Align with input text roughly
     },
 });

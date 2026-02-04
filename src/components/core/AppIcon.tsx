@@ -1,4 +1,5 @@
 import { useTheme } from '@/src/hooks/use-theme';
+import { logger } from '@/src/utils/logger';
 import {
     AlertCircle,
     AlertTriangle,
@@ -9,6 +10,8 @@ import {
     ArrowUp,
     ArrowUpDown,
     BarChart3,
+    Briefcase,
+    Bus,
     Calendar,
     CheckCircle2,
     ChevronDown,
@@ -16,14 +19,18 @@ import {
     ChevronRight,
     ChevronUp,
     Circle,
+    Coffee,
     Copy,
+    CreditCard,
     DollarSign,
     Edit2,
     Eye,
     EyeOff,
     FileText,
+    Film,
     FolderOpen,
     Home,
+    Landmark,
     Menu,
     MoreVertical,
     Plus,
@@ -32,15 +39,18 @@ import {
     RefreshCw,
     Search,
     Settings,
+    ShoppingBag,
+    ShoppingCart,
     Tag,
     Trash2,
+    TrendingUp,
+    Vault,
     Wallet,
     X,
     XCircle
 } from 'lucide-react-native';
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import { logger } from '@/src/utils/logger';
 
 // Map internal names to Lucide components
 export const IconMap = {
@@ -81,9 +91,26 @@ export const IconMap = {
     plusCircle: PlusCircle,
     circle: Circle,
     arrowRight: ArrowRight,
+    bank: Landmark,
+    safe: Vault,
+    creditCard: CreditCard,
+    trendingUp: TrendingUp,
+    briefcase: Briefcase,
+    coffee: Coffee,
+    shoppingCart: ShoppingCart,
+    bus: Bus,
+    film: Film,
+    shoppingBag: ShoppingBag,
 } as const;
 
 export type IconName = keyof typeof IconMap;
+
+/**
+ * Helper to check if a string is a valid icon name
+ */
+export const isValidIconName = (name: string | undefined): name is IconName => {
+    return Boolean(name && name in IconMap);
+};
 
 interface AppIconProps {
     name: IconName;

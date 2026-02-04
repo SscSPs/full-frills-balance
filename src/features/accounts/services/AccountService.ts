@@ -13,6 +13,7 @@ export interface CreateAccountData {
     accountType: string;
     currencyCode: string;
     description?: string;
+    icon?: string;
     initialBalance?: number;
     orderNum?: number;
     parentAccountId?: string;
@@ -32,6 +33,7 @@ export class AccountService {
             accountType: data.accountType as AccountType,
             currencyCode: data.currencyCode,
             description: data.description,
+            icon: data.icon,
             orderNum: orderNum,
             parentAccountId: data.parentAccountId
         });
@@ -101,6 +103,7 @@ export class AccountService {
             accountType: updates.accountType as AccountType,
             currencyCode: updates.currencyCode,
             description: updates.description,
+            icon: updates.icon,
             orderNum: updates.orderNum,
             parentAccountId: updates.parentAccountId
         });

@@ -52,6 +52,10 @@ export class TransactionService {
 
         return transactions.map(tx => {
             const account = accountMap.get(tx.accountId);
+            // Counter account logic: if journal has 2 transactions, the other one is the counter
+            const otherTx = transactions.find(t => t.id !== tx.id);
+            const counterAccount = otherTx ? accountMap.get(otherTx.accountId) : undefined;
+
             return {
                 id: tx.id,
                 journalId: tx.journalId,
@@ -64,6 +68,10 @@ export class TransactionService {
                 journalDescription: journal?.description,
                 accountName: account?.name,
                 accountType: account?.accountType as any,
+                icon: account?.icon,
+                counterAccountName: counterAccount?.name,
+                counterAccountType: counterAccount?.accountType as any,
+                counterAccountIcon: counterAccount?.icon,
                 runningBalance: tx.runningBalance,
                 displayTitle: journal?.description || 'Transaction',
                 displayType: journal?.displayType as any,
@@ -131,6 +139,9 @@ export class TransactionService {
                         const accountMap = new Map(accounts.map(a => [a.id, a]));
                         return transactions.map(tx => {
                             const account = accountMap.get(tx.accountId);
+                            const otherTx = transactions.find(t => t.id !== tx.id);
+                            const counterAccount = otherTx ? accountMap.get(otherTx.accountId) : undefined;
+
                             return {
                                 id: tx.id,
                                 journalId: tx.journalId,
@@ -143,6 +154,10 @@ export class TransactionService {
                                 journalDescription: journal?.description,
                                 accountName: account?.name,
                                 accountType: account?.accountType as any,
+                                icon: account?.icon,
+                                counterAccountName: counterAccount?.name,
+                                counterAccountType: counterAccount?.accountType as any,
+                                counterAccountIcon: counterAccount?.icon,
                                 runningBalance: tx.runningBalance,
                                 displayTitle: journal?.description || 'Transaction',
                                 displayType: journal?.displayType as any,
@@ -184,6 +199,7 @@ export class TransactionService {
                                 journalDescription: journal?.description,
                                 accountName: account?.name,
                                 accountType: account?.accountType as any,
+                                icon: account?.icon,
                                 runningBalance: tx.runningBalance,
                                 displayTitle: journal?.description || 'Transaction',
                                 displayType: journal?.displayType as any,
@@ -225,6 +241,7 @@ export class TransactionService {
                 journalDescription: journal?.description,
                 accountName: account?.name,
                 accountType: account?.accountType as any,
+                icon: account?.icon,
                 runningBalance: tx.runningBalance,
                 displayTitle: journal?.description || 'Transaction',
                 displayType: journal?.displayType as any,

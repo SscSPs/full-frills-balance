@@ -56,6 +56,7 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
                 <View style={[styles.headerSection, { backgroundColor: accentColor }]}>
                     <View style={styles.headerTop}>
                         <IvyIcon
+                            name={account.icon as any}
                             label={account.name}
                             color={textColor}
                             size={24}

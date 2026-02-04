@@ -11,6 +11,7 @@ export interface ImportedAccount {
   currencyCode: string
   parentAccountId?: string
   description?: string
+  icon?: string
   orderNum?: number
   createdAt?: number
 }
@@ -73,6 +74,7 @@ export class ImportRepository {
           record.currencyCode = acc.currencyCode
           record.parentAccountId = acc.parentAccountId
           record.description = acc.description
+          record.icon = acc.icon
           record.orderNum = acc.orderNum
           record._raw._status = 'synced'
           if (acc.createdAt) (record as any)._raw.created_at = acc.createdAt

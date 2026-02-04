@@ -26,6 +26,7 @@ export interface AccountBalance {
     transactionCount: number;
     asOfDate: number;
     accountType: AccountType;
+    icon?: string;
 }
 
 /**
@@ -49,6 +50,8 @@ export interface TransactionWithAccountInfo {
     journalDescription?: string;
     displayTitle?: string;
     isIncrease?: boolean;
+    icon?: string;
+    counterAccountIcon?: string;
 
     // Semantic flags
     flowDirection: 'IN' | 'OUT';
@@ -97,6 +100,7 @@ export interface AccountWithBalance {
     currentBalance: number;
     transactionCount: number;
     lastActivityDate?: number;
+    icon?: string;
 
     // Audit fields
     createdAt: Date;
@@ -119,6 +123,7 @@ export interface EnrichedJournal {
         id: string;
         name: string;
         accountType: string;
+        icon?: string;
         role: 'SOURCE' | 'DESTINATION' | 'NEUTRAL';
     }[];
     semanticType?: string;
@@ -146,6 +151,8 @@ export interface EnrichedTransaction {
     displayTitle: string;
     displayType: JournalDisplayType;
     isIncrease: boolean;
+    icon?: string;
+    counterAccountIcon?: string;
     exchangeRate?: number;
     semanticType?: string;
     semanticLabel?: string;
@@ -176,6 +183,7 @@ export interface AccountCreateInput {
     currencyCode: string;
     description?: string;
     parentAccountId?: string;
+    icon?: string;
     initialBalance?: number;
 }
 
@@ -187,6 +195,7 @@ export interface AccountUpdateInput {
     description?: string;
     parentAccountId?: string;
     accountType?: AccountType;
+    icon?: string;
 }
 
 /**

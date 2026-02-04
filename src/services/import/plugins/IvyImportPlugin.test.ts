@@ -31,10 +31,10 @@ jest.mock('@/src/data/database/idGenerator', () => ({
 describe('IvyImportPlugin', () => {
     const validIvyData = {
         accounts: [
-            { id: 'ivy-a1', name: 'Wallet', currency: 'USD', color: 0, accountCategory: 'ASSET' }
+            { id: 'ivy-a1', name: 'Wallet', currency: 'USD', color: 0, accountCategory: 'ASSET', icon: 'wallet-icon' }
         ],
         categories: [
-            { id: 'ivy-c1', name: 'Food', color: 0 }
+            { id: 'ivy-c1', name: 'Food', color: 0, icon: 'food-icon' }
         ],
         transactions: [
             { id: 'ivy-t1', accountId: 'ivy-a1', type: 'EXPENSE', amount: 50, categoryId: 'ivy-c1', dateTime: '2023-01-01T10:00:00Z' }
@@ -63,6 +63,13 @@ describe('IvyImportPlugin', () => {
 
             expect(integrityService.resetDatabase).toHaveBeenCalledWith({ seedDefaults: false });
             expect(importRepository.batchInsert).toHaveBeenCalled();
+
+            const lastBatch = (importRepository.batchInsert as jest.Mock).mock.calls[0][0];
+            const walletAcc = lastBatch.accounts.find((a: any) => a.name === 'Wallet');
+            const foodAcc = lastBatch.accounts.find((a: any) => a.name === 'Food - USD');
+
+            expect(walletAcc.icon).toBe('wallet-icon');
+            expect(foodAcc.icon).toBe('food-icon');
 
             // Should create 2 accounts (1 original + 1 category-currency specific)
             expect(stats.accounts).toBe(2);

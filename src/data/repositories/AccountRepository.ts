@@ -10,6 +10,7 @@ export interface AccountPersistenceInput {
   accountType: AccountType
   currencyCode: string
   description?: string
+  icon?: string
   orderNum?: number
   parentAccountId?: string
 }

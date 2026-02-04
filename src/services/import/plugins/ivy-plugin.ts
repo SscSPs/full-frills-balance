@@ -154,6 +154,7 @@ export const ivyPlugin: ImportPlugin = {
             currency: string;
             type: AccountType;
             description: string;
+            icon?: string;
             isOriginal: boolean;
         }
 
@@ -178,6 +179,7 @@ export const ivyPlugin: ImportPlugin = {
                 currency: ivyAcc.currency || 'USD',
                 type: mappedType,
                 description,
+                icon: ivyAcc.icon,
                 isOriginal: true
             });
         });
@@ -202,6 +204,7 @@ export const ivyPlugin: ImportPlugin = {
                 currency,
                 type,
                 description: 'Imported Category',
+                icon: ivyCat.icon,
                 isOriginal: false
             });
         }
@@ -228,6 +231,7 @@ export const ivyPlugin: ImportPlugin = {
                 accountType: acc.type,
                 currencyCode: acc.currency,
                 description: acc.description,
+                icon: acc.icon,
                 orderNum: index + 1
             });
         });

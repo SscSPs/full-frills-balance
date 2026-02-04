@@ -1,11 +1,11 @@
-import { AppIcon, IconName } from '@/src/components/core/AppIcon';
+import { AppIcon, IconName, isValidIconName } from '@/src/components/core/AppIcon';
 import { AppText } from '@/src/components/core/AppText';
 import { getContrastColor } from '@/src/constants/theme-helpers';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
 interface IvyIconProps {
-    name?: IconName;
+    name?: string | IconName;
     label?: string;
     color: string;
     size?: number;
@@ -21,6 +21,8 @@ export const IvyIcon = ({ name, label, color, size = 40, style }: IvyIconProps) 
     const iconSize = size * 0.6;
     const labelSize = size * 0.5;
 
+    const hasValidIcon = name && isValidIconName(name as string);
+
     return (
         <View style={[
             styles.container,
@@ -32,8 +34,8 @@ export const IvyIcon = ({ name, label, color, size = 40, style }: IvyIconProps) 
             },
             style
         ]}>
-            {name ? (
-                <AppIcon name={name} size={iconSize} color={textColor} />
+            {hasValidIcon ? (
+                <AppIcon name={name as IconName} size={iconSize} color={textColor} />
             ) : label ? (
                 <AppText
                     style={{

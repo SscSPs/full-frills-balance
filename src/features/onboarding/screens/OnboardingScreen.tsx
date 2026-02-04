@@ -1,155 +1,207 @@
-import { AppButton, AppCard, AppIcon, AppInput, AppText } from '@/src/components/core';
-import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
-import { useUI } from '@/src/contexts/UIContext'; // Fixed relative import
-import { useCurrencies } from '@/src/hooks/use-currencies';
-import { useImport } from '@/src/hooks/use-import';
+import { Spacing } from '@/src/constants';
+import { useUI } from '@/src/contexts/UIContext';
+import { AccountType } from '@/src/data/models/Account';
+import { useAccountActions } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { StepAccountSuggestions } from '../components/StepAccountSuggestions';
+import { StepCategorySuggestions } from '../components/StepCategorySuggestions';
+import { StepCurrency } from '../components/StepCurrency';
+import { StepSplash } from '../components/StepSplash';
+
+const DEFAULT_ACCOUNTS = [
+    { name: 'Cash', icon: 'wallet', type: AccountType.ASSET },
+    { name: 'Bank', icon: 'bank', type: AccountType.ASSET },
+    { name: 'Savings', icon: 'safe', type: AccountType.ASSET },
+    { name: 'Revolut', icon: 'creditCard', type: AccountType.ASSET },
+];
+
+const DEFAULT_CATEGORIES = [
+    { name: 'Salary', icon: 'trendingUp', type: AccountType.INCOME },
+    { name: 'Work', icon: 'briefcase', type: AccountType.INCOME },
+    { name: 'Food & Drink', icon: 'coffee', type: AccountType.EXPENSE },
+    { name: 'Groceries', icon: 'shoppingCart', type: AccountType.EXPENSE },
+    { name: 'Transportation', icon: 'bus', type: AccountType.EXPENSE },
+    { name: 'Entertainment', icon: 'film', type: AccountType.EXPENSE },
+    { name: 'Shopping', icon: 'shoppingBag', type: AccountType.EXPENSE },
+    { name: 'Bills', icon: 'fileText', type: AccountType.EXPENSE },
+];
 
 export default function OnboardingScreen() {
-    const [step, setStep] = useState(1)
-    const [name, setName] = useState('')
-    const [selectedCurrency, setSelectedCurrency] = useState('USD')
-    const { currencies } = useCurrencies()
-    const [isCompleting, setIsCompleting] = useState(false)
-    const { theme } = useTheme()
-    const { completeOnboarding } = useUI()
-    const { isImporting } = useImport()
+    const [step, setStep] = useState(1);
+    const [name, setName] = useState('');
+    const [selectedCurrency, setSelectedCurrency] = useState('USD');
+    const [selectedAccounts, setSelectedAccounts] = useState<string[]>(['Cash', 'Bank']);
+    const [customAccounts, setCustomAccounts] = useState<{ name: string; icon: string }[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>(['Salary', 'Food & Drink', 'Groceries', 'Bills']);
+    const [customCategories, setCustomCategories] = useState<{ name: string; type: 'INCOME' | 'EXPENSE'; icon: string }[]>([]);
+    const [isCompleting, setIsCompleting] = useState(false);
 
-    const handleContinue = async () => {
-        if (step === 1) {
-            if (!name.trim()) return
-            setStep(2)
-            return
+    const { theme } = useTheme();
+    const { completeOnboarding } = useUI();
+    const { createAccount } = useAccountActions();
+
+    const handleContinue = () => setStep(prev => prev + 1);
+    const handleBack = () => setStep(prev => prev - 1);
+
+    const toggleAccount = (name: string) => {
+        setSelectedAccounts(prev =>
+            prev.includes(name) ? prev.filter(a => a !== name) : [...prev, name]
+        );
+    };
+
+    const addCustomAccount = (name: string, icon: string) => {
+        if (!selectedAccounts.includes(name)) {
+            setSelectedAccounts(prev => [...prev, name]);
         }
+        if (!customAccounts.some(a => a.name === name) && !DEFAULT_ACCOUNTS.some(a => a.name === name)) {
+            setCustomAccounts(prev => [...prev, { name, icon }]);
+        }
+    };
 
-        setIsCompleting(true)
+    const toggleCategory = (name: string) => {
+        setSelectedCategories(prev =>
+            prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
+        );
+    };
+
+    const addCustomCategory = (name: string, type: 'INCOME' | 'EXPENSE', icon: string) => {
+        if (!selectedCategories.includes(name)) {
+            setSelectedCategories(prev => [...prev, name]);
+        }
+        if (!customCategories.some(c => c.name === name) && !DEFAULT_CATEGORIES.some(c => c.name === name)) {
+            setCustomCategories(prev => [...prev, { name, type, icon }]);
+        }
+    };
+
+    const handleFinish = async () => {
+        if (isCompleting) return;
+        setIsCompleting(true);
         try {
-            await completeOnboarding(name.trim(), selectedCurrency)
-            router.replace('/account-creation' as any)
+            logger.info(`Starting onboarding completion for user: ${name}`);
+
+            // 1. Complete basic onboarding (prefs)
+            await completeOnboarding(name.trim(), selectedCurrency);
+
+            // 2. Create selected accounts (defaults + custom)
+            for (const accountName of selectedAccounts) {
+                let type = AccountType.ASSET;
+                let icon = 'wallet';
+                const def = DEFAULT_ACCOUNTS.find(a => a.name === accountName);
+                const custom = customAccounts.find(a => a.name === accountName);
+
+                if (def) {
+                    type = def.type;
+                    icon = def.icon;
+                } else if (custom) {
+                    icon = custom.icon;
+                }
+
+                await createAccount({
+                    name: accountName,
+                    accountType: type,
+                    currencyCode: selectedCurrency,
+                    initialBalance: 0,
+                    icon,
+                });
+            }
+
+            // 3. Create selected categories (defaults + custom)
+            for (const categoryName of selectedCategories) {
+                // Skip if already created in accounts step (though unlikely with naming conventions)
+                if (selectedAccounts.includes(categoryName)) continue;
+
+                let type = AccountType.EXPENSE;
+                let icon = 'tag';
+                const def = DEFAULT_CATEGORIES.find(c => c.name === categoryName);
+                const custom = customCategories.find(c => c.name === categoryName);
+
+                if (def) {
+                    type = def.type as any as AccountType;
+                    icon = def.icon;
+                } else if (custom) {
+                    type = custom.type as any as AccountType;
+                    icon = custom.icon;
+                }
+
+                await createAccount({
+                    name: categoryName,
+                    accountType: type as any as AccountType,
+                    currencyCode: selectedCurrency,
+                    initialBalance: 0,
+                    icon,
+                });
+            }
+
+            logger.info('Onboarding complete, redirecting to accounts');
+            router.replace('/(tabs)/accounts' as any);
         } catch (error) {
-            logger.error('Failed to complete onboarding:', error)
+            logger.error('Failed to complete onboarding:', error);
         } finally {
-            setIsCompleting(false)
+            setIsCompleting(false);
         }
-    }
+    };
 
-    const renderNameStep = () => (
-        <>
-            <AppText variant="title" style={styles.title}>
-                Welcome to Balance
-            </AppText>
-            <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Let&apos;s start with your name to personalize your experience.
-            </AppText>
-
-            <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                <AppInput
-                    placeholder="Enter your name"
-                    value={name}
-                    onChangeText={setName}
-                    autoFocus
-                />
-            </AppCard>
-
-            <AppButton
-                variant="primary"
-                size="lg"
-                onPress={handleContinue}
-                disabled={!name.trim() || isCompleting}
-                style={styles.continueButton}
-            >
-                Continue
-            </AppButton>
-
-            <View style={styles.divider}>
-                <View style={[styles.line, { backgroundColor: theme.border }]} />
-                <AppText variant="caption" color="secondary" style={styles.orText}>OR</AppText>
-                <View style={[styles.line, { backgroundColor: theme.border }]} />
-            </View>
-
-            <AppButton
-                variant="outline"
-                size="md"
-                onPress={() => router.push('/import-selection')}
-                loading={isImporting}
-                disabled={isImporting || isCompleting}
-            >
-                Import Backup
-            </AppButton>
-        </>
-    )
-
-    const renderCurrencyStep = () => (
-        <>
-            <AppText variant="title" style={styles.title}>
-                Default Currency
-            </AppText>
-            <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Choose the default currency for your accounts and transactions. You can change this later for individual accounts.
-            </AppText>
-
-            <AppCard elevation="sm" padding="none" style={styles.currencyListContainer}>
-                <FlatList
-                    data={currencies}
-                    keyExtractor={(item) => item.code}
-                    style={styles.currencyList}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.currencyItem,
-                                { borderBottomColor: theme.border },
-                                selectedCurrency === item.code && { backgroundColor: withOpacity(theme.primary, Opacity.soft / 2) }
-                            ]}
-                            onPress={() => setSelectedCurrency(item.code)}
-                        >
-                            <View style={styles.currencyInfo}>
-                                <AppText variant="body">{item.name}</AppText>
-                                <AppText variant="caption" color="secondary">{item.code}</AppText>
-                            </View>
-                            <View style={styles.currencyRight}>
-                                <AppText variant="subheading">{item.symbol}</AppText>
-                                {selectedCurrency === item.code && (
-                                    <AppIcon name="checkCircle" size={Size.sm} color={theme.primary} style={{ marginLeft: Spacing.sm }} />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                />
-            </AppCard>
-
-            <View style={styles.buttonContainer}>
-                <AppButton
-                    variant="primary"
-                    size="lg"
-                    onPress={handleContinue}
-                    disabled={isCompleting}
-                    style={styles.continueButton}
-                >
-                    {isCompleting ? 'Setting up...' : 'Get Started'}
-                </AppButton>
-                <AppButton
-                    variant="outline"
-                    size="lg"
-                    onPress={() => setStep(1)}
-                    disabled={isCompleting}
-                >
-                    Back
-                </AppButton>
-            </View>
-        </>
-    )
+    const renderStep = () => {
+        switch (step) {
+            case 1:
+                return (
+                    <StepSplash
+                        name={name}
+                        setName={setName}
+                        onContinue={handleContinue}
+                        isCompleting={isCompleting}
+                    />
+                );
+            case 2:
+                return (
+                    <StepCurrency
+                        selectedCurrency={selectedCurrency}
+                        onSelect={setSelectedCurrency}
+                        onContinue={handleContinue}
+                        onBack={handleBack}
+                        isCompleting={isCompleting}
+                    />
+                );
+            case 3:
+                return (
+                    <StepAccountSuggestions
+                        selectedAccounts={selectedAccounts}
+                        customAccounts={customAccounts}
+                        onToggleAccount={toggleAccount}
+                        onAddCustomAccount={addCustomAccount}
+                        onContinue={handleContinue}
+                        onBack={handleBack}
+                        isCompleting={isCompleting}
+                    />
+                );
+            case 4:
+                return (
+                    <StepCategorySuggestions
+                        selectedCategories={selectedCategories}
+                        customCategories={customCategories}
+                        onToggleCategory={toggleCategory}
+                        onAddCustomCategory={addCustomCategory}
+                        onContinue={handleFinish}
+                        onBack={handleBack}
+                        isCompleting={isCompleting}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.content}>
-                {step === 1 ? renderNameStep() : renderCurrencyStep()}
+                {renderStep()}
             </View>
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -162,56 +214,7 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         width: '100%',
         alignSelf: 'center',
-    },
-    title: {
-        textAlign: 'center',
-        marginBottom: Spacing.sm,
-    },
-    subtitle: {
-        textAlign: 'center',
-        marginBottom: Spacing.xl,
-    },
-    inputContainer: {
-        marginBottom: Spacing.xl,
-    },
-    currencyListContainer: {
-        height: Size.xxl * 6,
-        marginBottom: Spacing.xl,
-        overflow: 'hidden',
-    },
-    currencyList: {
         flex: 1,
-    },
-    currencyItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: Spacing.lg,
-        borderBottomWidth: 1,
-    },
-    currencyInfo: {
-        flex: 1,
-    },
-    currencyRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    buttonContainer: {
-        gap: Spacing.md,
-    },
-    continueButton: {
-        marginBottom: Spacing.xs,
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: Spacing.lg,
-    },
-    line: {
-        flex: 1,
-        height: 1,
-    },
-    orText: {
-        marginHorizontal: Spacing.md,
+        justifyContent: 'center',
     },
 });

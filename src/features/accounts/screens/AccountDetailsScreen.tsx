@@ -181,6 +181,7 @@ export default function AccountDetailsScreen() {
                 <AppCard elevation="sm" style={styles.accountInfoCard}>
                     <View style={styles.accountHeader}>
                         <IvyIcon
+                            name={account.icon as any}
                             label={account.name}
                             color={account.accountType.toLowerCase() === 'liability' ? theme.liability : (account.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
                             size={48}

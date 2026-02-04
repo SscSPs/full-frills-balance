@@ -21,7 +21,8 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
             {
                 id: transaction.accountId,
                 name: transaction.accountName || 'Unknown',
-                accountType: transaction.accountType || 'ASSET'
+                accountType: transaction.accountType || 'ASSET',
+                icon: transaction.icon
             }
         ];
 
@@ -30,7 +31,8 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
             accounts.unshift({
                 id: 'counter',
                 name: transaction.counterAccountName || transaction.counterAccountType,
-                accountType: transaction.counterAccountType
+                accountType: transaction.counterAccountType,
+                icon: transaction.counterAccountIcon
             });
         }
 
@@ -45,7 +47,7 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
         return {
             label: base.label,
             typeColor: base.colorHex,
-            typeIcon: isIncrease ? 'arrowUp' : 'arrowDown',
+            typeIcon: (isIncrease ? 'arrowUp' : 'arrowDown') as any,
             amountPrefix: isIncrease ? '+ ' : '− ',
         };
     }, [theme, transaction.displayType, transaction.isIncrease, transaction.semanticLabel]);
@@ -60,8 +62,8 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
             amount={transaction.amount}
             currencyCode={transaction.currencyCode}
             transactionDate={transaction.transactionDate}
-            presentation={presentation}
-            accounts={displayAccounts}
+            presentation={presentation as any}
+            accounts={displayAccounts as any}
             notes={transaction.notes}
             onPress={onPress ? handlePress : undefined}
         />

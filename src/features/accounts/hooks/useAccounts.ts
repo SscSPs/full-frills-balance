@@ -111,6 +111,7 @@ export function useAccountActions() {
         name: string;
         accountType: AccountType;
         currencyCode: string;
+        icon?: string;
         initialBalance?: number;
     }) => {
         return accountService.createAccount(data)
@@ -121,6 +122,7 @@ export function useAccountActions() {
         accountType?: AccountType;
         currencyCode?: string;
         description?: string;
+        icon?: string;
     }) => {
         return accountService.updateAccount(account.id, data)
     }, [])

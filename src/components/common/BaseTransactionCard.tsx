@@ -23,6 +23,7 @@ export interface BaseTransactionCardProps {
         id: string;
         name: string;
         accountType: string;
+        icon?: string;
         role?: 'SOURCE' | 'DESTINATION' | 'NEUTRAL';
     }[];
     notes?: string;
@@ -76,7 +77,7 @@ export const BaseTransactionCard = ({
                             key={acc.id}
                             variant={acc.accountType.toLowerCase() as any}
                             size="sm"
-                            icon={acc.accountType === 'EXPENSE' ? 'tag' : 'wallet'}
+                            icon={(acc.icon || (acc.accountType === 'EXPENSE' ? 'tag' : 'wallet')) as any}
                         >
                             {showPrefix}{acc.name}
                         </Badge>
