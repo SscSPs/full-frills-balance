@@ -1,12 +1,12 @@
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalEditor';
-import { journalEntryService } from '@/src/features/journal/services/JournalEntryService';
+import { journalService } from '@/src/features/journal/services/JournalService';
 import { transactionService } from '@/src/features/journal/services/TransactionService';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 
 // Mock dependencies
-jest.mock('@/src/features/journal/services/JournalEntryService');
+jest.mock('@/src/features/journal/services/JournalService');
 jest.mock('@/src/features/journal/services/TransactionService');
 jest.mock('@/src/data/repositories/JournalRepository');
 jest.mock('@/src/data/repositories/TransactionRepository');
@@ -64,20 +64,20 @@ describe('useJournalEditor', () => {
     it('should fail submission if service fails', async () => {
         const { result } = renderHook(() => useJournalEditor());
 
-        (journalEntryService.submitJournalEntry as jest.Mock).mockResolvedValue({ success: false, error: 'fail' });
+        (journalService.saveMultiLineEntry as jest.Mock).mockResolvedValue({ success: false, error: 'fail' });
 
         await act(async () => {
             await result.current.submit();
         });
 
-        expect(journalEntryService.submitJournalEntry).toHaveBeenCalled();
+        expect(journalService.saveMultiLineEntry).toHaveBeenCalled();
         expect(mockBack).not.toHaveBeenCalled();
     });
 
     it('should succeed submission and navigate back', async () => {
         const { result } = renderHook(() => useJournalEditor());
 
-        (journalEntryService.submitJournalEntry as jest.Mock).mockResolvedValue({ success: true });
+        (journalService.saveMultiLineEntry as jest.Mock).mockResolvedValue({ success: true });
 
         await act(async () => {
             await result.current.submit();

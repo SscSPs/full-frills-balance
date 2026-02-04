@@ -5,7 +5,7 @@
  * Queues account IDs and processes them in batches with debouncing.
  */
 
-import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
+import { accountingRebuildService } from '@/src/services/AccountingRebuildService'
 import { logger } from '@/src/utils/logger'
 
 interface RebuildQueueConfig {
@@ -148,7 +148,7 @@ class RebuildQueueService {
 
                 // Process all accounts in the batch
                 const results = await Promise.allSettled(
-                    batch.map(item => transactionRepository.rebuildRunningBalances(item.id, item.fromDate))
+                    batch.map(item => accountingRebuildService.rebuildAccountBalances(item.id, item.fromDate))
                 )
 
                 // Log any failures

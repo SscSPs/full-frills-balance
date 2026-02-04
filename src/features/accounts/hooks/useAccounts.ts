@@ -5,15 +5,12 @@ import Account, { AccountType } from '@/src/data/models/Account'
 import Transaction from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
+import { accountService } from '@/src/features/accounts/services/AccountService'
 import { useObservable } from '@/src/hooks/useObservable'
-import { AccountService } from '@/src/features/accounts/services/AccountService'
 import { AccountBalance } from '@/src/types/domain'
 import { accountingService } from '@/src/utils/accountingService'
 import { useCallback, useMemo } from 'react'
 import { from, map, of, switchMap } from 'rxjs'
-
-// Instantiate service outside hook (assuming singleton pattern)
-const accountService = new AccountService()
 
 /**
  * Hook to reactively get all accounts

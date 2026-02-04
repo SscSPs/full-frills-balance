@@ -8,8 +8,8 @@ import { AccountType } from '@/src/data/models/Account'
 import { TransactionType } from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
-import { accountService } from '@/src/features/accounts'
 import { balanceService } from '@/src/services/BalanceService'
+import { accountService } from '../AccountService'
 
 describe('AccountRepository', () => {
     beforeEach(async () => {

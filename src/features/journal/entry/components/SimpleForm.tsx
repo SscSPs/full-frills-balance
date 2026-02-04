@@ -46,7 +46,7 @@ export const SimpleForm = ({
     initialDescription = '',
 }: SimpleFormProps) => {
     const { theme } = useTheme();
-    const { createJournal, updateJournal } = useJournalActions();
+    const { saveSimpleEntry } = useJournalActions();
     const { fetchRate } = useExchangeRate();
 
     const transactionAccounts = useMemo(() => {
@@ -198,66 +198,16 @@ export const SimpleForm = ({
 
         setIsSubmitting(true);
         try {
-            // Calculate cross-currency values if needed
-            let destAmount = numAmount;
-            let destRate = undefined;
-
-            if (isCrossCurrency && exchangeRate) {
-                // 1. Get destination currency precision
-                const precision = new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: destCurrency || 'USD'
-                }).resolvedOptions().maximumFractionDigits;
-
-                // 2. Calculate rounded destination amount
-                // We must round FIRST, then calculate the rate that gets us back to source amount
-                // otherwise the journal won't balance due to rounding errors
-                const rawDestAmount = numAmount * exchangeRate;
-                const roundedDestAmount = parseFloat(rawDestAmount.toFixed(precision));
-
-                if (roundedDestAmount <= 0) {
-                    throw new Error("Converted amount is too small to process");
-                }
-
-                destAmount = roundedDestAmount;
-                // 3. Calculate the implied rate that validates: Dest * Rate = Source
-                destRate = numAmount / roundedDestAmount;
-            }
-
-            const entryData: any = {
+            await saveSimpleEntry({
+                type,
+                amount: numAmount,
+                sourceId,
+                destinationId,
                 journalDate: new Date(`${journalDate}T${journalTime}`).getTime(),
                 description: description || undefined,
-                currencyCode: sourceCurrency || 'USD',
-                transactions: [
-                    {
-                        accountId: sourceId,
-                        amount: numAmount,
-                        transactionType: 'CREDIT',
-                        notes: description
-                    },
-                    {
-                        accountId: destinationId,
-                        amount: destAmount,
-                        transactionType: 'DEBIT',
-                        notes: description,
-                        exchangeRate: destRate
-                    }
-                ]
-            };
-
-            if (type === 'income') {
-                entryData.transactions[0].transactionType = 'CREDIT'; // Income
-                entryData.transactions[1].transactionType = 'DEBIT';  // Asset
-            } else if (type === 'transfer') {
-                entryData.transactions[0].transactionType = 'CREDIT'; // Asset
-                entryData.transactions[1].transactionType = 'DEBIT';  // Asset
-            }
-
-            if (journalId) {
-                await updateJournal(journalId, entryData as any);
-            } else {
-                await createJournal(entryData as any);
-            }
+                exchangeRate: (isCrossCurrency && exchangeRate) ? exchangeRate : undefined,
+                journalId
+            });
 
             if (type === 'expense' || type === 'transfer') await preferences.setLastUsedSourceAccountId(sourceId);
             if (type === 'income' || type === 'transfer') await preferences.setLastUsedDestinationAccountId(destinationId);
@@ -266,7 +216,6 @@ export const SimpleForm = ({
             onSuccess();
         } catch (error) {
             logger.error('Failed to save:', error);
-            // Ideally show a toast here, but for now we log
         } finally {
             setIsSubmitting(false);
         }

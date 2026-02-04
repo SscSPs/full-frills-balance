@@ -1,7 +1,7 @@
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
-import { journalEntryService } from '@/src/features/journal/services/JournalEntryService';
+import { journalService } from '@/src/features/journal/services/JournalService';
 import { transactionService } from '@/src/features/journal/services/TransactionService';
 import { JournalEntryLine } from '@/src/types/domain';
 import { showErrorAlert } from '@/src/utils/alerts';
@@ -113,7 +113,13 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
     const submit = async () => {
         setIsSubmitting(true);
         try {
-            const result = await journalEntryService.submitJournalEntry(lines, description, journalDate, journalTime, isEdit ? journalId : undefined);
+            const result = await journalService.saveMultiLineEntry({
+                lines,
+                description,
+                journalDate,
+                journalTime,
+                journalId: isEdit ? journalId : undefined
+            });
 
             if (!result.success) {
                 showErrorAlert(result.error || 'Unknown error');

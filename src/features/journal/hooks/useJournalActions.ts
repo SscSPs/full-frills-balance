@@ -24,11 +24,16 @@ export function useJournalActions() {
         return journalService.duplicateJournal(journalId);
     }, []);
 
+    const saveSimpleEntry = useCallback(async (params: any) => {
+        return journalService.saveSimpleEntry(params);
+    }, []);
+
     return {
         createJournal,
         updateJournal,
         deleteJournal,
         findJournal,
         duplicateJournal,
+        saveSimpleEntry,
     };
 }

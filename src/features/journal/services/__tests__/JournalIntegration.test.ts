@@ -9,8 +9,9 @@ import { TransactionType } from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
 import { balanceService } from '@/src/services/BalanceService'
-import { journalService, transactionService } from '@/src/features/journal'
 import { rebuildQueueService } from '@/src/services/RebuildQueueService'
+import { journalService } from '../JournalService'
+import { transactionService } from '../TransactionService'
 
 describe('JournalRepository', () => {
     let cashAccountId: string

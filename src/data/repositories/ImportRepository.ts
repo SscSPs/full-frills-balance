@@ -133,6 +133,16 @@ export class ImportRepository {
       if (operations.length > 0) {
         await database.batch(...operations)
       }
+
+      // Trigger rebuild for all involved accounts
+      const uniqueAccountIds = Array.from(new Set(data.transactions.map(t => t.accountId)))
+      if (uniqueAccountIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
+        // We find the earliest transaction date in the import to rebuild from there
+        const earliestDate = data.transactions.reduce((min, t) => Math.min(min, t.transactionDate), Date.now())
+        rebuildQueueService.enqueueMany(uniqueAccountIds, earliestDate)
+      }
     })
   }
 }

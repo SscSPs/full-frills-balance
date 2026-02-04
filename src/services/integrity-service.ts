@@ -13,6 +13,7 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { databaseRepository } from '@/src/data/repositories/DatabaseRepository'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
+import { accountingRebuildService } from '@/src/services/AccountingRebuildService'
 import { accountingService } from '@/src/utils/accountingService'
 import { logger } from '@/src/utils/logger'
 import { amountsAreEqual, roundToPrecision } from '@/src/utils/money'
@@ -140,7 +141,7 @@ export class IntegrityService {
      */
     async repairAccountBalance(accountId: string): Promise<boolean> {
         try {
-            await transactionRepository.rebuildRunningBalances(accountId)
+            await accountingRebuildService.rebuildAccountBalances(accountId)
             logger.info(`[IntegrityService] Repaired running balances for account ${accountId}`)
             return true
         } catch (error) {
