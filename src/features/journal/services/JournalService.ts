@@ -25,7 +25,7 @@ export class JournalService {
         // 1. Fetch all unique accounts involved
         const accountIds = [...new Set(data.transactions.map(t => t.accountId))];
         const accounts = await accountRepository.findAllByIds(accountIds);
-        const accountMap = new Map(accounts.map(a => [a.id, a]));
+        // const accountMap = new Map(accounts.map(a => [a.id, a]));
         const accountTypes = new Map(accounts.map(a => [a.id, a.accountType as AccountType]));
 
         // 2. Get precisions
@@ -105,7 +105,7 @@ export class JournalService {
         // Validation and Calculation logic mirrored from createJournal
         const accountIds = [...new Set(data.transactions.map(t => t.accountId))];
         const accounts = await accountRepository.findAllByIds(accountIds);
-        const accountMap = new Map(accounts.map(a => [a.id, a]));
+        // const accountMap = new Map(accounts.map(a => [a.id, a]));
         const accountTypes = new Map(accounts.map(a => [a.id, a.accountType as AccountType]));
 
         const accountPrecisions = new Map<string, number>();

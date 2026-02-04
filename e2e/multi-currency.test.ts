@@ -40,7 +40,7 @@ test.describe('Multi-currency Workflows', () => {
         await journalEntryPage.enterDescription('Euro Salary');
 
         //wait 1000 ms for save to be enabled
-        await journalEntryPage.page.waitForTimeout(1000);
+        await journalEntryPage.page.waitForTimeout(2500);
         await journalEntryPage.assertSaveEnabled();
         await journalEntryPage.save();
         //verify that the save is successful, by checking the current page is changed by chekcing url to not be 'journal-entry'

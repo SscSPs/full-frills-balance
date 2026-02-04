@@ -8,15 +8,15 @@
  * - Composes DashboardHeader + JournalList together
  */
 import { DateRangePicker } from '@/src/components/common/DateRangePicker';
+import { MemoizedJournalCard } from '@/src/components/common/JournalCard';
 import { AppText, FloatingActionButton } from '@/src/components/core';
 import { Spacing } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { DashboardHeader } from '@/src/features/dashboard/components/DashboardHeader';
-import { useSummary } from '@/src/hooks/useSummary';
-import { MemoizedJournalCard } from '@/src/components/common/JournalCard';
 import { useJournals } from '@/src/features/journal/hooks/useJournals';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
+import { useSummary } from '@/src/hooks/useSummary';
 import { EnrichedJournal } from '@/src/types/domain';
 import { DateRange, PeriodFilter } from '@/src/utils/dateUtils';
 import { FlashList } from '@shopify/flash-list';
@@ -123,6 +123,15 @@ export default function DashboardScreen() {
         ) : null
     ), [isLoadingMore]);
 
+    const renderItem = useCallback(({ item }: { item: EnrichedJournal }) => (
+        <MemoizedJournalCard
+            journal={item}
+            onPress={handleJournalPress}
+        />
+    ), [handleJournalPress]);
+
+    const keyExtractor = useCallback((item: EnrichedJournal) => item.id, []);
+
     // Show loading while initializing
     if (!isInitialized) {
         return (
@@ -136,15 +145,6 @@ export default function DashboardScreen() {
     if (!hasCompletedOnboarding) {
         return null;
     }
-
-    const renderItem = useCallback(({ item }: { item: EnrichedJournal }) => (
-        <MemoizedJournalCard
-            journal={item}
-            onPress={handleJournalPress}
-        />
-    ), [handleJournalPress]);
-
-    const keyExtractor = useCallback((item: EnrichedJournal) => item.id, []);
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>

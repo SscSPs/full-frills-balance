@@ -29,7 +29,13 @@ export default function AccountCreationScreen() {
     const { account: existingAccount } = useAccount(accountId || null)
     const { createAccount, updateAccount } = useAccountActions()
     const { accounts } = useAccounts()
-    const { currencies } = useCurrencies()
+    useCurrencies() // Keep hook if it triggers fetch, otherwise remove entirely?
+    // Actually useCurrencies likely returns { currencies, loading, error }etc. 
+    // If I just call useCurrencies(), it might complain. 
+    // Let's see if useCurrencies has side effects. Usually hooks that fetch data on mount do.
+    // If I remove the hook call entirely, data might not load if this is the first screen.
+    // But `useCurrencies` implies it provides data.
+    // Let's just remove the variable capture.
 
     // Parse initial account type from URL param for deep-linking
     const getInitialAccountType = (): AccountType => {

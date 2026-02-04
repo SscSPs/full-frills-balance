@@ -70,7 +70,7 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
                             })));
                         }
                     }
-                } catch (error) {
+                } catch {
                     showErrorAlert('Failed to load transaction');
                 } finally {
                     setIsLoading(false);

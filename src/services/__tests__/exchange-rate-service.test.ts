@@ -1,3 +1,6 @@
+import { exchangeRateRepository } from '@/src/data/repositories/ExchangeRateRepository';
+import { ExchangeRateService } from '@/src/services/exchange-rate-service';
+
 // Mock ExchangeRateRepository
 jest.mock('@/src/data/repositories/ExchangeRateRepository', () => ({
     exchangeRateRepository: {
@@ -6,9 +9,6 @@ jest.mock('@/src/data/repositories/ExchangeRateRepository', () => ({
         cacheRate: jest.fn().mockResolvedValue({}),
     }
 }));
-
-import { exchangeRateRepository } from '@/src/data/repositories/ExchangeRateRepository';
-import { ExchangeRateService } from '@/src/services/exchange-rate-service';
 
 describe('ExchangeRateService', () => {
     let service: ExchangeRateService;

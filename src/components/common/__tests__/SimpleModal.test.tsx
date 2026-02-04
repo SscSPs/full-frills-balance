@@ -4,7 +4,9 @@ import React from 'react';
 
 // Mock expo-router Link
 jest.mock('expo-router', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RN = require('react-native');
   return {
     Link: ({ children, href, ...props }: any) =>
@@ -14,7 +16,9 @@ jest.mock('expo-router', () => {
 
 // Mock core components
 jest.mock('@/src/components/core', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RN = require('react-native');
   return {
     AppButton: ({ children, variant, ...props }: any) =>

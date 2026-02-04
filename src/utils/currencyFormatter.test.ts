@@ -37,19 +37,18 @@ describe('CurrencyFormatter', () => {
 
         it('handles fallback for invalid currency', () => {
             // Mock toLocaleString to throw to test fallback
-            const originalToLocaleString = Number.prototype.toLocaleString;
-            Number.prototype.toLocaleString = jest.fn().mockImplementation(() => { throw new Error('fail') });
+            const spy = jest.spyOn(Number.prototype, 'toLocaleString').mockImplementation(() => { throw new Error('fail') });
 
             const result = CurrencyFormatter.formatAmount(100, 'INVALID');
             expect(result).toBe('100.00 INVALID');
 
-            Number.prototype.toLocaleString = originalToLocaleString;
+            spy.mockRestore();
         });
     });
 
     describe('formatWithPreference', () => {
         it('uses preference currency if set', () => {
-            preferences.defaultCurrencyCode = 'GBP';
+            (preferences as any).defaultCurrencyCode = 'GBP';
             const result = CurrencyFormatter.formatWithPreference(100);
             expect(result).toContain('£');
         });

@@ -2,28 +2,11 @@ import { render, RenderOptions } from '@testing-library/react-native';
 import React, { ReactElement } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Colors } from '@/src/constants';
 import { UIContext } from '@/src/contexts/UIContext';
-import { Theme } from '@react-navigation/native';
 
 // Mock Theme
-const mockTheme: Theme = {
-    dark: false,
-    colors: {
-        primary: Colors.light.tint,
-        background: Colors.light.background,
-        card: Colors.light.background, // fallback
-        text: Colors.light.text,
-        border: '#ccc',
-        notification: 'red',
-    },
-    fonts: { // Mock fonts as the default navigation theme structure
-        regular: { fontFamily: 'System', fontWeight: '400' },
-        medium: { fontFamily: 'System', fontWeight: '500' },
-        bold: { fontFamily: 'System', fontWeight: '700' },
-        heavy: { fontFamily: 'System', fontWeight: '900' },
-    }
-};
+// Mock Theme
+// const mockTheme: Theme = { ... };
 
 const mockUIContext: any = {
     themePreference: 'system' as const,
@@ -65,3 +48,4 @@ const customRender = (
 
 export * from '@testing-library/react-native';
 export { customRender as render };
+

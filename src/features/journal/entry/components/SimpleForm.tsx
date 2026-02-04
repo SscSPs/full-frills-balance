@@ -112,7 +112,7 @@ export const SimpleForm = ({
         };
 
         updateExchangeRate();
-    }, [sourceId, destinationId, sourceCurrency, destCurrency, isCrossCurrency]);
+    }, [sourceId, destinationId, sourceCurrency, destCurrency, isCrossCurrency, fetchRate]);
 
     useEffect(() => {
         const lastSourceId = preferences.lastUsedSourceAccountId;
@@ -190,7 +190,7 @@ export const SimpleForm = ({
                 }
             }
         }
-    }, [type, accounts, transactionAccounts, sourceId, destinationId]);
+    }, [type, accounts, transactionAccounts, sourceId, destinationId, expenseAccounts, incomeAccounts, initialDestinationId, initialSourceId]);
 
     const handleSave = async () => {
         if (!numAmount || numAmount <= 0) return;

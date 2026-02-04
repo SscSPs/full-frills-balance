@@ -52,7 +52,7 @@ describe('useObservable', () => {
         const subject = new Subject<string>();
         // Spy on behavior to verify unsubscription if possible, 
         // usually we trust the effect cleanup, but we can check if data stops updating
-        const { result, unmount } = renderHook(({ f }: { f: () => BehaviorSubject<string> }) => useObservable(f, [f], 'default'), {
+        const { unmount } = renderHook(({ f }: { f: () => BehaviorSubject<string> }) => useObservable(f, [f], 'default'), {
             initialProps: { f: () => subject as any }
         });
 

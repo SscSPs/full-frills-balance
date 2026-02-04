@@ -4,7 +4,9 @@ import React from 'react';
 
 // Mock AppIcon and AppButton to avoid testing them here
 jest.mock('@/src/components/core', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RN = require('react-native');
   return {
     AppIcon: ({ name, size, color, style }: any) =>

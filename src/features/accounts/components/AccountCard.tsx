@@ -28,7 +28,6 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
     const { theme } = useTheme();
 
     const balance = balanceData?.balance || 0;
-    const transactionCount = balanceData?.transactionCount || 0;
 
     // Account type colors for card background/accent
     let accentColor = theme.asset

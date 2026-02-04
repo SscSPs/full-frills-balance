@@ -52,7 +52,7 @@ export const DonutChart = ({ data, size = 200, strokeWidth = 20 }: DonutChartPro
             startAngle += angle;
             return { path: pathData, color: item.color };
         });
-    }, [data, size, strokeWidth, radius, center]);
+    }, [data, radius, center]);
 
     if (data.length === 0) {
         return (

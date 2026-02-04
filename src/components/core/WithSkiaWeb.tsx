@@ -13,7 +13,7 @@ export const WithSkiaWeb = <P extends object>(
     Component: React.ComponentType<P>,
     FallbackComponent?: React.ComponentType<any>
 ) => {
-    return (props: P) => {
+    const WrappedComponent = (props: P) => {
         const [ready, setReady] = useState(Platform.OS !== 'web');
         const { theme } = useTheme();
 
@@ -21,7 +21,6 @@ export const WithSkiaWeb = <P extends object>(
             if (Platform.OS === 'web' && !ready) {
                 const loadSkia = async () => {
                     try {
-                        // Dynamically import Skia for Web
                         const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
                         await LoadSkiaWeb({ locateFile: () => '/canvaskit.wasm' });
                         setReady(true);
@@ -31,7 +30,7 @@ export const WithSkiaWeb = <P extends object>(
                 };
                 loadSkia();
             }
-        }, []);
+        }, [ready]);
 
         if (!ready) {
             if (FallbackComponent) return <FallbackComponent />;
@@ -44,6 +43,8 @@ export const WithSkiaWeb = <P extends object>(
 
         return <Component {...props} />;
     };
+
+    return WrappedComponent;
 };
 
 const styles = StyleSheet.create({

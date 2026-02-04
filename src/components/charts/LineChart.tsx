@@ -65,7 +65,7 @@ export const LineChart = ({ data, height = 200, color, showGradient = true }: Li
         }
 
         return { path: pathStr, gradientPath: gradientPathStr };
-    }, [data, height, CHART_WIDTH, chartColor]);
+    }, [data, height, CHART_WIDTH]);
 
     if (data.length === 0) {
         return (

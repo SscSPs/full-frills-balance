@@ -2,9 +2,11 @@ import { EmptyState } from '@/src/components/common/EmptyState';
 import { fireEvent, render, screen } from '@/src/utils/test-utils';
 import React from 'react';
 
-// Mock AppIcon to avoid testing it here
+// Mock AppIcon and AppButton to avoid testing them here
 jest.mock('@/src/components/core', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const RN = require('react-native');
   return {
     AppIcon: ({ name, size, color, style }: any) =>

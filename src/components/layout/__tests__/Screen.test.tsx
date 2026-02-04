@@ -1,36 +1,28 @@
 import { Screen } from '@/src/components/layout/Screen';
 import { render, screen } from '@/src/utils/test-utils';
 import React from 'react';
+import { ScrollView } from 'react-native';
 
 // Mock NavigationBar to avoid testing it here
 jest.mock('@/src/components/layout/NavigationBar', () => ({
   NavigationBar: ({ title, subtitle, onBack, showBack, backIcon, rightActions }: any) => (
-    <mockView testID="navigation-bar">
-      <mockView testID="nav-title">{title}</mockView>
-      <mockView testID="nav-subtitle">{subtitle}</mockView>
-      <mockView testID="nav-back">{showBack ? 'back' : 'no-back'}</mockView>
-      <mockView testID="nav-actions">{rightActions ? 'actions' : 'no-actions'}</mockView>
-    </mockView>
+    <MockView testID="navigation-bar">
+      <MockView testID="nav-title">{title}</MockView>
+      <MockView testID="nav-subtitle">{subtitle}</MockView>
+      <MockView testID="nav-back">{showBack ? 'back' : 'no-back'}</MockView>
+      <MockView testID="nav-actions">{rightActions ? 'actions' : 'no-actions'}</MockView>
+    </MockView>
   ),
 }));
 
 // Mock View component
-const mockView = ({ children, testID, ...props }: any) => React.createElement('mock-view', { testID, ...props }, children);
-
-// Declare mockView as a global JSX element
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      mockView: any;
-    }
-  }
-}
+const MockView = ({ children, testID, ...props }: any) => React.createElement('mock-view', { testID, ...props }, children);
 
 describe('Screen', () => {
   it('renders correctly with children', () => {
     render(
       <Screen>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -40,7 +32,7 @@ describe('Screen', () => {
   it('renders with title and shows NavigationBar', () => {
     render(
       <Screen title="Test Screen">
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -51,7 +43,7 @@ describe('Screen', () => {
   it('renders with title and subtitle', () => {
     render(
       <Screen title="Test Screen" subtitle="Test Subtitle">
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -62,7 +54,7 @@ describe('Screen', () => {
   it('renders with back button', () => {
     render(
       <Screen title="Test Screen" showBack>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -70,11 +62,11 @@ describe('Screen', () => {
   });
 
   it('renders with header actions', () => {
-    const TestActions = () => <mockView testID="test-actions" />;
+    const TestActions = () => <MockView testID="test-actions" />;
 
     render(
       <Screen title="Test Screen" headerActions={<TestActions />}>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -85,22 +77,24 @@ describe('Screen', () => {
   it('renders non-scrollable content when scrollable is false', () => {
     render(
       <Screen scrollable={false}>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
-    expect(() => screen.UNSAFE_root.findByType('ScrollView')).toThrow();
+    expect(() => screen.UNSAFE_root.findByType(ScrollView)).toThrow();
   });
 
   it('applies padding when withPadding is true', () => {
     render(
       <Screen withPadding>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
     const child = screen.getByTestId('test-child');
-    const parent = child.parent;
+    // The parent of host element 'mock-view' is the MockView component
+    // The parent of MockView is the View from Screen component
+    const parent = child.parent?.parent;
 
     // Check if the parent has padding styles
     expect(parent?.props.style).toEqual(
@@ -115,12 +109,12 @@ describe('Screen', () => {
   it('applies custom styles', () => {
     render(
       <Screen style={{ backgroundColor: 'red' }}>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
     const child = screen.getByTestId('test-child');
-    const parent = child.parent;
+    const parent = child.parent?.parent;
 
     expect(parent?.props.style).toEqual(
       expect.arrayContaining([
@@ -132,7 +126,7 @@ describe('Screen', () => {
   it('passes additional props to SafeAreaView', () => {
     render(
       <Screen testID="custom-screen">
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 
@@ -142,7 +136,7 @@ describe('Screen', () => {
   it('renders without title (no NavigationBar)', () => {
     render(
       <Screen>
-        <mockView testID="test-child" />
+        <MockView testID="test-child" />
       </Screen>
     );
 

@@ -46,6 +46,7 @@ export default function AccountsScreen() {
     const sections = useMemo(() => {
         if (!accounts.length) return []
         return getAccountSections(accounts)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accounts, accountsVersion])
 
     const {
@@ -57,6 +58,8 @@ export default function AccountsScreen() {
         isPrivacyMode,
         version: summaryVersion
     } = useSummary()
+
+
 
     const renderHeader = useMemo(() => {
         const categories = [
@@ -98,6 +101,7 @@ export default function AccountsScreen() {
                 </ScrollView>
             </View>
         )
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         handleReorderPress,
         isPrivacyMode,

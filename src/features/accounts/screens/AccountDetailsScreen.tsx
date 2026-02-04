@@ -42,7 +42,7 @@ export default function AccountDetailsScreen() {
     } = useDateRangeFilter({ defaultToCurrentMonth: true })
 
     const { account, isLoading: accountLoading, version: accountVersion } = useAccount(accountId)
-    const { transactions, isLoading: transactionsLoading, version: txVersion } = useAccountTransactions(accountId, 50, dateRange || undefined)
+    const { transactions, isLoading: transactionsLoading } = useAccountTransactions(accountId, 50, dateRange || undefined)
     const { balanceData, isLoading: balanceLoading, version: balanceVersion } = useAccountBalance(accountId)
     const { deleteAccount, recoverAccount: recoverAction } = useAccountActions()
 
@@ -145,7 +145,128 @@ export default function AccountDetailsScreen() {
                 </>
             )}
         </View>
-    ), [handleDelete, handleEdit, handleRecover, isDeleted, theme.error, theme.income, theme.text, accountVersion]);
+    ), [handleDelete, handleEdit, handleRecover, isDeleted, theme.error, theme.income, theme.text]);
+
+    const renderItem = useCallback(({ item }: { item: EnrichedTransaction }) => (
+        <MemoizedTransactionItem
+            transaction={item}
+            onPress={handleTransactionPress}
+        />
+    ), [handleTransactionPress]);
+
+    const listEmpty = useMemo(() => (
+        transactionsLoading ? (
+            <View style={{ padding: Spacing.lg }}>
+                <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+        ) : (
+            <AppCard elevation="sm" padding="lg">
+                <AppText variant="body" color="secondary" style={styles.emptyText}>
+                    No transactions yet
+                </AppText>
+            </AppCard>
+        )
+    ), [theme.primary, transactionsLoading]);
+
+    const keyExtractor = useCallback((item: EnrichedTransaction) => item.id, []);
+
+
+
+    const listHeader = useMemo(() => {
+        if (!account) return null;
+
+        return (
+            <View style={styles.headerListRegion}>
+                {/* Account Info Card */}
+                <AppCard elevation="sm" style={styles.accountInfoCard}>
+                    <View style={styles.accountHeader}>
+                        <IvyIcon
+                            label={account.name}
+                            color={account.accountType.toLowerCase() === 'liability' ? theme.liability : (account.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
+                            size={48}
+                        />
+                        <View style={styles.titleInfo}>
+                            <AppText variant="title">
+                                {account.name}
+                            </AppText>
+                            <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                                <Badge variant={account.accountType.toLowerCase() as any}>
+                                    {account.accountType}
+                                </Badge>
+                                {isDeleted && (
+                                    <Badge variant="expense">
+                                        DELETED
+                                    </Badge>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={styles.accountStats}>
+                        <View style={styles.statItem}>
+                            <AppText variant="caption" color="secondary">
+                                Current Balance
+                            </AppText>
+                            <AppText variant="heading">
+                                {balanceLoading ? '...' : CurrencyFormatter.format(balance, account.currencyCode)}
+                            </AppText>
+                        </View>
+
+                        <View style={styles.statItem}>
+                            <AppText variant="caption" color="secondary">
+                                Transactions
+                            </AppText>
+                            <AppText variant="subheading">
+                                {balanceLoading ? '...' : transactionCount}
+                            </AppText>
+                        </View>
+                    </View>
+
+                    <View style={[styles.accountMeta, { borderTopWidth: 1, borderTopColor: theme.border }]}>
+                        <TouchableOpacity
+                            style={styles.historyLink}
+                            onPress={handleAuditPress}
+                        >
+                            <AppText variant="caption" color="primary" weight="semibold">View Edit History</AppText>
+                            <AppIcon name="chevronRight" size={14} color={theme.primary} />
+                        </TouchableOpacity>
+                    </View>
+                </AppCard>
+
+                {/* Transaction History Header */}
+                <View style={styles.sectionHeader}>
+                    <AppText variant="heading">
+                        Transaction History
+                    </AppText>
+                    <DateRangeFilter
+                        range={dateRange}
+                        onPress={showDatePicker}
+                        onPrevious={navigatePrevious}
+                        onNext={navigateNext}
+                    />
+                </View>
+            </View>
+        )
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        account,
+        balance,
+        balanceLoading,
+        dateRange,
+        handleAuditPress,
+        isDeleted,
+        navigateNext,
+        navigatePrevious,
+        showDatePicker,
+        theme.asset,
+        theme.border,
+        theme.expense,
+        theme.liability,
+        theme.primary,
+        transactionCount,
+        accountVersion,
+        balanceVersion,
+    ]);
 
     if (accountLoading) {
         return (
@@ -171,120 +292,6 @@ export default function AccountDetailsScreen() {
             </Screen>
         )
     }
-
-    const listHeader = useMemo(() => (
-        <View style={styles.headerListRegion}>
-            {/* Account Info Card */}
-            <AppCard elevation="sm" style={styles.accountInfoCard}>
-                <View style={styles.accountHeader}>
-                    <IvyIcon
-                        label={account.name}
-                        color={account.accountType.toLowerCase() === 'liability' ? theme.liability : (account.accountType.toLowerCase() === 'expense' ? theme.expense : theme.asset)}
-                        size={48}
-                    />
-                    <View style={styles.titleInfo}>
-                        <AppText variant="title">
-                            {account.name}
-                        </AppText>
-                        <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
-                            <Badge variant={account.accountType.toLowerCase() as any}>
-                                {account.accountType}
-                            </Badge>
-                            {isDeleted && (
-                                <Badge variant="expense">
-                                    DELETED
-                                </Badge>
-                            )}
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.accountStats}>
-                    <View style={styles.statItem}>
-                        <AppText variant="caption" color="secondary">
-                            Current Balance
-                        </AppText>
-                        <AppText variant="heading">
-                            {balanceLoading ? '...' : CurrencyFormatter.format(balance, account.currencyCode)}
-                        </AppText>
-                    </View>
-
-                    <View style={styles.statItem}>
-                        <AppText variant="caption" color="secondary">
-                            Transactions
-                        </AppText>
-                        <AppText variant="subheading">
-                            {balanceLoading ? '...' : transactionCount}
-                        </AppText>
-                    </View>
-                </View>
-
-                <View style={[styles.accountMeta, { borderTopWidth: 1, borderTopColor: theme.border }]}>
-                    <TouchableOpacity
-                        style={styles.historyLink}
-                        onPress={handleAuditPress}
-                    >
-                        <AppText variant="caption" color="primary" weight="semibold">View Edit History</AppText>
-                        <AppIcon name="chevronRight" size={14} color={theme.primary} />
-                    </TouchableOpacity>
-                </View>
-            </AppCard>
-
-            {/* Transaction History Header */}
-            <View style={styles.sectionHeader}>
-                <AppText variant="heading">
-                    Transaction History
-                </AppText>
-                <DateRangeFilter
-                    range={dateRange}
-                    onPress={showDatePicker}
-                    onPrevious={navigatePrevious}
-                    onNext={navigateNext}
-                />
-            </View>
-        </View>
-    ), [
-        account,
-        balance,
-        balanceLoading,
-        dateRange,
-        handleAuditPress,
-        isDeleted,
-        navigateNext,
-        navigatePrevious,
-        showDatePicker,
-        theme.asset,
-        theme.border,
-        theme.expense,
-        theme.liability,
-        theme.primary,
-        transactionCount,
-        accountVersion,
-        balanceVersion,
-    ]);
-
-    const renderItem = useCallback(({ item }: { item: EnrichedTransaction }) => (
-        <MemoizedTransactionItem
-            transaction={item}
-            onPress={handleTransactionPress}
-        />
-    ), [handleTransactionPress]);
-
-    const listEmpty = useMemo(() => (
-        transactionsLoading ? (
-            <View style={{ padding: Spacing.lg }}>
-                <ActivityIndicator size="small" color={theme.primary} />
-            </View>
-        ) : (
-            <AppCard elevation="sm" padding="lg">
-                <AppText variant="body" color="secondary" style={styles.emptyText}>
-                    No transactions yet
-                </AppText>
-            </AppCard>
-        )
-    ), [theme.primary, transactionsLoading, txVersion]);
-
-    const keyExtractor = useCallback((item: EnrichedTransaction) => item.id, []);
 
     return (
         <Screen
