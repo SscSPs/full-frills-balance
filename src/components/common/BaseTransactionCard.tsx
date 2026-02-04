@@ -77,7 +77,7 @@ export const BaseTransactionCard = ({
                             key={acc.id}
                             variant={acc.accountType.toLowerCase() as any}
                             size="sm"
-                            icon={(acc.icon || (acc.accountType === 'EXPENSE' ? 'tag' : 'wallet')) as any}
+                            icon={acc.icon as IconName || (acc.accountType === 'EXPENSE' ? 'tag' : 'wallet')}
                         >
                             {showPrefix}{acc.name}
                         </Badge>

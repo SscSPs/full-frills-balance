@@ -50,37 +50,7 @@ export class TransactionService {
         const accounts = await accountRepository.findAllByIds(accountIds);
         const accountMap = new Map(accounts.map(a => [a.id, a]));
 
-        return transactions.map(tx => {
-            const account = accountMap.get(tx.accountId);
-            // Counter account logic: if journal has 2 transactions, the other one is the counter
-            const otherTx = transactions.find(t => t.id !== tx.id);
-            const counterAccount = otherTx ? accountMap.get(otherTx.accountId) : undefined;
-
-            return {
-                id: tx.id,
-                journalId: tx.journalId,
-                accountId: tx.accountId,
-                amount: tx.amount,
-                currencyCode: tx.currencyCode,
-                transactionType: tx.transactionType as any,
-                transactionDate: tx.transactionDate,
-                notes: tx.notes,
-                journalDescription: journal?.description,
-                accountName: account?.name,
-                accountType: account?.accountType as any,
-                icon: account?.icon,
-                counterAccountName: counterAccount?.name,
-                counterAccountType: counterAccount?.accountType as any,
-                counterAccountIcon: counterAccount?.icon,
-                runningBalance: tx.runningBalance,
-                displayTitle: journal?.description || 'Transaction',
-                displayType: journal?.displayType as any,
-                isIncrease: ['ASSET', 'EXPENSE'].includes(account?.accountType || '')
-                    ? tx.transactionType === 'DEBIT'
-                    : tx.transactionType === 'CREDIT',
-                exchangeRate: tx.exchangeRate
-            } as EnrichedTransaction;
-        });
+        return transactions.map(tx => this.mapToEnriched(tx, transactions, accountMap, journal));
     }
 
     /**
@@ -137,36 +107,7 @@ export class TransactionService {
                 return accountRepository.observeByIds(accountIds).pipe(
                     map((accounts) => {
                         const accountMap = new Map(accounts.map(a => [a.id, a]));
-                        return transactions.map(tx => {
-                            const account = accountMap.get(tx.accountId);
-                            const otherTx = transactions.find(t => t.id !== tx.id);
-                            const counterAccount = otherTx ? accountMap.get(otherTx.accountId) : undefined;
-
-                            return {
-                                id: tx.id,
-                                journalId: tx.journalId,
-                                accountId: tx.accountId,
-                                amount: tx.amount,
-                                currencyCode: tx.currencyCode,
-                                transactionType: tx.transactionType as any,
-                                transactionDate: tx.transactionDate,
-                                notes: tx.notes,
-                                journalDescription: journal?.description,
-                                accountName: account?.name,
-                                accountType: account?.accountType as any,
-                                icon: account?.icon,
-                                counterAccountName: counterAccount?.name,
-                                counterAccountType: counterAccount?.accountType as any,
-                                counterAccountIcon: counterAccount?.icon,
-                                runningBalance: tx.runningBalance,
-                                displayTitle: journal?.description || 'Transaction',
-                                displayType: journal?.displayType as any,
-                                isIncrease: ['ASSET', 'EXPENSE'].includes(account?.accountType || '')
-                                    ? tx.transactionType === 'DEBIT'
-                                    : tx.transactionType === 'CREDIT',
-                                exchangeRate: tx.exchangeRate
-                            } as EnrichedTransaction;
-                        });
+                        return transactions.map(tx => this.mapToEnriched(tx, transactions, accountMap, journal));
                     })
                 );
             })
@@ -187,6 +128,9 @@ export class TransactionService {
                         const journalMap = new Map(journals.map(j => [j.id, j]));
                         return transactions.map(tx => {
                             const journal = journalMap.get(tx.journalId);
+                            // Note: for a single account view, we don't always have the full journal transactions here for counter-account
+                            // but we can at least return the basic enrichment
+                            const isIncrease = isBalanceIncrease(account?.accountType as any, tx.transactionType as any);
                             return {
                                 id: tx.id,
                                 journalId: tx.journalId,
@@ -203,9 +147,7 @@ export class TransactionService {
                                 runningBalance: tx.runningBalance,
                                 displayTitle: journal?.description || 'Transaction',
                                 displayType: journal?.displayType as any,
-                                isIncrease: ['ASSET', 'EXPENSE'].includes(account?.accountType || '')
-                                    ? tx.transactionType === 'DEBIT'
-                                    : tx.transactionType === 'CREDIT',
+                                isIncrease,
                                 exchangeRate: tx.exchangeRate
                             } as EnrichedTransaction;
                         });
@@ -228,6 +170,7 @@ export class TransactionService {
 
         return transactions.map((tx: any) => {
             const journal = journalMap.get(tx.journalId);
+            const isIncrease = isBalanceIncrease(account?.accountType as any, tx.transactionType as any);
 
             return {
                 id: tx.id,
@@ -245,10 +188,40 @@ export class TransactionService {
                 runningBalance: tx.runningBalance,
                 displayTitle: journal?.description || 'Transaction',
                 displayType: journal?.displayType as any,
-                isIncrease: isBalanceIncrease(account?.accountType as any, tx.transactionType as any),
+                isIncrease,
                 exchangeRate: tx.exchangeRate
             } as EnrichedTransaction;
         });
+    }
+
+    private mapToEnriched(tx: any, transactions: any[], accountMap: Map<string, any>, journal: any): EnrichedTransaction {
+        const account = accountMap.get(tx.accountId);
+        const otherTx = transactions.find(t => t.id !== tx.id);
+        const counterAccount = otherTx ? accountMap.get(otherTx.accountId) : undefined;
+        const isIncrease = isBalanceIncrease(account?.accountType as any, tx.transactionType as any);
+
+        return {
+            id: tx.id,
+            journalId: tx.journalId,
+            accountId: tx.accountId,
+            amount: tx.amount,
+            currencyCode: tx.currencyCode,
+            transactionType: tx.transactionType as any,
+            transactionDate: tx.transactionDate,
+            notes: tx.notes,
+            journalDescription: journal?.description,
+            accountName: account?.name,
+            accountType: account?.accountType as any,
+            icon: account?.icon,
+            counterAccountName: counterAccount?.name,
+            counterAccountType: counterAccount?.accountType as any,
+            counterAccountIcon: counterAccount?.icon,
+            runningBalance: tx.runningBalance,
+            displayTitle: journal?.description || 'Transaction',
+            displayType: journal?.displayType as any,
+            isIncrease,
+            exchangeRate: tx.exchangeRate
+        } as EnrichedTransaction;
     }
 }
 

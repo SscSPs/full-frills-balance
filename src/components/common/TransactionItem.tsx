@@ -1,4 +1,5 @@
 import { BaseTransactionCard } from '@/src/components/common/BaseTransactionCard';
+import { IconName } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import { EnrichedTransaction, JournalDisplayType } from '@/src/types/domain';
 import { journalPresenter } from '@/src/utils/journalPresenter';
@@ -47,7 +48,7 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
         return {
             label: base.label,
             typeColor: base.colorHex,
-            typeIcon: (isIncrease ? 'arrowUp' : 'arrowDown') as any,
+            typeIcon: (isIncrease ? 'arrowUp' : 'arrowDown') as IconName,
             amountPrefix: isIncrease ? '+ ' : '− ',
         };
     }, [theme, transaction.displayType, transaction.isIncrease, transaction.semanticLabel]);
@@ -62,8 +63,8 @@ export const TransactionItem = ({ transaction, onPress }: TransactionItemProps) 
             amount={transaction.amount}
             currencyCode={transaction.currencyCode}
             transactionDate={transaction.transactionDate}
-            presentation={presentation as any}
-            accounts={displayAccounts as any}
+            presentation={presentation}
+            accounts={displayAccounts}
             notes={transaction.notes}
             onPress={onPress ? handlePress : undefined}
         />
