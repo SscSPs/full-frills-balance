@@ -40,6 +40,9 @@ interface UIState {
   // Privacy
   isPrivacyMode: boolean
 
+  // Account Display
+  showAccountMonthlyStats: boolean
+
   // App Lifecycle
   isRestartRequired: boolean
   restartType: 'IMPORT' | 'RESET' | null
@@ -52,6 +55,7 @@ interface UIContextType extends UIState {
   setThemePreference: (theme: 'light' | 'dark' | 'system') => Promise<void>
   updateUserDetails: (name: string, currency: string) => Promise<void>
   setPrivacyMode: (isPrivacyMode: boolean) => Promise<void>
+  setShowAccountMonthlyStats: (show: boolean) => Promise<void>
   requireRestart: (options: { type: 'IMPORT' | 'RESET'; stats?: { accounts: number; journals: number; transactions: number; auditLogs?: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } }) => void
 }
 
@@ -69,6 +73,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     userName: '',
     defaultCurrency: 'USD',
     isPrivacyMode: false,
+    showAccountMonthlyStats: true,
     isRestartRequired: false,
     restartType: null,
     importStats: null,
@@ -104,6 +109,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           userName: loadedPreferences.userName || '',
           defaultCurrency: loadedPreferences.defaultCurrencyCode || 'USD',
           isPrivacyMode: loadedPreferences.isPrivacyMode || false,
+          showAccountMonthlyStats: loadedPreferences.showAccountMonthlyStats ?? true,
           isRestartRequired: false,
           restartType: null,
           importStats: null,
@@ -173,6 +179,16 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const setShowAccountMonthlyStats = async (showAccountMonthlyStats: boolean) => {
+    try {
+      await preferences.setShowAccountMonthlyStats(showAccountMonthlyStats)
+      setUIState(prev => ({ ...prev, showAccountMonthlyStats }))
+    } catch (error) {
+      logger.warn('Failed to save account stats preference', { error })
+      setUIState(prev => ({ ...prev, showAccountMonthlyStats }))
+    }
+  }
+
   const requireRestart = (options: { type: 'IMPORT' | 'RESET'; stats?: { accounts: number; journals: number; transactions: number; auditLogs?: number; skippedTransactions: number; skippedItems?: { id: string; reason: string; description?: string }[] } }) => {
     setUIState(prev => ({ ...prev, isRestartRequired: true, restartType: options.type, importStats: options.stats || null }))
   }
@@ -183,6 +199,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     setThemePreference,
     updateUserDetails,
     setPrivacyMode,
+    setShowAccountMonthlyStats,
     requireRestart,
   }
 

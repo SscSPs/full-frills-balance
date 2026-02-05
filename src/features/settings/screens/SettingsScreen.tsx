@@ -15,12 +15,13 @@ import { Alert, Platform, StyleSheet, View } from 'react-native';
 export default function SettingsScreen() {
     const { theme } = useTheme();
     const router = useRouter();
+    const ui = useUI();
     const {
         themePreference,
         setThemePreference,
         isPrivacyMode,
         setPrivacyMode,
-    } = useUI();
+    } = ui;
     const { exportToJSON, runIntegrityCheck, cleanupDatabase, resetApp } = useSettingsActions();
     const { isImporting: isImportingData } = useImport();
     const [isExporting, setIsExporting] = useState(false);
@@ -179,6 +180,22 @@ export default function SettingsScreen() {
                             onPress={() => setPrivacyMode(!isPrivacyMode)}
                         >
                             {isPrivacyMode ? 'On' : 'Off'}
+                        </AppButton>
+                    </View>
+
+                    <View style={[styles.divider, { backgroundColor: theme.divider, marginVertical: Spacing.md }]} />
+
+                    <View style={styles.rowBetween}>
+                        <View style={{ flex: 1 }}>
+                            <AppText variant="body" weight="semibold">Account Statistics</AppText>
+                            <AppText variant="caption" color="secondary">Show monthly income/expense on cards</AppText>
+                        </View>
+                        <AppButton
+                            variant={ui.showAccountMonthlyStats ? 'primary' : 'outline'}
+                            size="sm"
+                            onPress={() => ui.setShowAccountMonthlyStats(!ui.showAccountMonthlyStats)}
+                        >
+                            {ui.showAccountMonthlyStats ? 'On' : 'Off'}
                         </AppButton>
                     </View>
                 </AppCard>

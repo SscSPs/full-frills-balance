@@ -1,5 +1,6 @@
 import { AppCard, AppText, IvyIcon } from '@/src/components/core';
-import { Opacity, Palette, Shape, Spacing, Typography } from '@/src/constants';
+import { Opacity, Palette, Shape, Size, Spacing, Typography } from '@/src/constants';
+import { useUI } from '@/src/contexts/UIContext';
 import Account from '@/src/data/models/Account';
 import { useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -26,11 +27,14 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
     const isLoading = initialBalanceData ? false : hookData.isLoading;
 
     const { theme } = useTheme();
+    const ui = useUI();
 
     const balance = balanceData?.balance || 0;
+    const monthlyIncome = balanceData?.monthlyIncome || 0;
+    const monthlyExpenses = balanceData?.monthlyExpenses || 0;
 
     // Account type colors for card background/accent
-    let accentColor = theme.asset
+    let accentColor = theme.asset;
     const typeLower = account.accountType.toLowerCase();
 
     if (typeLower === 'liability') accentColor = theme.liability;
@@ -51,7 +55,7 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
             style={[styles.container, { backgroundColor: theme.surface }]}
             padding="none"
         >
-            <TouchableOpacity onPress={handlePress}>
+            <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
                 {/* Ivy-style Header: Full colored background */}
                 <View style={[styles.headerSection, { backgroundColor: accentColor }]}>
                     <View style={styles.headerTop}>
@@ -59,21 +63,48 @@ export const AccountCard = ({ account, onPress, initialBalanceData }: AccountCar
                             name={account.icon as any}
                             label={account.name}
                             color={textColor}
-                            size={24}
+                            size={Size.avatarSm}
                         />
-                        <View style={styles.titleInfo}>
-                            <AppText variant="body" weight="bold" style={[styles.accountName, { color: textColor }]} numberOfLines={1}>
-                                {account.name}
-                            </AppText>
-                        </View>
+                        <AppText variant="body" weight="bold" style={[styles.accountName, { color: textColor }]} numberOfLines={1}>
+                            {account.name}
+                        </AppText>
                     </View>
 
                     <View style={styles.balanceSection}>
-                        <AppText variant="title" style={[styles.balanceText, { color: textColor }]}>
+                        <AppText variant="title" weight="bold" style={[styles.balanceText, { color: textColor }]}>
                             {isLoading ? '...' : CurrencyFormatter.format(balance, account.currencyCode)}
                         </AppText>
                     </View>
                 </View>
+
+                {/* Ivy-style Footer: Monthly Income/Expenses */}
+                {ui.showAccountMonthlyStats && (
+                    <View
+                        style={[styles.footerSection, { backgroundColor: theme.surface }]}
+                        accessibilityLabel={`Monthly statistics for ${account.name}`}
+                        accessibilityRole="summary"
+                    >
+                        <View style={styles.statsColumn} accessibilityLabel={`Monthly Income: ${CurrencyFormatter.format(monthlyIncome, account.currencyCode)}`}>
+                            <AppText variant="caption" weight="bold" color="secondary" style={styles.statsLabel}>
+                                MONTH INCOME
+                            </AppText>
+                            <AppText variant="body" weight="bold" style={styles.statsValue}>
+                                {CurrencyFormatter.format(monthlyIncome, account.currencyCode)}
+                            </AppText>
+                        </View>
+
+                        <View style={[styles.divider, { backgroundColor: theme.divider }]} accessibilityRole="none" />
+
+                        <View style={styles.statsColumn} accessibilityLabel={`Monthly Expenses: ${CurrencyFormatter.format(monthlyExpenses, account.currencyCode)}`}>
+                            <AppText variant="caption" weight="bold" color="secondary" style={styles.statsLabel}>
+                                MONTH EXPENSES
+                            </AppText>
+                            <AppText variant="body" weight="bold" style={styles.statsValue}>
+                                {CurrencyFormatter.format(monthlyExpenses, account.currencyCode)}
+                            </AppText>
+                        </View>
+                    </View>
+                )}
             </TouchableOpacity>
         </AppCard>
     );
@@ -87,11 +118,13 @@ const styles = StyleSheet.create({
     },
     headerSection: {
         paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.xl,
+        paddingTop: Spacing.xl,
+        paddingBottom: Spacing.xxxxl,
     },
     headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: Spacing.md,
         marginBottom: Spacing.md,
     },
     titleInfo: {
@@ -100,17 +133,37 @@ const styles = StyleSheet.create({
     },
     accountName: {
         fontSize: Typography.sizes.lg,
+        flex: 1,
     },
     balanceSection: {
-        marginTop: Spacing.xs,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     balanceText: {
-        fontSize: Typography.sizes.hero / 1.5, // hero is too big (72), so we scale it or use xxxl
+        fontSize: Typography.sizes.xxxl,
         fontFamily: Typography.fonts.bold,
     },
-    reconciledText: {
-        marginTop: Spacing.xs,
-        opacity: Opacity.medium,
+    footerSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+    },
+    statsColumn: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statsLabel: {
+        fontSize: Typography.sizes.xs,
+        marginBottom: Spacing.xs,
+        opacity: Opacity.heavy,
+    },
+    statsValue: {
+        fontSize: Typography.sizes.sm,
+    },
+    divider: {
+        width: 2,
+        height: 32,
+        borderRadius: 1,
     },
 });

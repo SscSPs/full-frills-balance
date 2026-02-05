@@ -2,13 +2,14 @@
  * Reactive Data Hooks for Accounts
  */
 import Account, { AccountType } from '@/src/data/models/Account'
-import Transaction from '@/src/data/models/Transaction'
+import Transaction, { TransactionType } from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { accountService } from '@/src/features/accounts/services/AccountService'
 import { useObservable } from '@/src/hooks/useObservable'
 import { AccountBalance } from '@/src/types/domain'
 import { accountingService } from '@/src/utils/accountingService'
+import { roundToPrecision } from '@/src/utils/money'
 import { useCallback, useMemo } from 'react'
 import { from, map, of, switchMap } from 'rxjs'
 
@@ -67,14 +68,31 @@ export function useAccountBalance(accountId: string | null) {
                         from(currencyRepository.getPrecision(account.currencyCode)).pipe(
                             map((precision) => {
                                 let balance = 0
+                                let monthlyIncome = 0
+                                let monthlyExpenses = 0
+                                const startOfMonth = new Date()
+                                startOfMonth.setDate(1)
+                                startOfMonth.setHours(0, 0, 0, 0)
+                                const startOfMonthTs = startOfMonth.getTime()
+
+                                const multiplierMap: Record<string, number> = {
+                                    [TransactionType.DEBIT]: accountingService.getImpactMultiplier(account.accountType as AccountType, TransactionType.DEBIT),
+                                    [TransactionType.CREDIT]: accountingService.getImpactMultiplier(account.accountType as AccountType, TransactionType.CREDIT)
+                                }
+
                                 for (const tx of transactions) {
-                                    balance = accountingService.calculateNewBalance(
-                                        balance,
-                                        tx.amount,
-                                        account.accountType as AccountType,
-                                        tx.transactionType as any,
-                                        precision
-                                    )
+                                    const multiplier = multiplierMap[tx.transactionType] || 0
+                                    const impact = tx.amount * multiplier
+
+                                    balance = roundToPrecision(balance + impact, precision)
+
+                                    if (tx.transactionDate >= startOfMonthTs) {
+                                        if (impact > 0) {
+                                            monthlyIncome = roundToPrecision(monthlyIncome + tx.amount, precision)
+                                        } else if (impact < 0) {
+                                            monthlyExpenses = roundToPrecision(monthlyExpenses + tx.amount, precision)
+                                        }
+                                    }
                                 }
 
                                 return {
@@ -83,7 +101,9 @@ export function useAccountBalance(accountId: string | null) {
                                     currencyCode: account.currencyCode,
                                     transactionCount: transactions.length,
                                     asOfDate: Date.now(),
-                                    accountType: account.accountType as AccountType
+                                    accountType: account.accountType as AccountType,
+                                    monthlyIncome,
+                                    monthlyExpenses
                                 } as AccountBalance
                             })
                         )

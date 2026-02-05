@@ -27,6 +27,8 @@ export interface AccountBalance {
     asOfDate: number;
     accountType: AccountType;
     icon?: string;
+    monthlyIncome: number;
+    monthlyExpenses: number;
 }
 
 /**

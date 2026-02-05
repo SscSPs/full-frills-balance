@@ -10,14 +10,15 @@ interface IvyIconProps {
     color: string;
     size?: number;
     style?: ViewStyle;
+    iconColor?: string;
 }
 
 /**
  * IvyIcon - Circular icon container with contrast-aware content
  * Designed to provide a consistent visual identity for accounts and transaction types.
  */
-export const IvyIcon = ({ name, label, color, size = 40, style }: IvyIconProps) => {
-    const textColor = getContrastColor(color);
+export const IvyIcon = ({ name, label, color, size = 40, style, iconColor }: IvyIconProps) => {
+    const textColor = iconColor || getContrastColor(color);
     const iconSize = size * 0.6;
     const labelSize = size * 0.5;
 
