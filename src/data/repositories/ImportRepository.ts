@@ -1,6 +1,6 @@
 import { database } from '@/src/data/database/Database'
 import Account from '@/src/data/models/Account'
-import AuditLog from '@/src/data/models/AuditLog'
+import AuditLog, { AuditEntityType } from '@/src/data/models/AuditLog'
 import Journal from '@/src/data/models/Journal'
 import Transaction from '@/src/data/models/Transaction'
 import { Q } from '@nozbe/watermelondb'
@@ -52,7 +52,7 @@ export interface ImportedTransaction {
 
 export interface ImportedAuditLog {
   id: string
-  entityType: string
+  entityType: AuditEntityType
   entityId: string
   action: string
   changes: string

@@ -1,9 +1,9 @@
-import AuditLog from '@/src/data/models/AuditLog';
+import AuditLog, { AuditEntityType } from '@/src/data/models/AuditLog';
 import { AuditLogEntry } from '@/src/features/audit/components/AuditLogItem';
 import { useObservable } from '@/src/hooks/useObservable';
 import { auditService } from '@/src/services/audit-service';
 
-export function useAuditLogs(params: { entityType?: string; entityId?: string }) {
+export function useAuditLogs(params: { entityType?: AuditEntityType; entityId?: string }) {
     const { entityType, entityId } = params;
     const isFiltered = !!(entityType && entityId);
 

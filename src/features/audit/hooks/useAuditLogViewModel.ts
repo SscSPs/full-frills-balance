@@ -1,3 +1,4 @@
+import { AuditEntityType } from '@/src/data/models/AuditLog';
 import { useAuditAccounts } from '@/src/features/audit/hooks/useAuditData';
 import { useAuditLogs } from '@/src/features/audit/hooks/useAuditLogs';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -16,7 +17,7 @@ export interface AuditLogViewModel {
 
 export function useAuditLogViewModel(): AuditLogViewModel {
     const { theme } = useTheme();
-    const { entityType, entityId } = useLocalSearchParams<{ entityType?: string; entityId?: string }>();
+    const { entityType, entityId } = useLocalSearchParams<{ entityType?: AuditEntityType; entityId?: string }>();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     const { accountMap, isLoading: accountsLoading } = useAuditAccounts();

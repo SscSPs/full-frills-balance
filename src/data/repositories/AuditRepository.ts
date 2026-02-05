@@ -1,12 +1,12 @@
 import { database } from '@/src/data/database/Database'
-import AuditLog, { AuditAction } from '@/src/data/models/AuditLog'
+import AuditLog, { AuditAction, AuditEntityType } from '@/src/data/models/AuditLog'
 import { Q } from '@nozbe/watermelondb'
 
-export interface AuditEntry {
-    entityType: string
+export interface AuditEntry<T = any> {
+    entityType: AuditEntityType
     entityId: string
     action: AuditAction
-    changes: any // Will be JSON stringified
+    changes: T // Will be JSON stringified
 }
 
 export class AuditRepository {
@@ -17,10 +17,10 @@ export class AuditRepository {
     /**
      * Log an audit entry
      */
-    async log(entry: AuditEntry): Promise<void> {
+    async log<T>(entry: AuditEntry<T>): Promise<void> {
         await database.write(async () => {
-            await this.auditLogs.create((record) => {
-                record.entityType = entry.entityType
+            await this.auditLogs.create((record: AuditLog) => {
+                record.entityType = entry.entityType.toLowerCase() as AuditEntityType
                 record.entityId = entry.entityId
                 record.action = entry.action
                 record.changes = JSON.stringify(entry.changes)
@@ -34,12 +34,12 @@ export class AuditRepository {
      * Find audit logs for a specific entity
      */
     async findByEntity(
-        entityType: string,
+        entityType: AuditEntityType,
         entityId: string
     ): Promise<AuditLog[]> {
         return this.auditLogs
             .query(
-                Q.where('entity_type', entityType),
+                Q.where('entity_type', entityType.toLowerCase()),
                 Q.where('entity_id', entityId),
                 Q.sortBy('timestamp', Q.desc)
             )
@@ -50,12 +50,12 @@ export class AuditRepository {
      * Observe audit logs for a specific entity
      */
     observeByEntity(
-        entityType: string,
+        entityType: AuditEntityType,
         entityId: string
     ) {
         return this.auditLogs
             .query(
-                Q.where('entity_type', entityType),
+                Q.where('entity_type', entityType.toLowerCase()),
                 Q.where('entity_id', entityId),
                 Q.sortBy('timestamp', Q.desc)
             )

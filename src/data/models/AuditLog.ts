@@ -7,10 +7,12 @@ export enum AuditAction {
     DELETE = 'DELETE',
 }
 
+export type AuditEntityType = 'account' | 'journal' | 'transaction'
+
 export default class AuditLog extends Model {
     static table = 'audit_logs'
 
-    @field('entity_type') entityType!: string // 'journal', 'transaction', 'account'
+    @field('entity_type') entityType!: AuditEntityType
     @field('entity_id') entityId!: string
     @field('action') action!: AuditAction
     @field('changes') changes!: string // JSON string of before/after state

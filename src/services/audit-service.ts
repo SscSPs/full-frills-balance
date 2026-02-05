@@ -1,4 +1,5 @@
-import AuditLog from '@/src/data/models/AuditLog'
+import { database } from '@/src/data/database/Database'
+import AuditLog, { AuditEntityType } from '@/src/data/models/AuditLog'
 import { AuditEntry, auditRepository } from '@/src/data/repositories/AuditRepository'
 
 /**
@@ -10,7 +11,7 @@ export class AuditService {
     /**
      * Log an audit entry
      */
-    async log(entry: AuditEntry): Promise<void> {
+    async log<T>(entry: AuditEntry<T>): Promise<void> {
         return auditRepository.log(entry)
     }
 
@@ -18,7 +19,7 @@ export class AuditService {
      * Get audit trail for a specific entity
      */
     async getAuditTrail(
-        entityType: string,
+        entityType: AuditEntityType,
         entityId: string
     ): Promise<AuditLog[]> {
         return auditRepository.findByEntity(entityType, entityId)
@@ -34,7 +35,7 @@ export class AuditService {
     /**
      * Observe audit trail for a specific entity
      */
-    observeAuditTrail(entityType: string, entityId: string) {
+    observeAuditTrail(entityType: AuditEntityType, entityId: string) {
         return auditRepository.observeByEntity(entityType, entityId)
     }
 
@@ -43,6 +44,36 @@ export class AuditService {
      */
     observeRecentLogs(limit: number = 100) {
         return auditRepository.observeRecent(limit)
+    }
+
+    /**
+     * Cleanup legacy entity types (convert to lowercase)
+     * This is an idempotent one-time migration.
+     */
+    async cleanupLegacyEntityTypes(): Promise<number> {
+        const allLogs = await auditRepository.findAll()
+        const uppercaseLogs = allLogs.filter(log => log.entityType !== log.entityType.toLowerCase())
+
+        if (uppercaseLogs.length === 0) return 0
+
+        await database.write(async () => {
+            const batches = []
+            for (let i = 0; i < uppercaseLogs.length; i += 100) {
+                batches.push(uppercaseLogs.slice(i, i + 100))
+            }
+
+            for (const batch of batches) {
+                await database.batch(
+                    ...batch.map(log =>
+                        log.prepareUpdate(record => {
+                            record.entityType = log.entityType.toLowerCase() as AuditEntityType
+                        })
+                    )
+                )
+            }
+        })
+
+        return uppercaseLogs.length
     }
 }
 
