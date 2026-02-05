@@ -14,7 +14,7 @@ describe('usePaginatedObservable', () => {
             expect(result.current.items).toEqual(['a', 'b']);
             expect(result.current.isLoading).toBe(false);
         });
-        expect(observe).toHaveBeenCalledWith(2, undefined);
+        expect(observe).toHaveBeenCalledWith(2, undefined, undefined);
     });
 
     it('should handle pagination (loadMore)', async () => {
@@ -38,10 +38,10 @@ describe('usePaginatedObservable', () => {
 
         // Wait for limit to update
         await waitFor(() => {
-            expect(observe).toHaveBeenCalledWith(20, undefined);
+            expect(observe).toHaveBeenCalledWith(20, undefined, undefined);
         });
 
-        expect(observe).toHaveBeenLastCalledWith(20, undefined);
+        expect(observe).toHaveBeenLastCalledWith(20, undefined, undefined);
     });
 
     it('should set hasMore to false when fewer items returned than limit', async () => {
@@ -75,18 +75,15 @@ describe('usePaginatedObservable', () => {
 
         // Simulate loadMore to increase limit
         act(() => result.current.loadMore());
-        // Verify limit increased (mock implementation of hook logic implies it calls observe with higher limit)
-        // But verifying internal state 'currentLimit' is hard without spy or effect trigger.
-        // We can verify 'observe' call args.
-        await waitFor(() => expect(observe).toHaveBeenCalledWith(10, initialRange));
+        // Verify limit increased
+        await waitFor(() => expect(observe).toHaveBeenCalledWith(10, initialRange, undefined));
 
         // Change date range
         rerender({ range: newRange });
 
         // Should reset to page size (10)
-        // We wait for the observe call to happen with new parameters
         await waitFor(() => {
-            expect(observe).toHaveBeenCalledWith(10, newRange);
+            expect(observe).toHaveBeenCalledWith(10, newRange, undefined);
         });
     });
 
@@ -102,6 +99,19 @@ describe('usePaginatedObservable', () => {
 
         await waitFor(() => {
             expect(result.current.items).toEqual(['enriched']);
+        });
+    });
+
+    it('should pass searchQuery to observe', async () => {
+        const observe = jest.fn().mockReturnValue(of([]));
+        renderHook(() => usePaginatedObservable({
+            pageSize: 10,
+            observe,
+            searchQuery: 'test-query'
+        }));
+
+        await waitFor(() => {
+            expect(observe).toHaveBeenCalledWith(10, undefined, 'test-query');
         });
     });
 });
