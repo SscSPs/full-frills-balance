@@ -1,6 +1,7 @@
 import { useUI } from '@/src/contexts/UIContext';
 import { useJournalListViewModel } from '@/src/features/journal/hooks/useJournalListViewModel';
-import { useSummary } from '@/src/hooks/useSummary';
+import { useMonthlyFlow } from '@/src/hooks/useMonthlyFlow';
+import { useNetWorth } from '@/src/hooks/useNetWorth';
 import { DateRange } from '@/src/utils/dateUtils';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -41,17 +42,23 @@ export interface DashboardViewModel {
 
 export function useDashboardViewModel(): DashboardViewModel {
     const router = useRouter();
-    const { userName, hasCompletedOnboarding, isInitialized } = useUI();
+    const { userName, hasCompletedOnboarding, isInitialized, isPrivacyMode, setPrivacyMode } = useUI();
+
     const {
-        income,
-        expense,
         netWorth,
         totalAssets,
         totalLiabilities,
-        isPrivacyMode,
-        togglePrivacyMode,
-        isLoading: isSummaryLoading,
-    } = useSummary();
+        isLoading: isWealthLoading,
+    } = useNetWorth();
+
+    const {
+        income,
+        expense,
+        isLoading: isFlowLoading,
+    } = useMonthlyFlow();
+
+    const isSummaryLoading = isWealthLoading || isFlowLoading;
+    const togglePrivacyMode = useCallback(() => setPrivacyMode(!isPrivacyMode), [isPrivacyMode, setPrivacyMode]);
 
     const list = useJournalListViewModel({
         pageSize: 50,

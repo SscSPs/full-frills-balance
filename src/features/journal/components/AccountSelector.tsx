@@ -1,12 +1,13 @@
-import { AppText } from '@/src/components/core';
+import { AppText, ListRow } from '@/src/components/core';
 import { Shape, Spacing } from '@/src/constants';
+import Account from '@/src/data/models/Account';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface AccountSelectorProps {
     visible: boolean;
-    accounts: any[]; // Replace with proper Account type when available
+    accounts: Account[];
     onClose: () => void;
     onSelect: (accountId: string) => void;
 }
@@ -39,20 +40,16 @@ export function AccountSelector({
                         data={accounts}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={[styles.accountItem, {
-                                    backgroundColor: theme.surface,
-                                    borderColor: theme.border
-                                }]}
+                            <ListRow
+                                title={item.name}
+                                subtitle={`${item.accountType} • ${item.currencyCode}`}
                                 onPress={() => onSelect(item.id)}
-                            >
-                                <View>
-                                    <AppText variant="body">{item.name}</AppText>
-                                    <AppText variant="caption" color="secondary">
-                                        {item.accountType} • {item.currencyCode}
-                                    </AppText>
-                                </View>
-                            </TouchableOpacity>
+                                style={[styles.accountRow, {
+                                    backgroundColor: theme.surface,
+                                    borderColor: theme.border,
+                                }]}
+                                padding="md"
+                            />
                         )}
                         contentContainerStyle={styles.accountsListContent}
                         style={styles.accountsList}
@@ -69,7 +66,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        borderTopLeftRadius: Shape.radius.r2, // More pronounced Ivy-style rounding
+        borderTopLeftRadius: Shape.radius.r2,
         borderTopRightRadius: Shape.radius.r2,
         maxHeight: '70%',
     },
@@ -80,14 +77,10 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
         borderBottomWidth: 1,
     },
-    accountItem: {
-        padding: Spacing.md,
+    accountRow: {
         borderWidth: 1,
         borderRadius: Shape.radius.r3,
         marginBottom: Spacing.sm,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
     },
     accountsList: {
         flex: 1,

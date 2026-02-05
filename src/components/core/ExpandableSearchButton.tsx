@@ -1,9 +1,8 @@
 import { AppIcon } from '@/src/components/core/AppIcon';
 import { Opacity, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
-import React, { useRef } from 'react';
+import React from 'react';
 import {
-    LayoutAnimation,
     Platform,
     StyleSheet,
     TextInput,
@@ -11,6 +10,7 @@ import {
     UIManager,
     View
 } from 'react-native';
+import { useExpandableSearch } from './hooks/useExpandableSearch';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -21,6 +21,7 @@ interface ExpandableSearchButtonProps {
     value: string;
     onChangeText: (text: string) => void;
     placeholder?: string;
+    onExpandChange?: (isExpanded: boolean) => void;
 }
 
 /**
@@ -32,33 +33,17 @@ interface ExpandableSearchButtonProps {
 export const ExpandableSearchButton = ({
     value,
     onChangeText,
-    placeholder = "Search..."
+    placeholder = "Search...",
+    onExpandChange,
 }: ExpandableSearchButtonProps) => {
     const { theme } = useTheme();
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const inputRef = useRef<TextInput>(null);
-
-    // Keep expanded if there's a search value
-    const shouldStayExpanded = value.length > 0;
-
-
-    const handleExpand = () => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setIsExpanded(true);
-        setTimeout(() => inputRef.current?.focus(), 100);
-    };
-
-    const handleCollapse = () => {
-        if (shouldStayExpanded) return;
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setIsExpanded(false);
-        inputRef.current?.blur();
-    };
-
-    const handleClear = () => {
-        onChangeText('');
-        inputRef.current?.focus();
-    };
+    const {
+        isExpanded,
+        handleExpand,
+        handleCollapse,
+        handleClear,
+        inputRef
+    } = useExpandableSearch({ value, onChangeText, onExpandChange });
 
     if (!isExpanded) {
         return (
@@ -118,13 +103,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         height: Size.xxl,
+        minHeight: Size.xxl,
         borderRadius: Shape.radius.md,
-        paddingHorizontal: Spacing.sm,
-        borderWidth: 1,
+        paddingHorizontal: Spacing.md,
         flex: 1,
     },
     icon: {
-        marginRight: Spacing.sm,
+        marginRight: Spacing.md,
     },
     input: {
         flex: 1,

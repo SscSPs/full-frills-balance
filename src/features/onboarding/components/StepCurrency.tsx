@@ -1,9 +1,9 @@
-import { AppButton, AppCard, AppIcon, AppText } from '@/src/components/core';
+import { AppButton, AppCard, AppIcon, AppText, ListRow } from '@/src/components/core';
 import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 interface StepCurrencyProps {
     selectedCurrency: string;
@@ -36,27 +36,27 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
                 <FlatList
                     data={currencies}
                     keyExtractor={(item) => item.code}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.currencyItem,
-                                { borderBottomColor: theme.border },
-                                selectedCurrency === item.code && { backgroundColor: withOpacity(theme.primary, Opacity.soft / 2) }
-                            ]}
-                            onPress={() => onSelect(item.code)}
-                        >
-                            <View style={styles.currencyInfo}>
-                                <AppText variant="body">{item.name}</AppText>
-                                <AppText variant="caption" color="secondary">{item.code}</AppText>
-                            </View>
-                            <View style={styles.currencyRight}>
-                                <AppText variant="subheading">{item.symbol}</AppText>
-                                {selectedCurrency === item.code && (
-                                    <AppIcon name="checkCircle" size={Size.sm} color={theme.primary} style={{ marginLeft: Spacing.sm }} />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item, index }) => {
+                        const isSelected = selectedCurrency === item.code;
+                        return (
+                            <ListRow
+                                title={item.name}
+                                subtitle={item.code}
+                                trailing={
+                                    <View style={styles.currencyRight}>
+                                        <AppText variant="subheading">{item.symbol}</AppText>
+                                        {isSelected && (
+                                            <AppIcon name="checkCircle" size={Size.sm} color={theme.primary} style={{ marginLeft: Spacing.sm }} />
+                                        )}
+                                    </View>
+                                }
+                                onPress={() => onSelect(item.code)}
+                                showDivider={index < currencies.length - 1}
+                                padding="lg"
+                                style={isSelected ? { backgroundColor: withOpacity(theme.primary, Opacity.soft / 2) } : undefined}
+                            />
+                        );
+                    }}
                 />
             </AppCard>
 

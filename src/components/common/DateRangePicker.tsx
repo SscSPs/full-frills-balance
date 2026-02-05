@@ -1,12 +1,13 @@
 import { AppButton, AppText, Divider, IconButton } from '@/src/components/core';
 import { getDatePickerStyles, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
-import { DateRange, getLastNRange, getMonthRange, PeriodFilter } from '@/src/utils/dateUtils';
+import { DateRange, PeriodFilter } from '@/src/utils/dateUtils';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from 'react-native-ui-datepicker';
+import { useDateRangePicker } from './hooks/useDateRangePicker';
 
 interface DateRangePickerProps {
     visible: boolean;
@@ -21,170 +22,22 @@ export function DateRangePicker({ visible, onClose, onSelect, currentFilter }: D
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
 
-    // View State
-    const [view, setView] = useState<PickerView>('MENU');
-    const [draftFilter, setDraftFilter] = useState<PeriodFilter>(currentFilter);
-
-    // Sync draft with current when opening
-    useEffect(() => {
-        if (visible) {
-            setDraftFilter(currentFilter);
-
-            // Sync local inputs based on filter type
-            if (currentFilter.type === 'CUSTOM' && currentFilter.startDate && currentFilter.endDate) {
-                setCustomRange({
-                    startDate: dayjs(currentFilter.startDate),
-                    endDate: dayjs(currentFilter.endDate)
-                });
-            } else {
-                setCustomRange({ startDate: null, endDate: null });
-            }
-
-            if (currentFilter.type === 'LAST_N') {
-                setLastNValue((currentFilter.lastN ?? 7).toString());
-                setLastNUnit(currentFilter.lastNUnit ?? 'days');
-            } else {
-                setLastNValue('7');
-                setLastNUnit('days');
-            }
-        }
-    }, [visible, currentFilter]);
-
-    // Data State
-    const [customRange, setCustomRange] = useState<{ startDate: dayjs.Dayjs | null, endDate: dayjs.Dayjs | null }>({
-        startDate: null,
-        endDate: null
-    });
-
-    const [lastNValue, setLastNValue] = useState('7');
-    const [lastNUnit, setLastNUnit] = useState<'days' | 'weeks' | 'months'>('days');
-
-    // Constants
-    // Generate chronological months: Past 25 ... Current ... Future 13
-    const monthList = React.useMemo(() => {
-        const list = [];
-        const today = dayjs();
-
-        // Past 25 months
-        for (let i = 25; i > 0; i--) {
-            const d = today.subtract(i, 'month');
-            list.push({ month: d.month(), year: d.year(), label: d.format('MMM YYYY') });
-        }
-
-        // Current month
-        list.push({ month: today.month(), year: today.year(), label: today.format('MMM YYYY') });
-
-        // Future 13 months
-        for (let i = 1; i <= 13; i++) {
-            const d = today.add(i, 'month');
-            list.push({ month: d.month(), year: d.year(), label: d.format('MMM YYYY') });
-        }
-        return list;
-    }, []);
-
-    const INITIAL_MONTH_INDEX = 25; // The current month is at index 25
-    const flatListRef = React.useRef<FlatList>(null);
-
-    // Scroll to current month (index 25) or selected month when opening
-    useEffect(() => {
-        if (visible && flatListRef.current) {
-            let targetIndex = INITIAL_MONTH_INDEX;
-
-            if (currentFilter.type === 'MONTH') {
-                const foundIndex = monthList.findIndex(
-                    m => m.month === currentFilter.month && m.year === currentFilter.year
-                );
-                if (foundIndex !== -1) {
-                    targetIndex = foundIndex;
-                }
-            }
-
-            // Small timeout to ensure layout is ready
-            setTimeout(() => {
-                flatListRef.current?.scrollToIndex({ index: targetIndex, animated: false, viewPosition: 0.5 });
-            }, 100);
-        }
-    }, [visible, currentFilter, monthList]);
-
-    // Handlers
-    const handleSelectMonth = (month: number, year: number) => {
-        setDraftFilter({ type: 'MONTH', month, year });
-        // Optional: Scroll to that month on select?
-        // Let's keep it centered on Open.
-    };
-
-    const handleSelectAllTime = () => {
-        setDraftFilter({ type: 'ALL_TIME' });
-    };
-
-    // Called when Last N inputs change
-    const updateLastN = (nStr: string, unit: 'days' | 'weeks' | 'months') => {
-        setLastNValue(nStr);
-        setLastNUnit(unit);
-
-        const n = parseInt(nStr);
-        if (!isNaN(n) && n > 0) {
-            setDraftFilter({ type: 'LAST_N', lastN: n, lastNUnit: unit });
-        }
-    };
-
-    const handleDateSelect = (params: { date: any }) => {
-        const date = dayjs(params.date);
-        let newRange = { ...customRange };
-
-        if (view === 'START_DATE') {
-            newRange.startDate = date;
-        } else {
-            newRange.endDate = date;
-        }
-
-        setCustomRange(newRange);
-
-        // Allow partial selection in draft
-        if (newRange.startDate || newRange.endDate) {
-            setDraftFilter({
-                type: 'CUSTOM',
-                startDate: newRange.startDate ? newRange.startDate.valueOf() : 0,
-                endDate: newRange.endDate ? newRange.endDate.valueOf() : 0 // temporary placeholder
-            });
-        }
-
-        setView('MENU');
-    };
-
-    const handleApply = () => {
-        let range: DateRange | null = null;
-
-        if (draftFilter.type === 'MONTH' && draftFilter.month !== undefined && draftFilter.year !== undefined) {
-            const mRange = getMonthRange(draftFilter.month, draftFilter.year);
-            range = { ...mRange, label: `${dayjs().month(draftFilter.month).format('MMM')} ${draftFilter.year}` };
-        } else if (draftFilter.type === 'LAST_N' && draftFilter.lastN && draftFilter.lastNUnit) {
-            range = getLastNRange(draftFilter.lastN, draftFilter.lastNUnit);
-            range.label = `Last ${draftFilter.lastN} ${draftFilter.lastNUnit}`;
-        } else if (draftFilter.type === 'CUSTOM') {
-            // Handle custom range logic with defaults
-            const start = customRange.startDate ? customRange.startDate.startOf('day') : dayjs(0); // Epoch if missing start
-            const end = customRange.endDate ? customRange.endDate.endOf('day') : dayjs().endOf('day'); // End of today if missing end
-
-            // If both missing (shouldn't happen if type is CUSTOM but safe check), default to Today
-            if (!customRange.startDate && !customRange.endDate) {
-                // Fallback to all time or today? 
-                // If user clicked custom but selected nothing, maybe just return null or All Time.
-                // But let's assume they want "All Time" effectively if nothing selected?
-                // Or stick to current defaults.
-            }
-
-            range = {
-                startDate: start.valueOf(),
-                endDate: end.valueOf(),
-                label: `${start.year() === 1970 ? 'Start' : start.format('MMM D')} - ${customRange.endDate ? end.format('MMM D') : 'Now'}`
-            };
-        }
-        // ALL_TIME remains null range
-
-        onSelect(range, draftFilter);
-        onClose();
-    };
+    const {
+        view,
+        setView,
+        draftFilter,
+        customRange,
+        lastNValue,
+        lastNUnit,
+        monthList,
+        flatListRef,
+        handleSelectMonth,
+        handleSelectAllTime,
+        updateLastN,
+        handleDateSelect,
+        handleApply,
+        INITIAL_MONTH_INDEX,
+    } = useDateRangePicker({ visible, currentFilter, onSelect, onClose });
 
     // Renders
     const renderDatePicker = () => (

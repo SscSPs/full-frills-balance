@@ -1,9 +1,9 @@
-import { AppButton, AppCard, AppIcon, AppText, Badge, IconButton } from '@/src/components/core';
+import { AppButton, AppCard, AppIcon, AppText, Badge, IconButton, ListRow } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
 import { TransactionDetailsViewModel } from '@/src/features/journal/hooks/useTransactionDetailsViewModel';
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 export function TransactionDetailsView(vm: TransactionDetailsViewModel) {
     const {
@@ -118,65 +118,67 @@ export function TransactionDetailsView(vm: TransactionDetailsViewModel) {
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
                     <View style={styles.infoSection}>
-                        <InfoRow label="Date" value={formattedDate} />
-                        <InfoRow label="Journal ID" value={journalIdShort} />
-                        <TouchableOpacity
-                            style={styles.historyLink}
+                        <ListRow
+                            title="Date"
+                            trailing={<AppText variant="body">{formattedDate}</AppText>}
+                            padding="sm"
+                        />
+                        <ListRow
+                            title="Journal ID"
+                            trailing={<AppText variant="body">{journalIdShort}</AppText>}
+                            padding="sm"
+                        />
+                        <ListRow
+                            title="History"
+                            trailing={
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                                    <AppText variant="body" color="primary">View Edit History</AppText>
+                                    <AppIcon name="chevronRight" size={Typography.sizes.sm} color={theme.primary} />
+                                </View>
+                            }
                             onPress={onHistoryPress}
-                        >
-                            <AppText variant="caption" color="secondary" style={styles.infoLabel}>History</AppText>
-                            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.xs }}>
-                                <AppText variant="body" color="primary">View Edit History</AppText>
-                                <AppIcon name="chevronRight" size={Typography.sizes.sm} color={theme.primary} />
-                            </View>
-                        </TouchableOpacity>
+                            padding="sm"
+                        />
                     </View>
 
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
-                    <AppText variant="caption" color="secondary" style={{ marginBottom: Spacing.md }}>
+                    <AppText variant="caption" color="secondary" style={{ marginBottom: Spacing.md, paddingHorizontal: Spacing.md }}>
                         BREAKDOWN
                     </AppText>
 
-                    {splitItems.map((item) => (
-                        <TouchableOpacity
+                    {splitItems.map((item, index) => (
+                        <ListRow
                             key={item.id}
-                            style={styles.splitRow}
-                            onPress={item.onPress}
-                        >
-                            <View style={styles.splitIconContainer}>
+                            title={item.accountName}
+                            subtitle={item.transactionType}
+                            leading={
                                 <View style={[styles.directionIcon, { backgroundColor: item.iconBackground }]}>
                                     <AppIcon
-                                        name={item.iconName}
+                                        name={item.iconName as any}
                                         size={16}
                                         color={item.iconColor}
                                     />
                                 </View>
-                            </View>
-                            <View style={styles.splitInfo}>
-                                <AppText variant="body" color="primary">{item.accountName}</AppText>
-                                <AppText variant="caption" color="secondary">{item.transactionType}</AppText>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-                                <AppText variant="subheading" style={{ color: item.amountColor }}>
-                                    {item.amountText}
-                                </AppText>
-                                <AppIcon name="chevronRight" size={Typography.sizes.sm} color={theme.textSecondary} />
-                            </View>
-                        </TouchableOpacity>
+                            }
+                            trailing={
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                                    <AppText variant="subheading" style={{ color: item.amountColor }}>
+                                        {item.amountText}
+                                    </AppText>
+                                    <AppIcon name="chevronRight" size={Typography.sizes.sm} color={theme.textSecondary} />
+                                </View>
+                            }
+                            onPress={item.onPress}
+                            padding="md"
+                            showDivider={index < splitItems.length - 1}
+                        />
                     ))}
                 </AppCard>
             </View>
         </Screen>
     );
 }
-
-const InfoRow = ({ label, value }: { label: string, value: string }) => (
-    <View style={styles.infoRow}>
-        <AppText variant="caption" color="secondary" style={styles.infoLabel}>{label}</AppText>
-        <AppText variant="body" style={{ flex: 1, textAlign: 'right' }}>{value}</AppText>
-    </View>
-);
 
 const styles = StyleSheet.create({
     center: {
@@ -189,6 +191,7 @@ const styles = StyleSheet.create({
     },
     receiptCard: {
         width: '100%',
+        padding: 0, // ListRows handle their own horizontal padding
     },
     iconContainer: {
         alignItems: 'center',
@@ -211,33 +214,7 @@ const styles = StyleSheet.create({
         marginVertical: Spacing.lg,
     },
     infoSection: {
-        gap: Spacing.sm,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: Spacing.xs,
-    },
-    infoLabel: {
-        width: 110,
-    },
-    historyLink: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: Spacing.xs,
-    },
-    splitRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: Spacing.sm,
-    },
-    splitInfo: {
-        flex: 1,
-    },
-    splitIconContainer: {
-        marginRight: Spacing.md,
+        gap: Spacing.xs,
     },
     directionIcon: {
         width: Size.lg,

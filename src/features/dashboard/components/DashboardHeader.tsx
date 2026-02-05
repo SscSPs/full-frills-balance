@@ -1,6 +1,6 @@
-import { DateRangeFilter } from '@/src/components/common/DateRangeFilter';
-import { AppIcon, AppText, ExpandableSearchButton } from '@/src/components/core';
-import { Size, Spacing } from '@/src/constants';
+import { FilterToolbar } from '@/src/components/common/FilterToolbar';
+import { AppIcon, AppText } from '@/src/components/core';
+import { Shape, Size, Spacing } from '@/src/constants';
 import { DashboardSummary } from '@/src/features/dashboard/components/DashboardSummary';
 import { NetWorthCard } from '@/src/features/dashboard/components/NetWorthCard';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -50,42 +50,60 @@ export function DashboardHeader({
     sectionTitle,
 }: DashboardHeaderProps) {
     const { theme } = useTheme();
+    const [isSearching, setIsSearching] = React.useState(false);
+    const wasExpandedBeforeSearch = React.useRef(!isCollapsed);
+
+    const handleSearchExpand = React.useCallback((expanded: boolean) => {
+        setIsSearching(expanded);
+        if (expanded) {
+            // Save current state and collapse
+            wasExpandedBeforeSearch.current = !isCollapsed;
+            if (!isCollapsed) {
+                onToggleCollapse();
+            }
+        } else {
+            // Restore saved state if it was expanded
+            if (wasExpandedBeforeSearch.current && isCollapsed) {
+                onToggleCollapse();
+            }
+        }
+    }, [isCollapsed, onToggleCollapse]);
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerRow}>
-                <View style={styles.greetingContainer}>
-                    <AppText variant="title" numberOfLines={1}>
-                        {greeting}
-                    </AppText>
-                </View>
+            <View style={[styles.headerRow, isSearching && { gap: 0 }]}>
+                {!isSearching && (
+                    <View style={styles.greetingContainer}>
+                        <AppText variant="title" numberOfLines={1}>
+                            {greeting}
+                        </AppText>
+                    </View>
+                )}
 
-                <View style={styles.headerActions}>
-                    <TouchableOpacity
-                        onPress={onToggleCollapse}
-                        hitSlop={{ top: Spacing.sm, bottom: Spacing.sm, left: Spacing.sm, right: Spacing.sm }}
-                        style={styles.collapseButton}
-                    >
-                        <AppIcon
-                            name={isCollapsed ? 'chevronDown' : 'chevronUp'}
-                            size={Size.sm}
-                            color={theme.textSecondary}
-                        />
-                    </TouchableOpacity>
+                <View style={[styles.headerActions, isSearching && styles.expandedActions]}>
+                    {!isSearching && (
+                        <TouchableOpacity
+                            onPress={onToggleCollapse}
+                            hitSlop={{ top: Spacing.sm, bottom: Spacing.sm, left: Spacing.sm, right: Spacing.sm }}
+                            style={[styles.collapseButton, { backgroundColor: theme.surface }]}
+                        >
+                            <AppIcon
+                                name={isCollapsed ? 'chevronDown' : 'chevronUp'}
+                                size={Size.sm}
+                                color={theme.textSecondary}
+                            />
+                        </TouchableOpacity>
+                    )}
 
-                    <DateRangeFilter
-                        range={dateRange}
-                        onPress={showDatePicker}
-                        onPrevious={navigatePrevious}
-                        onNext={navigateNext}
-                        showNavigationArrows={false}
-                        style={styles.dateFilter}
-                    />
-
-                    <ExpandableSearchButton
-                        value={searchQuery}
-                        onChangeText={onSearchChange}
-                        placeholder="Search..."
+                    <FilterToolbar
+                        searchQuery={searchQuery}
+                        onSearchChange={onSearchChange}
+                        dateRange={dateRange}
+                        showDatePicker={showDatePicker}
+                        navigatePrevious={navigatePrevious}
+                        navigateNext={navigateNext}
+                        onSearchExpandChange={handleSearchExpand}
+                        style={isSearching ? styles.expandedToolbar : undefined}
                     />
                 </View>
             </View>
@@ -125,11 +143,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: Spacing.lg,
-        gap: Spacing.sm,
+        gap: Spacing.md,
     },
     greetingContainer: {
         flex: 1,
-        minWidth: 0, // Allow shrinking
+        minWidth: 0,
+        marginRight: Spacing.sm,
     },
     headerActions: {
         flexDirection: 'row',
@@ -138,10 +157,17 @@ const styles = StyleSheet.create({
         flexShrink: 0,
     },
     collapseButton: {
-        padding: Spacing.xs,
+        width: Size.xxl,
+        height: Size.xxl,
+        borderRadius: Shape.radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    dateFilter: {
-        marginBottom: 0,
+    expandedActions: {
+        flex: 1,
+    },
+    expandedToolbar: {
+        flex: 1,
     },
     sectionTitle: {
         marginBottom: Spacing.md,

@@ -1,5 +1,5 @@
-import { DateRangeFilter } from '@/src/components/common/DateRangeFilter';
-import { AppText, ExpandableSearchButton } from '@/src/components/core';
+import { FilterToolbar } from '@/src/components/common/FilterToolbar';
+import { AppText } from '@/src/components/core';
 import { Spacing } from '@/src/constants';
 import { DateRange } from '@/src/utils/dateUtils';
 import React from 'react';
@@ -24,26 +24,26 @@ export function JournalListHeader({
     searchQuery,
     onSearchChange,
 }: JournalListHeaderProps) {
+    const [isSearching, setIsSearching] = React.useState(false);
+
     return (
         <View style={styles.headerContainer}>
-            <View style={styles.headerRow}>
-                <AppText variant="subheading">
-                    {title}
-                </AppText>
-                <View style={styles.headerActions}>
-                    <DateRangeFilter
-                        range={dateRange}
-                        onPress={onShowDatePicker}
-                        onPrevious={onNavigatePrevious}
-                        onNext={onNavigateNext}
-                        showNavigationArrows={false}
-                    />
-                    <ExpandableSearchButton
-                        value={searchQuery}
-                        onChangeText={onSearchChange}
-                        placeholder="Search..."
-                    />
-                </View>
+            <View style={[styles.headerRow, isSearching && { gap: 0 }]}>
+                {!isSearching && (
+                    <AppText variant="subheading">
+                        {title}
+                    </AppText>
+                )}
+                <FilterToolbar
+                    searchQuery={searchQuery}
+                    onSearchChange={onSearchChange}
+                    dateRange={dateRange}
+                    showDatePicker={onShowDatePicker}
+                    navigatePrevious={onNavigatePrevious}
+                    navigateNext={onNavigateNext}
+                    onSearchExpandChange={setIsSearching}
+                    style={isSearching ? styles.expandedToolbar : undefined}
+                />
             </View>
         </View>
     );
@@ -63,5 +63,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
+    },
+    expandedToolbar: {
+        flex: 1,
     },
 });

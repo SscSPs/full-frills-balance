@@ -1,4 +1,4 @@
-import { AppText, IvyIcon } from '@/src/components/core';
+import { AppIcon, AppText } from '@/src/components/core';
 import { Opacity, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { DateRange } from '@/src/utils/dateUtils';
@@ -33,7 +33,7 @@ export function DateRangeFilter({
                     style={[styles.navButton, { backgroundColor: theme.surface }]}
                     activeOpacity={Opacity.heavy}
                 >
-                    <IvyIcon name="chevronLeft" size={Size.sm} color={theme.textSecondary} />
+                    <AppIcon name="chevronLeft" size={Size.sm} color={theme.textSecondary} />
                 </TouchableOpacity>
             )}
 
@@ -42,11 +42,11 @@ export function DateRangeFilter({
                 onPress={onPress}
                 activeOpacity={Opacity.heavy}
             >
-                <IvyIcon name="calendar" size={Size.sm} color={theme.primary} />
+                <AppIcon name="calendar" size={Size.sm} color={theme.primary} />
                 <AppText variant="body" style={styles.text}>
                     {range?.label || 'All Time'}
                 </AppText>
-                <IvyIcon name="chevronDown" size={Size.xs} color={theme.textSecondary} />
+                <AppIcon name="chevronDown" size={Size.xs} color={theme.textSecondary} />
             </TouchableOpacity>
 
             {showNavigation && (
@@ -55,7 +55,7 @@ export function DateRangeFilter({
                     style={[styles.navButton, { backgroundColor: theme.surface }]}
                     activeOpacity={Opacity.heavy}
                 >
-                    <IvyIcon name="chevronRight" size={Size.sm} color={theme.textSecondary} />
+                    <AppIcon name="chevronRight" size={Size.sm} color={theme.textSecondary} />
                 </TouchableOpacity>
             )}
         </View>
@@ -67,10 +67,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
-        marginBottom: Spacing.md,
     },
     navButton: {
-        padding: Spacing.md,
+        width: Size.xxl,
+        height: Size.xxl,
         borderRadius: Shape.radius.md,
         alignItems: 'center',
         justifyContent: 'center',
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         height: Size.xxl,
-        paddingHorizontal: Spacing.sm,
+        paddingHorizontal: Spacing.md,
         borderRadius: Shape.radius.md,
-        gap: Spacing.xs,
+        gap: Spacing.sm,
     },
     text: {
         fontSize: Typography.sizes.sm,
