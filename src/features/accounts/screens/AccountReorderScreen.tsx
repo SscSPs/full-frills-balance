@@ -1,4 +1,5 @@
 import { AppCard, AppIcon, AppText, Stack } from '@/src/components/core';
+import { Screen } from '@/src/components/layout';
 import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { useAccountActions, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
@@ -6,7 +7,7 @@ import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
  * AccountReorderScreen - Manage the display order of all accounts.
@@ -71,7 +72,7 @@ export default function AccountReorderScreen() {
     if (isLoading) return null;
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Screen showBack={false}>
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -124,21 +125,18 @@ export default function AccountReorderScreen() {
                     ))}
                 </Stack>
             </ScrollView>
-        </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg,
-        paddingTop: Platform.OS === 'ios' ? 60 : 20,
-        paddingBottom: Spacing.md,
+        paddingVertical: Spacing.md,
         borderBottomWidth: 1,
     },
     backButton: {

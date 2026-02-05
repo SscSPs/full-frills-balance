@@ -1,4 +1,5 @@
 import { AppIcon, AppText, Box, FloatingActionButton } from '@/src/components/core';
+import { Screen } from '@/src/components/layout';
 import { Shape, Size, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { AccountCard } from '@/src/features/accounts/components/AccountCard';
@@ -167,7 +168,7 @@ export default function AccountsScreen() {
     const keyExtractor = useCallback((item: Account) => item.id, [])
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Screen showBack={false}>
             <SectionList
                 sections={sections}
                 extraData={accountsVersion}
@@ -191,14 +192,11 @@ export default function AccountsScreen() {
             <FloatingActionButton
                 onPress={handleCreateAccount}
             />
-        </View>
+        </Screen>
     )
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
     headerButtons: {
         flexDirection: 'row',
         gap: Spacing.sm,

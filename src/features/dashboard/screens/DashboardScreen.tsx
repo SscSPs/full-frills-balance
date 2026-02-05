@@ -10,6 +10,7 @@
 import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { MemoizedJournalCard } from '@/src/components/common/JournalCard';
 import { AppText, FloatingActionButton } from '@/src/components/core';
+import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { DashboardHeader } from '@/src/features/dashboard/components/DashboardHeader';
@@ -147,7 +148,7 @@ export default function DashboardScreen() {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Screen showBack={false}>
             <TypedFlashList
                 data={filteredJournals}
                 renderItem={renderItem}
@@ -187,14 +188,11 @@ export default function DashboardScreen() {
                 currentFilter={periodFilter}
                 onSelect={handleDateSelect}
             />
-        </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
     loading: {
         flex: 1,
         justifyContent: 'center',

@@ -24,7 +24,6 @@ export default function ReportsScreen() {
         loading,
         dateRange,
         periodFilter,
-        loadData,
         updateFilter
     } = useReports();
 
@@ -44,8 +43,8 @@ export default function ReportsScreen() {
     }, []);
 
     const handleRefresh = useCallback(() => {
-        loadData();
-    }, [loadData]);
+        // Trigger re-fetch logic if needed, currently observable driven
+    }, []);
 
     const currentNetWorth = netWorthHistory.length > 0 ? netWorthHistory[netWorthHistory.length - 1].netWorth : 0;
 
