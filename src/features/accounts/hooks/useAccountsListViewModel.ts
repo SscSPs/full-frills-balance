@@ -3,7 +3,7 @@ import { useUI } from '@/src/contexts/UIContext';
 import Account from '@/src/data/models/Account';
 import { useWealthSummary } from '@/src/features/wealth';
 import { useTheme } from '@/src/hooks/use-theme';
-import { getAccountSections } from '@/src/utils/accountUtils';
+import { getAccountAccentColor, getAccountSections, getSectionColor } from '@/src/utils/accountUtils';
 import { getContrastColor } from '@/src/utils/colorUtils';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
@@ -32,7 +32,6 @@ export interface AccountSectionViewModel {
 }
 
 export interface AccountsListViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     sections: AccountSectionViewModel[];
     isRefreshing: boolean;
     onRefresh: () => void;
@@ -96,38 +95,34 @@ export function useAccountsListViewModel(): AccountsListViewModel {
         const rawSections = getAccountSections(accounts);
 
         return rawSections.map((section) => {
-            let sectionColor = theme.text;
-            let sectionTotal = 0;
+            const sectionColor = getSectionColor(section.title, {
+                asset: theme.asset,
+                liability: theme.liability,
+                equity: theme.equity,
+                income: theme.income,
+                expense: theme.expense,
+                text: theme.text,
+            });
 
-            if (section.title === 'Assets') {
-                sectionColor = theme.asset;
-                sectionTotal = totalAssets;
-            } else if (section.title === 'Liabilities') {
-                sectionColor = theme.liability;
-                sectionTotal = totalLiabilities;
-            } else if (section.title === 'Equity') {
-                sectionColor = theme.equity;
-                sectionTotal = totalEquity;
-            } else if (section.title === 'Income') {
-                sectionColor = theme.income;
-                sectionTotal = totalIncome;
-            } else if (section.title === 'Expenses') {
-                sectionColor = theme.expense;
-                sectionTotal = totalExpense;
-            }
+            let sectionTotal = 0;
+            if (section.title === 'Assets') sectionTotal = totalAssets;
+            else if (section.title === 'Liabilities') sectionTotal = totalLiabilities;
+            else if (section.title === 'Equity') sectionTotal = totalEquity;
+            else if (section.title === 'Income') sectionTotal = totalIncome;
+            else if (section.title === 'Expenses') sectionTotal = totalExpense;
 
             const totalDisplay = isPrivacyMode
                 ? '••••'
                 : CurrencyFormatter.formatShort(sectionTotal, defaultCurrency || AppConfig.defaultCurrency);
 
             const data = section.data.map((account: Account) => {
-                let accentColor = theme.asset;
-                const typeLower = account.accountType.toLowerCase();
-
-                if (typeLower === 'liability') accentColor = theme.liability;
-                else if (typeLower === 'equity') accentColor = theme.equity;
-                else if (typeLower === 'income') accentColor = theme.income;
-                else if (typeLower === 'expense') accentColor = theme.expense;
+                const accentColor = getAccountAccentColor(account.accountType, {
+                    asset: theme.asset,
+                    liability: theme.liability,
+                    equity: theme.equity,
+                    income: theme.income,
+                    expense: theme.expense,
+                });
 
                 const contrastColor = getContrastColor(accentColor);
                 const textColor = contrastColor === 'white' ? Palette.pureWhite : Palette.trueBlack;
@@ -187,7 +182,6 @@ export function useAccountsListViewModel(): AccountsListViewModel {
     ]);
 
     return {
-        theme,
         sections,
         isRefreshing: isLoading,
         onRefresh,

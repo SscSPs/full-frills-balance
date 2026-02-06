@@ -56,3 +56,44 @@ export function getAccountSections(accounts: Account[]): { title: string; data: 
 
     return sections
 }
+
+/**
+ * Maps section title to theme color.
+ */
+export function getSectionColor(title: string, theme: {
+    asset: string;
+    liability: string;
+    equity: string;
+    income: string;
+    expense: string;
+    text: string;
+}): string {
+    switch (title) {
+        case 'Assets': return theme.asset;
+        case 'Liabilities': return theme.liability;
+        case 'Equity': return theme.equity;
+        case 'Income': return theme.income;
+        case 'Expenses': return theme.expense;
+        default: return theme.text;
+    }
+}
+
+/**
+ * Maps account type to accent color for card display.
+ */
+export function getAccountAccentColor(accountType: string, theme: {
+    asset: string;
+    liability: string;
+    equity: string;
+    income: string;
+    expense: string;
+}): string {
+    const typeLower = accountType.toLowerCase();
+    switch (typeLower) {
+        case 'liability': return theme.liability;
+        case 'equity': return theme.equity;
+        case 'income': return theme.income;
+        case 'expense': return theme.expense;
+        default: return theme.asset;
+    }
+}

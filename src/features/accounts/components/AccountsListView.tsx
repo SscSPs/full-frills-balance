@@ -1,12 +1,12 @@
 import { AppCard, AppIcon, AppText, Box, FloatingActionButton, IvyIcon } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Shape, Size, Spacing, Typography } from '@/src/constants';
+import { useTheme } from '@/src/hooks/use-theme';
 import { AccountsListViewModel, AccountCardViewModel, AccountSectionViewModel } from '@/src/features/accounts/hooks/useAccountsListViewModel';
 import React from 'react';
 import { SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export function AccountsListView({
-    theme,
     sections,
     isRefreshing,
     onRefresh,
@@ -17,6 +17,7 @@ export function AccountsListView({
     onTogglePrivacy,
     isPrivacyMode,
 }: AccountsListViewModel) {
+    const { theme } = useTheme();
     return (
         <Screen showBack={false}>
             <View style={styles.container}>
