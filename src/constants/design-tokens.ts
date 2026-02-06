@@ -173,7 +173,12 @@ export const Size = {
 
   // Card minimums
   cardMinWidth: 160,
+  cardMinHeight: 110,
   maxContentWidth: 400,
+
+  // Grid layout
+  gridItemWidth: '46%',
+  gridItemMargin: '2%',
 } as const
 
 // === TYPOGRAPHY SCALE ===

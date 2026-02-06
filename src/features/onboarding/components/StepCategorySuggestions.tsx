@@ -239,12 +239,12 @@ const styles = StyleSheet.create({
         marginHorizontal: -Spacing.xs,
     },
     item: {
-        width: '46%',
-        margin: '2%',
+        width: Size.gridItemWidth,
+        margin: Size.gridItemMargin,
         borderRadius: Shape.radius.r3,
         borderWidth: 1.5,
         padding: Spacing.md,
-        minHeight: 110, // Minimum touchable height
+        minHeight: Size.cardMinHeight,
         justifyContent: 'space-between',
     },
     itemHeader: {
