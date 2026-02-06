@@ -4,6 +4,8 @@ description: Production-Grade Code Review Prompt (Expo + WatermelonDB)
 
 A focused review workflow for **any set of code changes** in an Expo + React Native app using WatermelonDB.
 
+Only work with staged content check with `git diff --cached`
+
 This workflow evaluates **only the current changeset** and its interaction with the existing codebase. Its purpose is to **prevent regressions, architectural drift, unnecessary complexity, and reactive data bugs** from being introduced.
 
 It applies regardless of whether the changes come from a pull request, merge request, patch, or local diff.
