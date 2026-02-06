@@ -1,6 +1,5 @@
-import { AppText } from '@/src/components/core';
 import { AppIcon } from '@/src/components/core/AppIcon';
-import { Spacing } from '@/src/constants';
+import { Size, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -30,6 +29,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                                 style={[
                                     styles.dot,
                                     {
+                                        width: isActive ? Size.lg : Spacing.md,
                                         backgroundColor: isActive
                                             ? theme.primary
                                             : isCompleted
@@ -44,7 +44,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                                 ]}
                             >
                                 {isCompleted && (
-                                    <AppIcon name="check" size={8} color={theme.surface} strokeWidth={4} />
+                                    <AppIcon name="check" size={Spacing.sm} color={theme.surface} strokeWidth={Spacing.xs} />
                                 )}
                             </View>
                             {index < totalSteps - 1 && (
@@ -63,9 +63,6 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                     );
                 })}
             </View>
-            <AppText variant="caption" color="secondary" style={styles.stepText}>
-                Step {currentStep} of {totalSteps}
-            </AppText>
         </View>
     );
 };
@@ -79,26 +76,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: Spacing.sm,
     },
     stepWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     dot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        borderWidth: 2,
+        height: Spacing.md,
+        borderRadius: Spacing.md / 2,
         justifyContent: 'center',
         alignItems: 'center',
     },
     connector: {
-        width: 24,
+        width: Size.xs,
         height: 2,
-        marginHorizontal: 4,
-    },
-    stepText: {
-        fontSize: 12,
+        marginHorizontal: Spacing.xs,
+        borderRadius: 1,
     },
 });

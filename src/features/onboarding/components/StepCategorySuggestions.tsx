@@ -1,6 +1,6 @@
 import { AppButton, AppIcon, AppInput, AppText } from '@/src/components/core';
 import { IconName } from '@/src/components/core/AppIcon';
-import { Shape, Size, Spacing } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -60,12 +60,66 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
             style={styles.container}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-            <AppText variant="title" style={styles.title}>
-                Initial Categories
-            </AppText>
-            <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Choose starting categories or add your own.
-            </AppText>
+            <View style={styles.header}>
+                <AppText variant="title" style={styles.title}>
+                    Setup Categories
+                </AppText>
+                <AppText variant="body" color="secondary" style={styles.subtitle}>
+                    Select categories you use often.
+                </AppText>
+            </View>
+
+            <View style={styles.customInputContainer}>
+                <View style={styles.inputRow}>
+                    <TouchableOpacity
+                        style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                        onPress={() => setIsIconPickerVisible(true)}
+                        accessibilityLabel="Select icon for custom category"
+                        accessibilityRole="button"
+                    >
+                        <AppIcon name={selectedIcon} size={Size.sm} color={theme.primary} />
+                    </TouchableOpacity>
+
+                    <AppInput
+                        placeholder="Add category..."
+                        value={customName}
+                        onChangeText={setCustomName}
+                        containerStyle={styles.customInput}
+                        accessibilityLabel="Custom category name input"
+                    />
+
+                    <TouchableOpacity
+                        style={[styles.addButton, { backgroundColor: customName.trim() ? theme.primary : theme.border }]}
+                        onPress={handleAddCustom}
+                        disabled={!customName.trim()}
+                        accessibilityLabel="Add custom category"
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: !customName.trim() }}
+                    >
+                        <AppIcon name="add" size={Size.sm} color={theme.surface} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.typeToggle}>
+                    <TouchableOpacity
+                        onPress={() => handleTypeChange('EXPENSE')}
+                        style={[
+                            styles.typeButton,
+                            customType === 'EXPENSE' && { backgroundColor: withOpacity(theme.error, Opacity.soft), borderColor: theme.error }
+                        ]}
+                    >
+                        <AppText variant="caption" style={{ color: customType === 'EXPENSE' ? theme.error : theme.textSecondary }}>Expense</AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleTypeChange('INCOME')}
+                        style={[
+                            styles.typeButton,
+                            customType === 'INCOME' && { backgroundColor: withOpacity(theme.success, Opacity.soft), borderColor: theme.success }
+                        ]}
+                    >
+                        <AppText variant="caption" style={{ color: customType === 'INCOME' ? theme.success : theme.textSecondary }}>Income</AppText>
+                    </TouchableOpacity>
+                </View>
+            </View>
 
             <ScrollView
                 style={styles.scrollContainer}
@@ -81,96 +135,47 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
                             <TouchableOpacity
                                 key={category.name}
                                 style={[
-                                    styles.suggestionItem,
+                                    styles.item,
                                     {
-                                        backgroundColor: isSelected ? behaviorColor + '20' : theme.surface,
+                                        backgroundColor: isSelected ? withOpacity(behaviorColor, 0.05) : theme.surface,
                                         borderColor: isSelected ? behaviorColor : theme.border,
                                     }
                                 ]}
                                 onPress={() => onToggleCategory(category.name)}
-                                accessibilityLabel={`${category.name} ${category.type.toLowerCase()} category, ${isSelected ? 'selected' : 'not selected'}`}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: isSelected }}
+                                activeOpacity={Opacity.heavy}
                             >
-                                <AppIcon
-                                     name={category.icon}
-                                    size={Size.sm}
-                                    color={isSelected ? behaviorColor : theme.textSecondary}
-                                />
-                                <AppText
-                                    variant="caption"
-                                    numberOfLines={1}
-                                    style={[
-                                        styles.itemText,
-                                        { color: isSelected ? behaviorColor : theme.text }
-                                    ]}
-                                >
-                                    {category.name}
-                                </AppText>
-                                {isSelected && (
-                                    <View style={[styles.checkBadge, { backgroundColor: behaviorColor }]}>
-                                        <AppIcon name="checkCircle" size={12} color={theme.surface} />
+                                <View style={styles.itemHeader}>
+                                    <View style={[styles.iconContainer, { backgroundColor: isSelected ? withOpacity(behaviorColor, Opacity.soft) : theme.background }]}>
+                                        <AppIcon
+                                            name={category.icon}
+                                            size={20}
+                                            color={isSelected ? behaviorColor : theme.textSecondary}
+                                        />
                                     </View>
-                                )}
+                                    {isSelected && (
+                                        <AppIcon name="checkCircle" size={20} color={behaviorColor} />
+                                    )}
+                                </View>
+
+                                <View style={styles.itemContent}>
+                                    <AppText
+                                        variant="subheading"
+                                        style={{ color: isSelected ? theme.text : theme.text }}
+                                        numberOfLines={1}
+                                    >
+                                        {category.name}
+                                    </AppText>
+                                    <AppText
+                                        variant="caption"
+                                        color="secondary"
+                                        style={{ color: isSelected ? behaviorColor : theme.textSecondary }}
+                                    >
+                                        {category.type === 'INCOME' ? 'Income' : 'Expense'}
+                                    </AppText>
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
-                </View>
-
-                <View style={styles.customInputContainer}>
-                    <View style={styles.inputRow}>
-                        <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                            onPress={() => setIsIconPickerVisible(true)}
-                            accessibilityLabel="Select icon for custom category"
-                            accessibilityRole="button"
-                        >
-                            <AppIcon name={selectedIcon} size={Size.sm} color={theme.primary} />
-                        </TouchableOpacity>
-
-                        <AppInput
-                            placeholder="Add custom category..."
-                            value={customName}
-                            onChangeText={setCustomName}
-                            containerStyle={styles.customInput}
-                            accessibilityLabel="Custom category name input"
-                        />
-                        <TouchableOpacity
-                            style={[styles.addButton, { backgroundColor: theme.primary }]}
-                            onPress={handleAddCustom}
-                            accessibilityLabel="Add custom category"
-                            accessibilityRole="button"
-                            accessibilityState={{ disabled: !customName.trim() }}
-                        >
-                            <AppIcon name="add" size={Size.sm} color={theme.surface} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.typeToggle}>
-                        <TouchableOpacity
-                            onPress={() => handleTypeChange('EXPENSE')}
-                            style={[
-                                styles.typeButton,
-                                customType === 'EXPENSE' && { backgroundColor: theme.error + '20', borderColor: theme.error }
-                            ]}
-                            accessibilityLabel="Expense category type"
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: customType === 'EXPENSE' }}
-                        >
-                            <AppText variant="caption" style={{ color: customType === 'EXPENSE' ? theme.error : theme.textSecondary }}>Expense</AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => handleTypeChange('INCOME')}
-                            style={[
-                                styles.typeButton,
-                                customType === 'INCOME' && { backgroundColor: theme.success + '20', borderColor: theme.success }
-                            ]}
-                            accessibilityLabel="Income category type"
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: customType === 'INCOME' }}
-                        >
-                            <AppText variant="caption" style={{ color: customType === 'INCOME' ? theme.success : theme.textSecondary }}>Income</AppText>
-                        </TouchableOpacity>
-                    </View>
                 </View>
             </ScrollView>
 
@@ -181,10 +186,10 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
                 selectedIcon={selectedIcon}
             />
 
-            <View style={styles.buttonContainer}>
+            <View style={styles.footer}>
                 <AppButton
-                    variant="outline"
-                    size="md"
+                    variant="primary"
+                    size="lg"
                     onPress={onContinue}
                     disabled={isCompleting}
                     style={styles.continueButton}
@@ -206,58 +211,60 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
 
 const styles = StyleSheet.create({
     container: {
-        width: '100%',
         flex: 1,
+    },
+    header: {
+        alignItems: 'center',
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.md,
     },
     title: {
         textAlign: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
     subtitle: {
         textAlign: 'center',
-        marginBottom: Spacing.xl,
+        paddingHorizontal: Spacing.xl,
     },
     scrollContainer: {
         flex: 1,
     },
     scrollContent: {
         paddingBottom: Spacing.xl,
-        paddingHorizontal: Spacing.md,
-        paddingTop: Spacing.sm,
+        paddingHorizontal: Spacing.xs,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: Spacing.md,
-        justifyContent: 'flex-start',
-        overflow: 'visible',
+        marginHorizontal: -Spacing.xs,
     },
-    suggestionItem: {
-        width: '30%',
-        aspectRatio: 1,
+    item: {
+        width: '46%',
+        margin: '2%',
         borderRadius: Shape.radius.r3,
         borderWidth: 1.5,
+        padding: Spacing.md,
+        minHeight: 110, // Minimum touchable height
+        justifyContent: 'space-between',
+    },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: Spacing.md,
+    },
+    iconContainer: {
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Size.xl / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: Spacing.sm,
-        position: 'relative',
-        marginBottom: Spacing.xs,
-        overflow: 'visible',
     },
-    itemText: {
-        marginTop: Spacing.xs,
-        textAlign: 'center',
-        fontSize: 10,
-    },
-    checkBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        borderRadius: 10,
-        padding: 2,
+    itemContent: {
+        gap: Spacing.xs / 2,
     },
     customInputContainer: {
-        marginTop: Spacing.lg,
+        marginBottom: Spacing.md,
         gap: Spacing.sm,
     },
     inputRow: {
@@ -267,40 +274,42 @@ const styles = StyleSheet.create({
     },
     customInput: {
         flex: 1,
+        marginBottom: 0,
     },
     iconButton: {
-        width: Size.buttonMd,
-        height: Size.buttonMd,
+        width: Size.inputMd,
+        height: Size.inputMd,
         borderRadius: Shape.radius.r2,
         borderWidth: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     addButton: {
-        width: Size.buttonMd,
-        height: Size.buttonMd,
-        borderRadius: Size.buttonMd / 2,
+        width: Size.inputMd,
+        height: Size.inputMd,
+        borderRadius: Size.inputMd / 2,
         justifyContent: 'center',
         alignItems: 'center',
     },
     typeToggle: {
         flexDirection: 'row',
         gap: Spacing.sm,
+        paddingLeft: Size.inputMd + Spacing.sm, // Align with input
     },
     typeButton: {
         paddingVertical: 4,
-        paddingHorizontal: 12,
-        borderRadius: 20,
+        paddingHorizontal: Spacing.md,
+        borderRadius: Shape.radius.r3,
         borderWidth: 1,
         borderColor: 'transparent',
         backgroundColor: 'transparent',
     },
-    buttonContainer: {
-        gap: Spacing.md,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.xl,
+    footer: {
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.lg,
+        gap: Spacing.sm,
     },
     continueButton: {
-        marginBottom: Spacing.xs,
+        width: '100%',
     },
 });

@@ -1,6 +1,6 @@
 import { AppButton, AppIcon, AppInput, AppText } from '@/src/components/core';
 import { IconName } from '@/src/components/core/AppIcon';
-import { Shape, Size, Spacing } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -49,12 +49,44 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
             style={styles.container}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-            <AppText variant="title" style={styles.title}>
-                Initial Accounts
-            </AppText>
-            <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Select starting accounts or add your own.
-            </AppText>
+            <View style={styles.header}>
+                <AppText variant="title" style={styles.title}>
+                    Setup Accounts
+                </AppText>
+                <AppText variant="body" color="secondary" style={styles.subtitle}>
+                    Where is your money? Select all that apply.
+                </AppText>
+            </View>
+
+            <View style={styles.customInputContainer}>
+                <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    onPress={() => setIsIconPickerVisible(true)}
+                    accessibilityLabel="Select icon for custom account"
+                    accessibilityRole="button"
+                >
+                    <AppIcon name={selectedIcon} size={Size.sm} color={theme.primary} />
+                </TouchableOpacity>
+
+                <AppInput
+                    placeholder="Add custom account..."
+                    value={customName}
+                    onChangeText={setCustomName}
+                    containerStyle={styles.customInput}
+                    accessibilityLabel="Custom account name input"
+                />
+
+                <TouchableOpacity
+                    style={[styles.addButton, { backgroundColor: customName.trim() ? theme.primary : theme.border }]}
+                    onPress={handleAddCustom}
+                    disabled={!customName.trim()}
+                    accessibilityLabel="Add custom account"
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: !customName.trim() }}
+                >
+                    <AppIcon name="add" size={Size.sm} color={theme.surface} />
+                </TouchableOpacity>
+            </View>
 
             <ScrollView
                 style={styles.scrollContainer}
@@ -68,69 +100,50 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
                             <TouchableOpacity
                                 key={account.name}
                                 style={[
-                                    styles.suggestionItem,
+                                    styles.item,
                                     {
-                                        backgroundColor: isSelected ? theme.primary + '20' : theme.surface,
+                                        backgroundColor: isSelected ? withOpacity(theme.primary, 0.05) : theme.surface,
                                         borderColor: isSelected ? theme.primary : theme.border,
                                     }
                                 ]}
                                 onPress={() => onToggleAccount(account.name)}
+                                activeOpacity={Opacity.heavy}
                                 accessibilityLabel={`${account.name} account, ${isSelected ? 'selected' : 'not selected'}`}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: isSelected }}
                             >
-                                <AppIcon
-                                    name={account.icon}
-                                    size={Size.sm}
-                                    color={isSelected ? theme.primary : theme.textSecondary}
-                                />
-                                <AppText
-                                    variant="caption"
-                                    numberOfLines={1}
-                                    style={[
-                                        styles.itemText,
-                                        { color: isSelected ? theme.primary : theme.text }
-                                    ]}
-                                >
-                                    {account.name}
-                                </AppText>
-                                {isSelected && (
-                                    <View style={[styles.checkBadge, { backgroundColor: theme.success }]}>
-                                        <AppIcon name="checkCircle" size={12} color={theme.surface} />
+                                <View style={styles.itemHeader}>
+                                    <View style={[styles.iconContainer, { backgroundColor: isSelected ? withOpacity(theme.primary, Opacity.soft) : theme.background }]}>
+                                        <AppIcon
+                                            name={account.icon}
+                                            size={20}
+                                            color={isSelected ? theme.primary : theme.text}
+                                        />
                                     </View>
-                                )}
+                                    {isSelected && (
+                                        <AppIcon name="checkCircle" size={20} color={theme.primary} />
+                                    )}
+                                </View>
+
+                                <View style={styles.itemContent}>
+                                    <AppText
+                                        variant="subheading"
+                                        style={{ color: isSelected ? theme.primary : theme.text }}
+                                        numberOfLines={1}
+                                    >
+                                        {account.name}
+                                    </AppText>
+                                    <AppText
+                                        variant="caption"
+                                        color="secondary"
+                                        style={{ color: isSelected ? withOpacity(theme.primary, 0.8) : theme.textSecondary }}
+                                    >
+                                        Account
+                                    </AppText>
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
-                </View>
-
-                <View style={styles.customInputContainer}>
-                    <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
-                        onPress={() => setIsIconPickerVisible(true)}
-                        accessibilityLabel="Select icon for custom account"
-                        accessibilityRole="button"
-                    >
-                        <AppIcon name={selectedIcon} size={Size.sm} color={theme.primary} />
-                    </TouchableOpacity>
-
-                    <AppInput
-                        placeholder="Add custom account..."
-                        value={customName}
-                        onChangeText={setCustomName}
-                        containerStyle={styles.customInput}
-                        accessibilityLabel="Custom account name input"
-                    />
-
-                    <TouchableOpacity
-                        style={[styles.addButton, { backgroundColor: theme.primary }]}
-                        onPress={handleAddCustom}
-                        accessibilityLabel="Add custom account"
-                        accessibilityRole="button"
-                        accessibilityState={{ disabled: !customName.trim() }}
-                    >
-                        <AppIcon name="add" size={Size.sm} color={theme.surface} />
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
@@ -141,10 +154,10 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
                 selectedIcon={selectedIcon}
             />
 
-            <View style={styles.buttonContainer}>
+            <View style={styles.footer}>
                 <AppButton
-                    variant="outline"
-                    size="md"
+                    variant="primary"
+                    size="lg"
                     onPress={onContinue}
                     disabled={isCompleting}
                     style={styles.continueButton}
@@ -166,86 +179,89 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        width: '100%',
         flex: 1,
+    },
+    header: {
+        alignItems: 'center',
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.md,
     },
     title: {
         textAlign: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
     subtitle: {
         textAlign: 'center',
-        marginBottom: Spacing.xl,
+        paddingHorizontal: Spacing.xl,
     },
     scrollContainer: {
         flex: 1,
     },
     scrollContent: {
         paddingBottom: Spacing.xl,
-        paddingHorizontal: Spacing.md,
-        paddingTop: Spacing.sm,
+        paddingHorizontal: Spacing.xs,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: Spacing.md,
-        justifyContent: 'flex-start',
-        overflow: 'visible',
+        marginHorizontal: -Spacing.xs,
     },
-    suggestionItem: {
-        width: '30%',
-        aspectRatio: 1,
+    item: {
+        width: '46%',
+        margin: '2%',
         borderRadius: Shape.radius.r3,
         borderWidth: 1.5,
+        padding: Spacing.md,
+        minHeight: 110, // Minimum touchable height
+        justifyContent: 'space-between',
+    },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: Spacing.md,
+    },
+    iconContainer: {
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Size.xl / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: Spacing.sm,
-        position: 'relative',
-        marginBottom: Spacing.xs,
-        overflow: 'visible',
     },
-    itemText: {
-        marginTop: Spacing.xs,
-        textAlign: 'center',
-        fontSize: 10,
-    },
-    checkBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        borderRadius: 10,
-        padding: 2,
+    itemContent: {
+        gap: Spacing.xs / 2,
     },
     customInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: Spacing.lg,
+        marginBottom: Spacing.md,
         gap: Spacing.sm,
     },
     customInput: {
         flex: 1,
+        marginBottom: 0,
     },
     iconButton: {
-        width: Size.buttonMd,
-        height: Size.buttonMd,
+        width: Size.inputMd,
+        height: Size.inputMd,
         borderRadius: Shape.radius.r2,
         borderWidth: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     addButton: {
-        width: Size.buttonMd,
-        height: Size.buttonMd,
-        borderRadius: Size.buttonMd / 2,
+        width: Size.inputMd,
+        height: Size.inputMd,
+        borderRadius: Size.inputMd / 2,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    buttonContainer: {
-        gap: Spacing.md,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.xl,
+    footer: {
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.lg,
+        gap: Spacing.sm,
     },
     continueButton: {
-        marginBottom: Spacing.xs,
+        width: '100%',
     },
 });

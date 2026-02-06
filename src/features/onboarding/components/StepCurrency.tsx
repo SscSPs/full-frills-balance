@@ -1,5 +1,5 @@
 import { AppButton, AppIcon, AppInput, AppText } from '@/src/components/core';
-import { Shape, Spacing } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import { COMMON_CURRENCY_CODES } from '@/src/services/currency-init-service';
@@ -27,8 +27,7 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
 
     const filteredCurrencies = useMemo(() => {
         if (!searchQuery.trim()) {
-            // Show only first bunch of common ones for clean initial view
-            return currencies.filter(c => COMMON_CURRENCY_CODES.slice(0, 12).includes(c.code));
+            return currencies.filter(c => COMMON_CURRENCY_CODES.slice(0, 10).includes(c.code));
         }
         return currencies.filter(c =>
             c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,20 +41,24 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
             style={styles.container}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-            <AppText variant="title" style={styles.title}>
-                Default Currency
-            </AppText>
-            <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Choose the default currency for your accounts and transactions.
-            </AppText>
+            <View style={styles.header}>
+                <AppText variant="title" style={styles.title}>
+                    Default Currency
+                </AppText>
+                <AppText variant="body" color="secondary" style={styles.subtitle}>
+                    Select your primary currency. You can add more later.
+                </AppText>
+            </View>
 
-            <AppInput
-                placeholder="Search currency..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                containerStyle={styles.searchBar}
-                accessibilityLabel="Search currencies"
-            />
+            <View style={styles.searchContainer}>
+                <AppInput
+                    placeholder="Search currency..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    containerStyle={styles.searchBar}
+                    accessibilityLabel="Search currencies"
+                />
+            </View>
 
             <ScrollView
                 style={styles.scrollContainer}
@@ -69,51 +72,58 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
                             <TouchableOpacity
                                 key={currency.code}
                                 style={[
-                                    styles.suggestionItem,
+                                    styles.item,
                                     {
-                                        backgroundColor: isSelected ? theme.primary + '20' : theme.surface,
+                                        backgroundColor: isSelected ? withOpacity(theme.primary, 0.05) : theme.surface,
                                         borderColor: isSelected ? theme.primary : theme.border,
                                     }
                                 ]}
                                 onPress={() => onSelect(currency.code)}
+                                activeOpacity={Opacity.heavy}
                                 accessibilityLabel={`${currency.name} (${currency.code}), ${isSelected ? 'selected' : 'not selected'}`}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: isSelected }}
                             >
-                                <AppText
-                                    variant="subheading"
-                                    style={[
-                                        styles.symbolText,
-                                        { color: isSelected ? theme.primary : theme.text }
-                                    ]}
-                                >
-                                    {currency.symbol}
-                                </AppText>
-                                <AppText
-                                    variant="caption"
-                                    numberOfLines={1}
-                                    style={[
-                                        styles.itemText,
-                                        { color: isSelected ? theme.primary : theme.text }
-                                    ]}
-                                >
-                                    {currency.code}
-                                </AppText>
-                                {isSelected && (
-                                    <View style={[styles.checkBadge, { backgroundColor: theme.success }]}>
-                                        <AppIcon name="checkCircle" size={12} color={theme.surface} />
+                                <View style={styles.itemHeader}>
+                                    <View style={[styles.symbolContainer, { backgroundColor: isSelected ? withOpacity(theme.primary, Opacity.soft) : theme.background }]}>
+                                        <AppText
+                                            variant="heading"
+                                            style={{ color: isSelected ? theme.primary : theme.text }}
+                                        >
+                                            {currency.symbol}
+                                        </AppText>
                                     </View>
-                                )}
+                                    {isSelected && (
+                                        <AppIcon name="checkCircle" size={20} color={theme.primary} />
+                                    )}
+                                </View>
+
+                                <View style={styles.itemContent}>
+                                    <AppText
+                                        variant="subheading"
+                                        style={{ color: isSelected ? theme.primary : theme.text }}
+                                    >
+                                        {currency.code}
+                                    </AppText>
+                                    <AppText
+                                        variant="caption"
+                                        color="secondary"
+                                        numberOfLines={1}
+                                        style={{ color: isSelected ? withOpacity(theme.primary, 0.8) : theme.textSecondary }}
+                                    >
+                                        {currency.name}
+                                    </AppText>
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
             </ScrollView>
 
-            <View style={styles.buttonContainer}>
+            <View style={styles.footer}>
                 <AppButton
-                    variant="outline"
-                    size="md"
+                    variant="primary"
+                    size="lg"
                     onPress={onContinue}
                     disabled={isCompleting}
                     style={styles.continueButton}
@@ -135,68 +145,70 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        width: '100%',
         flex: 1,
+    },
+    header: {
+        alignItems: 'center',
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.md,
     },
     title: {
         textAlign: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
     subtitle: {
         textAlign: 'center',
-        marginBottom: Spacing.xl,
+        paddingHorizontal: Spacing.xl,
+    },
+    searchContainer: {
+        marginBottom: Spacing.md,
     },
     searchBar: {
-        marginBottom: Spacing.md,
+        marginBottom: 0,
     },
     scrollContainer: {
         flex: 1,
     },
     scrollContent: {
         paddingBottom: Spacing.xl,
-        paddingHorizontal: Spacing.md,
-        paddingTop: Spacing.sm,
+        paddingHorizontal: Spacing.xs, // Compensation for half-gap margin
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: Spacing.md,
-        justifyContent: 'flex-start',
-        overflow: 'visible',
+        marginHorizontal: -Spacing.xs, // Negative margin for nice alignment
     },
-    suggestionItem: {
-        width: '30%',
-        aspectRatio: 1,
+    item: {
+        width: '46%', // approximate for 2 column
+        margin: '2%',
         borderRadius: Shape.radius.r3,
         borderWidth: 1.5,
+        padding: Spacing.md,
+        minHeight: 110, // Minimum touchable height
+        justifyContent: 'space-between',
+    },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: Spacing.md,
+    },
+    symbolContainer: {
+        width: Size.xl,
+        height: Size.xl,
+        borderRadius: Size.xl / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: Spacing.sm,
-        position: 'relative',
-        marginBottom: Spacing.xs,
-        overflow: 'visible',
     },
-    symbolText: {
-        fontSize: 20,
-        marginBottom: 2,
+    itemContent: {
+        gap: Spacing.xs / 2,
     },
-    itemText: {
-        textAlign: 'center',
-        fontSize: 10,
-    },
-    checkBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        borderRadius: 10,
-        padding: 2,
-    },
-    buttonContainer: {
-        gap: Spacing.md,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.xl,
+    footer: {
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.lg,
+        gap: Spacing.sm,
     },
     continueButton: {
-        marginBottom: Spacing.xs,
+        width: '100%',
     },
 });
