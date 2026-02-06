@@ -232,17 +232,20 @@ export class TransactionRepository {
    * Soft deletes a transaction
    */
   async delete(transaction: Transaction): Promise<void> {
+    const accountId = transaction.accountId
+    const transactionDate = transaction.transactionDate
+
     await database.write(async () => {
       await transaction.update((t) => {
         t.deletedAt = new Date()
         t.updatedAt = new Date()
       })
-    })
 
-    // Trigger rebuild for balance integrity outside the write transaction.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
-    rebuildQueueService.enqueue(transaction.accountId, transaction.transactionDate)
+      // Enqueue rebuild inside write transaction to ensure proper ordering.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
+      rebuildQueueService.enqueue(accountId, transactionDate)
+    })
   }
 
   /**
