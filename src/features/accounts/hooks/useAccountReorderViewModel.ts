@@ -1,4 +1,4 @@
-import Account from '@/src/data/models/Account';
+import Account, { AccountType } from '@/src/data/models/Account';
 import { useAccountActions, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
@@ -20,15 +20,36 @@ export function useAccountReorderViewModel(): AccountReorderViewModel {
     const { updateAccountOrder } = useAccountActions();
     const [accounts, setAccounts] = useState<Account[]>([]);
 
+    // Sort order for account types
+    const typeOrder = [
+        AccountType.ASSET,
+        AccountType.LIABILITY,
+        AccountType.INCOME,
+        AccountType.EXPENSE,
+        AccountType.EQUITY,
+    ];
+
     useEffect(() => {
         if (!isLoading) {
-            setAccounts([...initialAccounts]);
+            const sorted = [...initialAccounts].sort((a, b) => {
+                // First by Type
+                const typeRankA = typeOrder.indexOf(a.accountType);
+                const typeRankB = typeOrder.indexOf(b.accountType);
+                if (typeRankA !== typeRankB) return typeRankA - typeRankB;
+
+                // Then by OrderNum
+                return (a.orderNum || 0) - (b.orderNum || 0);
+            });
+            setAccounts(sorted);
         }
     }, [initialAccounts, isLoading]);
 
     const onMove = useCallback(async (index: number, direction: 'up' | 'down') => {
         const newIndex = direction === 'up' ? index - 1 : index + 1;
         if (newIndex < 0 || newIndex >= accounts.length) return;
+
+        // Prevent moving across account types
+        if (accounts[index].accountType !== accounts[newIndex].accountType) return;
 
         const newAccounts = [...accounts];
         const item = newAccounts[index];
@@ -39,14 +60,21 @@ export function useAccountReorderViewModel(): AccountReorderViewModel {
         const itemBefore = newAccounts[newIndex - 1];
         const itemAfter = newAccounts[newIndex + 1];
 
+        // Ensure we only look at neighbors of the SAME type for order calc
+        // (Though implicit since we blocked cross-type moves, good for safety)
         let newOrderNum = 0;
-        if (itemBefore && itemAfter) {
-            newOrderNum = ((itemBefore.orderNum || 0) + (itemAfter.orderNum || 0)) / 2;
-        } else if (itemBefore) {
-            newOrderNum = (itemBefore.orderNum || 0) + 1;
-        } else if (itemAfter) {
-            newOrderNum = (itemAfter.orderNum || 0) - 1;
+
+        // Helper to get order num safely
+        const getOrder = (acc?: Account) => acc?.orderNum || 0;
+
+        if (itemBefore && itemBefore.accountType === item.accountType && itemAfter && itemAfter.accountType === item.accountType) {
+            newOrderNum = (getOrder(itemBefore) + getOrder(itemAfter)) / 2;
+        } else if (itemBefore && itemBefore.accountType === item.accountType) {
+            newOrderNum = getOrder(itemBefore) + 1;
+        } else if (itemAfter && itemAfter.accountType === item.accountType) {
+            newOrderNum = getOrder(itemAfter) - 1;
         } else {
+            // First in section (or fallback)
             newOrderNum = 0;
         }
 
@@ -56,7 +84,7 @@ export function useAccountReorderViewModel(): AccountReorderViewModel {
             await updateAccountOrder(item, newOrderNum);
         } catch (error) {
             logger.error('Failed to update account order:', error);
-            setAccounts([...initialAccounts]);
+            setAccounts([...initialAccounts]); // Revert on failure
         }
     }, [accounts, initialAccounts, updateAccountOrder]);
 

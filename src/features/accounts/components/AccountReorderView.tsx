@@ -2,6 +2,7 @@ import { AppCard, AppIcon, AppText, Stack } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import { AccountReorderViewModel } from '@/src/features/accounts/hooks/useAccountReorderViewModel';
+import { getAccountIcon } from '@/src/features/accounts/utils/getAccountIcon';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -31,49 +32,67 @@ export function AccountReorderView({
                 </AppText>
 
                 <Stack space="sm">
-                    {accounts.map((account, index) => (
-                        <AppCard key={account.id} padding="none" style={styles.itemCard}>
-                            <View style={styles.itemContent}>
-                                <View style={styles.dragHandle}>
-                                    <AppIcon name="menu" size={20} color={theme.textSecondary} />
-                                </View>
+                    {accounts.map((account, index) => {
+                        const prevAccount = accounts[index - 1];
+                        const showSectionHeader = !prevAccount || prevAccount.accountType !== account.accountType;
+                        const isFirstInSection = !prevAccount || prevAccount.accountType !== account.accountType;
+                        const nextAccount = accounts[index + 1];
+                        const isLastInSection = !nextAccount || nextAccount.accountType !== account.accountType;
 
-                                <View style={styles.accountInfo}>
-                                    <AppText variant="body" weight="semibold" numberOfLines={1}>
-                                        {account.name}
-                                    </AppText>
-                                    <AppText variant="caption" color="secondary">
-                                        {account.accountType} • {account.currencyCode}
-                                    </AppText>
-                                </View>
+                        return (
+                            <React.Fragment key={account.id}>
+                                {showSectionHeader && (
+                                    <View style={styles.sectionHeader}>
+                                        <AppText variant="subheading" weight="bold" color="primary">
+                                            {account.accountType}
+                                        </AppText>
+                                    </View>
+                                )}
+                                <AppCard padding="none" style={styles.itemCard}>
+                                    <View style={styles.itemContent}>
+                                        <View style={styles.dragHandle}>
+                                            <AppIcon name={getAccountIcon(account) as any} size={24} color={theme.primary} />
+                                        </View>
 
-                                <View style={styles.actions}>
-                                    <TouchableOpacity
-                                        onPress={() => onMove(index, 'up')}
-                                        disabled={index === 0}
-                                        style={[
-                                            styles.actionButton,
-                                            { backgroundColor: withOpacity(theme.text, Opacity.soft) },
-                                            index === 0 && { opacity: 0.3 }
-                                        ]}
-                                    >
-                                        <AppIcon name="chevronUp" size={20} color={theme.text} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => onMove(index, 'down')}
-                                        disabled={index === accounts.length - 1}
-                                        style={[
-                                            styles.actionButton,
-                                            { backgroundColor: withOpacity(theme.text, Opacity.soft) },
-                                            index === accounts.length - 1 && { opacity: 0.3 }
-                                        ]}
-                                    >
-                                        <AppIcon name="chevronDown" size={20} color={theme.text} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </AppCard>
-                    ))}
+                                        <View style={styles.accountInfo}>
+                                            <AppText variant="body" weight="semibold" numberOfLines={1}>
+                                                {account.name}
+                                            </AppText>
+                                            <AppText variant="caption" color="secondary">
+                                                {account.accountType} • {account.currencyCode}
+                                            </AppText>
+                                        </View>
+
+                                        <View style={styles.actions}>
+                                            <TouchableOpacity
+                                                onPress={() => onMove(index, 'up')}
+                                                disabled={isFirstInSection}
+                                                style={[
+                                                    styles.actionButton,
+                                                    { backgroundColor: withOpacity(theme.text, Opacity.soft) },
+                                                    isFirstInSection && { opacity: 0.3 }
+                                                ]}
+                                            >
+                                                <AppIcon name="chevronUp" size={20} color={theme.text} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={() => onMove(index, 'down')}
+                                                disabled={isLastInSection}
+                                                style={[
+                                                    styles.actionButton,
+                                                    { backgroundColor: withOpacity(theme.text, Opacity.soft) },
+                                                    isLastInSection && { opacity: 0.3 }
+                                                ]}
+                                            >
+                                                <AppIcon name="chevronDown" size={20} color={theme.text} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </AppCard>
+                            </React.Fragment>
+                        );
+                    })}
+
                 </Stack>
             </ScrollView>
         </Screen>
@@ -109,6 +128,11 @@ const styles = StyleSheet.create({
     },
     dragHandle: {
         marginRight: Spacing.md,
+    },
+    sectionHeader: {
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.sm,
+        paddingHorizontal: Spacing.xs,
     },
     accountInfo: {
         flex: 1,
