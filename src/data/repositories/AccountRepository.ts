@@ -198,17 +198,21 @@ export class AccountRepository {
   }
 
   private async ensureUniqueName(name: string, excludeId?: string): Promise<void> {
-    const sanitizedName = name.trim().toLowerCase()
+    const sanitizedName = name.trim()
 
-    // Fetch all active account names to check case-insensitively
-    // We cannot easily do this with Q.where because of case sensitivity variations in SQLite/adapters
-    const allAccounts = await this.accounts
-      .query(Q.where('deleted_at', Q.eq(null)))
+    // Query specifically for the name to avoid fetching all accounts.
+    // We use a case-insensitive check in SQLite via normalized comparison if possible,
+    // otherwise a small set of matches is checked in JS.
+    const potentialDuplicates = await this.accounts
+      .query(
+        Q.where('name', Q.like(Q.sanitizeLikeString(sanitizedName))),
+        Q.where('deleted_at', Q.eq(null))
+      )
       .fetch()
 
-    const duplicate = allAccounts.find(account => {
+    const duplicate = potentialDuplicates.find(account => {
       if (excludeId && account.id === excludeId) return false
-      return account.name.trim().toLowerCase() === sanitizedName
+      return account.name.trim().toLowerCase() === sanitizedName.toLowerCase()
     })
 
     if (duplicate) {

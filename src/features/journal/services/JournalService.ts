@@ -50,7 +50,6 @@ export class JournalService {
 
         if (prepared.accountsToRebuild.size > 0) {
             rebuildQueueService.enqueueMany(prepared.accountsToRebuild, data.journalDate);
-            await rebuildQueueService.flush();
         }
 
         return journal;
@@ -85,7 +84,6 @@ export class JournalService {
         ]);
         const rebuildFromDate = Math.min(originalJournal.journalDate, data.journalDate);
         rebuildQueueService.enqueueMany(allAccountsToRebuild, rebuildFromDate);
-        await rebuildQueueService.flush();
 
         return journal;
     }
@@ -171,7 +169,6 @@ export class JournalService {
 
         const accountIds = Array.from(new Set(transactions.map((t: Transaction) => t.accountId)));
         rebuildQueueService.enqueueMany(accountIds, journal.journalDate);
-        await rebuildQueueService.flush();
     }
 
     async duplicateJournal(journalId: string): Promise<Journal> {

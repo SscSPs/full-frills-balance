@@ -121,10 +121,8 @@ export class AccountService {
             changes: { before: beforeState, after: updates }
         });
 
-        // Rebuild if account type changed
         if (updates.accountType && updates.accountType !== beforeState.accountType) {
             rebuildQueueService.enqueue(account.id, 0);
-            await rebuildQueueService.flush();
         }
 
         return updatedAccount;
