@@ -1,3 +1,4 @@
+import { TransactionType } from '@/src/data/models/Transaction';
 import { useAccounts } from '@/src/features/accounts';
 import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalEditor';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -19,6 +20,7 @@ export interface JournalEntryViewModel {
     onCloseAccountPicker: () => void;
     onSelectAccountRequest: (lineId: string) => void;
     onAccountSelected: (accountId: string) => void;
+    selectedAccountId?: string;
     simpleFormProps: {
         accounts: ReturnType<typeof useAccounts>['accounts'];
         journalId?: string;
@@ -101,14 +103,15 @@ export function useJournalEntryViewModel(): JournalEntryViewModel {
         onCloseAccountPicker: () => setShowAccountPicker(false),
         onSelectAccountRequest,
         onAccountSelected,
+        selectedAccountId: editor.lines.find(l => l.id === activeLineId)?.accountId,
         simpleFormProps: {
             accounts,
             journalId: params.journalId as string,
             onSuccess: () => router.back(),
             initialType: editor.transactionType,
             initialAmount: editor.lines[0]?.amount,
-            initialDestinationId: editor.lines[0]?.accountId,
-            initialSourceId: editor.lines[1]?.accountId,
+            initialDestinationId: editor.lines.find(l => l.transactionType === TransactionType.DEBIT)?.accountId || editor.lines[0]?.accountId,
+            initialSourceId: editor.lines.find(l => l.transactionType === TransactionType.CREDIT)?.accountId || editor.lines[1]?.accountId,
             initialDate: editor.journalDate,
             initialTime: editor.journalTime,
             initialDescription: editor.description,

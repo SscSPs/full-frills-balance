@@ -2,12 +2,14 @@ import { AppText, ListRow } from '@/src/components/core';
 import { Shape, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { useTheme } from '@/src/hooks/use-theme';
+import { journalPresenter } from '@/src/utils/journalPresenter';
 import React from 'react';
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface AccountSelectorProps {
     visible: boolean;
     accounts: Account[];
+    selectedId?: string;
     onClose: () => void;
     onSelect: (accountId: string) => void;
 }
@@ -15,10 +17,22 @@ interface AccountSelectorProps {
 export function AccountSelector({
     visible,
     accounts,
+    selectedId,
     onClose,
     onSelect,
 }: AccountSelectorProps) {
     const { theme } = useTheme();
+
+    const initialScrollIndex = React.useMemo(() => {
+        if (!selectedId) return undefined;
+        const index = accounts.findIndex(a => a.id === selectedId);
+        return index !== -1 ? index : undefined;
+    }, [accounts, selectedId]);
+
+    const getAccountColor = (type: string) => {
+        const key = journalPresenter.getAccountColorKey(type);
+        return (theme as any)[key] || theme.primary;
+    };
 
     return (
         <Modal
@@ -39,18 +53,30 @@ export function AccountSelector({
                     <FlatList
                         data={accounts}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <ListRow
-                                title={item.name}
-                                subtitle={`${item.accountType} • ${item.currencyCode}`}
-                                onPress={() => onSelect(item.id)}
-                                style={[styles.accountRow, {
-                                    backgroundColor: theme.surface,
-                                    borderColor: theme.border,
-                                }]}
-                                padding="md"
-                            />
-                        )}
+                        initialScrollIndex={initialScrollIndex}
+                        getItemLayout={(_, index) => ({
+                            length: 70, // Rough height of ListRow + margin
+                            offset: 70 * index,
+                            index,
+                        })}
+                        renderItem={({ item }) => {
+                            const isSelected = item.id === selectedId;
+                            const accountColor = getAccountColor(item.accountType);
+
+                            return (
+                                <ListRow
+                                    title={item.name}
+                                    subtitle={`${item.accountType} • ${item.currencyCode}`}
+                                    onPress={() => onSelect(item.id)}
+                                    style={[styles.accountRow, {
+                                        backgroundColor: theme.surface,
+                                        borderColor: isSelected ? accountColor : theme.border,
+                                        borderWidth: isSelected ? 2 : 1,
+                                    }]}
+                                    padding="md"
+                                />
+                            );
+                        }}
                         contentContainerStyle={styles.accountsListContent}
                         style={styles.accountsList}
                     />

@@ -12,6 +12,7 @@ import Account, { AccountType } from '@/src/data/models/Account';
 import { useJournalActions } from '@/src/features/journal/hooks/useJournalActions';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useExchangeRate } from '@/src/hooks/useExchangeRate';
+import { journalPresenter } from '@/src/utils/journalPresenter';
 import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';
 import dayjs from 'dayjs';
@@ -234,32 +235,44 @@ export const SimpleForm = ({
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         estimatedItemSize={120}
-                        renderItem={({ item: account }: { item: Account }) => (
-                            <TouchableOpacity
-                                testID={`account-option-${account.name.replace(/\s+/g, '-')}`}
-                                style={[
-                                    styles.accountCard,
-                                    { backgroundColor: theme.surfaceSecondary, borderColor: theme.border },
-                                    selectedId === account.id && {
-                                        backgroundColor: withOpacity(selectorColor, Opacity.soft),
-                                        borderColor: selectorColor
-                                    }
-                                ]}
-                                onPress={() => onSelect(account.id)}
-                            >
-                                <View style={[styles.accountIndicator, { backgroundColor: selectorColor, opacity: selectedId === account.id ? 1 : Opacity.soft }]} />
-                                <AppText
-                                    variant="body"
-                                    weight={selectedId === account.id ? "semibold" : "regular"}
-                                    style={{ color: theme.text, flex: 1 }}
+                        getItemLayout={(data: ArrayLike<Account> | null | undefined, index: number) => ({
+                            length: 120, // estimatedItemSize
+                            offset: 120 * index,
+                            index,
+                        })}
+                        initialScrollIndex={Math.max(0, accountList.findIndex(a => a.id === selectedId))}
+                        renderItem={({ item: account }: { item: Account }) => {
+                            const isSelected = selectedId === account.id;
+                            const colorKey = journalPresenter.getAccountColorKey(account.accountType);
+                            const accountColor = tintColor || (theme as any)[colorKey] || theme.primary;
+
+                            return (
+                                <TouchableOpacity
+                                    testID={`account-option-${account.name.replace(/\s+/g, '-')}`}
+                                    style={[
+                                        styles.accountCard,
+                                        { backgroundColor: theme.surfaceSecondary, borderColor: theme.border },
+                                        isSelected && {
+                                            backgroundColor: withOpacity(accountColor, Opacity.soft),
+                                            borderColor: accountColor
+                                        }
+                                    ]}
+                                    onPress={() => onSelect(account.id)}
                                 >
-                                    {account.name}
-                                </AppText>
-                                {selectedId === account.id && (
-                                    <AppIcon name="checkCircle" size={18} color={selectorColor} />
-                                )}
-                            </TouchableOpacity>
-                        )}
+                                    <View style={[styles.accountIndicator, { backgroundColor: accountColor, opacity: isSelected ? 1 : Opacity.soft }]} />
+                                    <AppText
+                                        variant="body"
+                                        weight={isSelected ? "semibold" : "regular"}
+                                        style={{ color: theme.text, flex: 1 }}
+                                    >
+                                        {account.name}
+                                    </AppText>
+                                    {isSelected && (
+                                        <AppIcon name="checkCircle" size={18} color={accountColor} />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        }}
                         contentContainerStyle={{ paddingHorizontal: Spacing.xs }}
                         ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
                     />
@@ -323,7 +336,7 @@ export const SimpleForm = ({
                     <>
                         {renderAccountSelector("To Category / Account", expenseAccounts, destinationId, setDestinationId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("From Account", transactionAccounts, sourceId, setSourceId, theme.primary)}
+                        {renderAccountSelector("From Account", transactionAccounts, sourceId, setSourceId)}
                     </>
                 )}
 
@@ -331,15 +344,15 @@ export const SimpleForm = ({
                     <>
                         {renderAccountSelector("From Source / Account", incomeAccounts, sourceId, setSourceId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("To Account", transactionAccounts, destinationId, setDestinationId, theme.primary)}
+                        {renderAccountSelector("To Account", transactionAccounts, destinationId, setDestinationId)}
                     </>
                 )}
 
                 {type === 'transfer' && (
                     <>
-                        {renderAccountSelector("Source Account", accounts, sourceId, setSourceId, theme.primary)}
+                        {renderAccountSelector("Source Account", accounts, sourceId, setSourceId)}
                         <View style={[styles.cardDivider, { backgroundColor: theme.border }]} />
-                        {renderAccountSelector("Destination Account", accounts, destinationId, setDestinationId, theme.primary)}
+                        {renderAccountSelector("Destination Account", accounts, destinationId, setDestinationId)}
                     </>
                 )}
             </AppCard>

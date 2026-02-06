@@ -52,9 +52,30 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
 
                         const txs = await transactionService.getEnrichedByJournal(journalId);
                         if (txs.length > 0) {
-                            // Auto-switch to advanced mode if more than 2 lines
+                            // 1. Force Advanced Mode for multi-leg transactions
                             if (txs.length > 2) {
                                 setIsGuidedMode(false);
+                            }
+                            // 2. Refined Type Detection for 2-leg transactions
+                            else if (txs.length === 2) {
+                                const creditTx = txs.find(t => t.transactionType === TransactionType.CREDIT);
+                                const debitTx = txs.find(t => t.transactionType === TransactionType.DEBIT);
+
+                                if (creditTx && debitTx) {
+                                    const sourceIsAssetLiab = creditTx.accountType === AccountType.ASSET || creditTx.accountType === AccountType.LIABILITY;
+                                    const destIsExpense = debitTx.accountType === AccountType.EXPENSE;
+
+                                    const sourceIsIncome = creditTx.accountType === AccountType.INCOME;
+                                    const destIsAssetLiab = debitTx.accountType === AccountType.ASSET || debitTx.accountType === AccountType.LIABILITY;
+
+                                    if (sourceIsAssetLiab && destIsExpense) {
+                                        setTransactionType('expense');
+                                    } else if (sourceIsIncome && destIsAssetLiab) {
+                                        setTransactionType('income');
+                                    } else {
+                                        setTransactionType('transfer');
+                                    }
+                                }
                             }
 
                             setLines(txs.map(tx => ({
