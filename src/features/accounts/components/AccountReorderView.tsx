@@ -19,7 +19,7 @@ export function AccountReorderView({
         <Screen showBack={false}>
             <View style={[styles.header, { borderBottomColor: theme.border }]}
             >
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton} accessibilityLabel="Close" accessibilityRole="button">
                     <AppIcon name="close" size={24} color={theme.text} />
                 </TouchableOpacity>
                 <AppText variant="subheading" weight="bold">Reorder Accounts</AppText>

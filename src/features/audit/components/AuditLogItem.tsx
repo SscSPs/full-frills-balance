@@ -267,7 +267,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
 
     return (
         <AppCard style={styles.card} padding="md" elevation="sm">
-            <TouchableOpacity onPress={onToggle}>
+            <TouchableOpacity onPress={onToggle} accessibilityLabel="View details" accessibilityRole="button">
                 <View style={styles.row}>
                     <View style={[styles.iconContainer, { backgroundColor: withOpacity(actionColor, Opacity.soft) }]}>
                         <AppIcon name={getActionIcon(item.action)} size={Size.sm} color={actionColor} />

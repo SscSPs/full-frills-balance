@@ -2,7 +2,8 @@ import { AppCard, AppIcon, AppText, Box, FloatingActionButton, IvyIcon } from '@
 import { Screen } from '@/src/components/layout';
 import { Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
-import { AccountsListViewModel, AccountCardViewModel, AccountSectionViewModel } from '@/src/features/accounts/hooks/useAccountsListViewModel';
+import { AccountsListViewModel } from '@/src/features/accounts/hooks/useAccountsListViewModel';
+import { AccountCardViewModel, AccountSectionViewModel } from '@/src/features/accounts/utils/transformAccounts';
 import React from 'react';
 import { SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -22,7 +23,7 @@ export function AccountsListView({
         <Screen showBack={false}>
             <View style={styles.container}>
                 <SectionList
-                    sections={sections as any}
+                    sections={sections}
                     refreshing={isRefreshing}
                     onRefresh={onRefresh}
                     keyExtractor={(item: AccountCardViewModel) => item.id}
@@ -31,6 +32,8 @@ export function AccountsListView({
                             onPress={() => onToggleSection(section.title)}
                             activeOpacity={0.7}
                             style={styles.sectionHeaderContainer}
+                            accessibilityLabel={`${section.title} section, ${section.count} accounts`}
+                            accessibilityRole="button"
                         >
                             <Box direction="row" align="center" justify="space-between" style={{ flex: 1 }}>
                                 <Box direction="row" align="center" gap="sm">
@@ -79,6 +82,8 @@ export function AccountsListView({
                                     <TouchableOpacity
                                         onPress={onTogglePrivacy}
                                         style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
+                                        accessibilityLabel={isPrivacyMode ? "Show balances" : "Hide balances"}
+                                        accessibilityRole="button"
                                     >
                                         <AppIcon
                                             name={isPrivacyMode ? "eyeOff" : "eye"}
@@ -89,6 +94,8 @@ export function AccountsListView({
                                     <TouchableOpacity
                                         onPress={onReorderPress}
                                         style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
+                                        accessibilityLabel="Reorder accounts"
+                                        accessibilityRole="button"
                                     >
                                         <AppIcon name="reorder" size={Size.iconSm} color={theme.text} />
                                     </TouchableOpacity>

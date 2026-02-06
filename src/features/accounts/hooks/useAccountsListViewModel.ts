@@ -70,7 +70,9 @@ export function useAccountsListViewModel(): AccountsListViewModel {
         togglePrivacyMode()
     }, [togglePrivacyMode])
 
-    const onRefresh = useCallback(() => { }, [])
+    const onRefresh = useCallback(() => {
+        // Refresh is handled reactively by useWealthSummary observables
+    }, []);
 
     const sections = useMemo(() => {
         return transformAccountsToSections(accounts, {

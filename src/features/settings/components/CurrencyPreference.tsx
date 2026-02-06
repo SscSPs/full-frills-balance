@@ -50,7 +50,7 @@ export const CurrencyPreference = () => {
                     <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
                         <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
                             <AppText variant="heading">Select Default Currency</AppText>
-                            <TouchableOpacity onPress={() => setShowModal(false)}>
+                            <TouchableOpacity onPress={() => setShowModal(false)} accessibilityLabel="Close" accessibilityRole="button">
                                 <AppIcon name="close" size={Typography.sizes.xxl} color={theme.text} />
                             </TouchableOpacity>
                         </View>
@@ -65,6 +65,8 @@ export const CurrencyPreference = () => {
                                         defaultCurrency === item.code && { backgroundColor: withOpacity(theme.primary, Opacity.soft / 2) },
                                     ]}
                                     onPress={() => handleSelect(item.code)}
+                                    accessibilityLabel={`${item.name} (${item.code})`}
+                                    accessibilityRole="button"
                                 >
                                     <View>
                                         <AppText variant="body">{item.name}</AppText>

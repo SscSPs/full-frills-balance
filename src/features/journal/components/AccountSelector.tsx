@@ -31,7 +31,7 @@ export function AccountSelector({
                 <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
                     <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
                         <AppText variant="heading">Select Account</AppText>
-                        <TouchableOpacity onPress={onClose}>
+                        <TouchableOpacity onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
                             <AppText variant="body" color="secondary">✕</AppText>
                         </TouchableOpacity>
                     </View>

@@ -32,11 +32,17 @@ class PreferencesHelper {
     try {
       const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
       if (stored) {
-        this.preferences = { ...this.preferences, ...JSON.parse(stored) };
+        try {
+          const parsed = JSON.parse(stored);
+          if (typeof parsed === 'object' && parsed !== null) {
+            this.preferences = { ...this.preferences, ...parsed };
+          }
+        } catch (parseError) {
+          logger.error('Failed to parse preferences, using defaults', { error: parseError });
+        }
       }
     } catch (error) {
-      // Silently fail - preferences are optional
-      logger.warn('Failed to load preferences', { error });
+      logger.error('Failed to load preferences', { error });
     }
     return this.preferences;
   }
@@ -45,8 +51,7 @@ class PreferencesHelper {
     try {
       await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(this.preferences));
     } catch (error) {
-      // Silently fail - preferences are optional
-      logger.warn('Failed to save preferences', { error });
+      logger.error('Failed to save preferences', { error });
     }
   }
 

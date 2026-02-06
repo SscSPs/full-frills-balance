@@ -4,13 +4,12 @@ import { AccountType } from '@/src/data/models/Account';
 import { useAccount, useAccountActions, useAccountBalance, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
-import { showErrorAlert } from '@/src/utils/alerts';
+import { showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
 import { ValidationError } from '@/src/utils/errors';
 import { logger } from '@/src/utils/logger';
 import { sanitizeInput, validateAccountName } from '@/src/utils/validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 
 export interface AccountFormViewModel {
     theme: ReturnType<typeof useTheme>['theme'];
@@ -70,26 +69,38 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const [accountType, setAccountType] = useState<AccountType>(getInitialAccountType());
     const [selectedCurrency, setSelectedCurrency] = useState<string>(defaultCurrency || AppConfig.defaultCurrency);
     const [selectedIcon, setSelectedIcon] = useState<string>('wallet');
-    const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
     const [initialBalance, setInitialBalance] = useState('');
-    const balanceDirtyRef = useRef(false);
+    const formDirtyRef = useRef({
+        name: false,
+        type: false,
+        currency: false,
+        icon: false,
+        balance: false,
+    });
+    const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [hasExistingAccounts, setHasExistingAccounts] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
     useEffect(() => {
-        balanceDirtyRef.current = false;
+        formDirtyRef.current = { name: false, type: false, currency: false, icon: false, balance: false };
     }, [accountId]);
 
     useEffect(() => {
         if (existingAccount) {
-            setAccountName(existingAccount.name);
-            setAccountType(existingAccount.accountType);
-            setSelectedCurrency(existingAccount.currencyCode);
-            if (existingAccount.icon) {
+            if (!formDirtyRef.current.name) {
+                setAccountName(existingAccount.name);
+            }
+            if (!formDirtyRef.current.type) {
+                setAccountType(existingAccount.accountType);
+            }
+            if (!formDirtyRef.current.currency) {
+                setSelectedCurrency(existingAccount.currencyCode);
+            }
+            if (!formDirtyRef.current.icon && existingAccount.icon) {
                 setSelectedIcon(existingAccount.icon);
             }
-            if (isEditMode && currentBalanceData && !balanceDirtyRef.current) {
+            if (isEditMode && currentBalanceData && !formDirtyRef.current.balance) {
                 setInitialBalance(currentBalanceData.balance.toString());
             }
         }
@@ -126,7 +137,7 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const isSubmitting = useRef(false);
 
     const onInitialBalanceChange = (value: string) => {
-        balanceDirtyRef.current = true;
+        formDirtyRef.current.balance = true;
         setInitialBalance(value);
     };
 
@@ -172,14 +183,10 @@ export function useAccountFormViewModel(): AccountFormViewModel {
                     }
                 }
 
-                if (Platform.OS !== 'web') {
-                    // eslint-disable-next-line @typescript-eslint/no-require-imports
-                    const { showSuccessAlert } = require('@/src/utils/alerts');
-                    showSuccessAlert(
-                        'Account Updated',
-                        `"${sanitizedName}" has been updated successfully!`
-                    );
-                }
+                showSuccessAlert(
+                    'Account Updated',
+                    `"${sanitizedName}" has been updated successfully!`
+                );
                 logger.info('[AccountCreation] Account updated, calling back()');
                 router.back();
             } else {
@@ -192,14 +199,10 @@ export function useAccountFormViewModel(): AccountFormViewModel {
                     icon: selectedIcon,
                 });
 
-                if (Platform.OS !== 'web') {
-                    // eslint-disable-next-line @typescript-eslint/no-require-imports
-                    const { showSuccessAlert } = require('@/src/utils/alerts');
-                    showSuccessAlert(
-                        'Account Created',
-                        `"${sanitizedName}" has been created successfully!`
-                    );
-                }
+                showSuccessAlert(
+                    'Account Created',
+                    `"${sanitizedName}" has been created successfully!`
+                );
 
                 setAccountName('');
                 setAccountType(AccountType.ASSET);

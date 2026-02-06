@@ -18,6 +18,17 @@ import { logger } from '@/src/utils/logger';
 import { roundToPrecision } from '@/src/utils/money';
 import { preferences } from '@/src/utils/preferences';
 import { sanitizeAmount } from '@/src/utils/validation';
+
+export interface SimpleEntryParams {
+    type: 'expense' | 'income' | 'transfer';
+    amount: number;
+    sourceId: string;
+    destinationId: string;
+    journalDate: number;
+    description?: string;
+    exchangeRate?: number;
+    journalId?: string;
+}
 import { Q } from '@nozbe/watermelondb';
 import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 
@@ -230,16 +241,7 @@ export class JournalService {
      * Specialized method for SimpleForm/V1-style entry.
      * Handles type-to-transaction mapping and cross-currency rounding.
      */
-    async saveSimpleEntry(params: {
-        type: 'expense' | 'income' | 'transfer',
-        amount: number,
-        sourceId: string,
-        destinationId: string,
-        journalDate: number,
-        description?: string,
-        exchangeRate?: number,
-        journalId?: string
-    }): Promise<Journal> {
+    async saveSimpleEntry(params: SimpleEntryParams): Promise<Journal> {
         const { type, amount, sourceId, destinationId, journalDate, description, exchangeRate, journalId } = params;
 
         // 1. Fetch source currency to determine journal currency

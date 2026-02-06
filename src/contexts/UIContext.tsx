@@ -15,7 +15,7 @@
 import { ThemeMode } from '@/src/constants'
 import { logger } from '@/src/utils/logger'
 import { preferences } from '@/src/utils/preferences'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useColorScheme } from 'react-native'
 
 // Simple UI state only - no domain data
@@ -25,9 +25,6 @@ interface UIState {
 
   // Theme preference
   themePreference: 'light' | 'dark' | 'system'
-
-  // Computed theme mode (resolved from preference + system)
-  themeMode: 'light' | 'dark'
 
   // Simple UI flags
   isLoading: boolean
@@ -50,6 +47,8 @@ interface UIState {
 }
 
 interface UIContextType extends UIState {
+  // Computed value (not stored in state)
+  themeMode: 'light' | 'dark'
   // Actions for UI state only
   completeOnboarding: (name: string, currency: string) => Promise<void>
   setThemePreference: (theme: 'light' | 'dark' | 'system') => Promise<void>
@@ -67,7 +66,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [uiState, setUIState] = useState<UIState>({
     hasCompletedOnboarding: false,
     themePreference: 'system',
-    themeMode: systemColorScheme === 'dark' ? 'dark' : 'light',
     isLoading: false,
     isInitialized: false,
     userName: '',
@@ -79,16 +77,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     importStats: null,
   })
 
-  // Update themeMode when preference or system scheme changes
-  useEffect(() => {
-    const newThemeMode = uiState.themePreference === 'system'
+  const themeMode = useMemo<'light' | 'dark'>(() => {
+    return uiState.themePreference === 'system'
       ? (systemColorScheme === 'dark' ? 'dark' : 'light')
       : uiState.themePreference
-
-    if (newThemeMode !== uiState.themeMode) {
-      setUIState(prev => ({ ...prev, themeMode: newThemeMode }))
-    }
-  }, [uiState.themePreference, systemColorScheme, uiState.themeMode])
+  }, [uiState.themePreference, systemColorScheme])
 
   // Load preferences on mount
   useEffect(() => {
@@ -98,14 +91,10 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
         const loadedPreferences = await preferences.loadPreferences()
         const themePreference = loadedPreferences.theme || 'system'
-        const computedThemeMode = themePreference === 'system'
-          ? (systemColorScheme === 'dark' ? 'dark' : 'light')
-          : themePreference
 
         setUIState({
           hasCompletedOnboarding: loadedPreferences.onboardingCompleted,
           themePreference,
-          themeMode: computedThemeMode,
           userName: loadedPreferences.userName || '',
           defaultCurrency: loadedPreferences.defaultCurrencyCode || 'USD',
           isPrivacyMode: loadedPreferences.isPrivacyMode || false,
@@ -195,6 +184,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
   const value: UIContextType = {
     ...uiState,
+    themeMode,
     completeOnboarding,
     setThemePreference,
     updateUserDetails,

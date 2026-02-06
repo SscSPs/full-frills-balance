@@ -56,7 +56,7 @@ export function JournalLineItem({
             <Box direction="row" justify="space-between" align="center" style={{ marginBottom: Spacing.md }}>
                 <AppText variant="subheading">Line {index + 1}</AppText>
                 {canRemove && (
-                    <TouchableOpacity onPress={onRemove} style={{ padding: Spacing.sm }}>
+                    <TouchableOpacity onPress={onRemove} style={{ padding: Spacing.sm }} accessibilityLabel="Remove line" accessibilityRole="button">
                         <AppText variant="body" color="error">Remove</AppText>
                     </TouchableOpacity>
                 )}
@@ -68,6 +68,8 @@ export function JournalLineItem({
                     borderColor: theme.border
                 }]}
                 onPress={onSelectAccount}
+                accessibilityLabel={line.accountName || "Select account"}
+                accessibilityRole="button"
             >
                 <AppText variant="body">
                     {line.accountName || 'Select Account'}
@@ -86,6 +88,8 @@ export function JournalLineItem({
                                 { borderColor: theme.border }
                             ]}
                             onPress={() => onUpdate('transactionType', TransactionType.DEBIT)}
+                            accessibilityLabel="Debit"
+                            accessibilityRole="button"
                         >
                             <AppText
                                 variant="body"
@@ -103,6 +107,8 @@ export function JournalLineItem({
                                 { borderColor: theme.border }
                             ]}
                             onPress={() => onUpdate('transactionType', TransactionType.CREDIT)}
+                            accessibilityLabel="Credit"
+                            accessibilityRole="button"
                         >
                             <AppText
                                 variant="body"

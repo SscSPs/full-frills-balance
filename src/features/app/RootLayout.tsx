@@ -31,13 +31,15 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <DatabaseProvider database={database}>
-        <UIProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <AppContent />
-          </ThemeProvider>
-        </UIProvider>
-      </DatabaseProvider>
+      <ErrorBoundary>
+        <DatabaseProvider database={database}>
+          <UIProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <AppContent />
+            </ThemeProvider>
+          </UIProvider>
+        </DatabaseProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
@@ -52,23 +54,21 @@ function AppContent() {
   }
 
   return (
-    <ErrorBoundary>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
-        <Stack.Screen name="account-details" options={{ headerShown: false }} />
-        <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
-        <Stack.Screen name="account-reorder" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="import-selection" options={{ headerShown: false }} />
-        <Stack.Screen name="audit-log" options={{ headerShown: false }} />
-      </Stack>
-    </ErrorBoundary>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="journal-entry" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="account-creation" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="_design-preview" options={{ headerShown: false }} />
+      <Stack.Screen name="account-details" options={{ headerShown: false }} />
+      <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
+      <Stack.Screen name="account-reorder" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="import-selection" options={{ headerShown: false }} />
+      <Stack.Screen name="audit-log" options={{ headerShown: false }} />
+    </Stack>
   );
 }

@@ -18,7 +18,7 @@ export const JournalEntryHeader = ({ title, onClose }: JournalEntryHeaderProps) 
 
     return (
         <View style={[styles.header, { backgroundColor: theme.background }]}>
-            <TouchableOpacity onPress={handleClose} style={styles.backButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.backButton} accessibilityLabel="Close" accessibilityRole="button">
                 <AppIcon name="close" size={28} color={theme.text} />
             </TouchableOpacity>
 

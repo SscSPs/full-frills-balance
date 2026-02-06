@@ -85,7 +85,7 @@ export const AdvancedForm = ({
                 <Stack space="md">
                     <Box direction="row" justify="space-between" align="center">
                         <AppText variant="heading">Journal Lines</AppText>
-                        <TouchableOpacity onPress={editor.addLine} style={{ padding: Spacing.sm }}>
+                        <TouchableOpacity onPress={editor.addLine} style={{ padding: Spacing.sm }} accessibilityLabel="Add line" accessibilityRole="button">
                             <AppText variant="body" color="primary">+ Add Line</AppText>
                         </TouchableOpacity>
                     </Box>

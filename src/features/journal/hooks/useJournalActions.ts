@@ -1,6 +1,6 @@
 import Journal from '@/src/data/models/Journal';
 import { CreateJournalData, journalRepository } from '@/src/data/repositories/JournalRepository';
-import { journalService } from '@/src/features/journal/services/JournalService';
+import { journalService, SimpleEntryParams } from '@/src/features/journal/services/JournalService';
 import { useCallback } from 'react';
 
 export function useJournalActions() {
@@ -24,7 +24,7 @@ export function useJournalActions() {
         return journalService.duplicateJournal(journalId);
     }, []);
 
-    const saveSimpleEntry = useCallback(async (params: any) => {
+    const saveSimpleEntry = useCallback(async (params: SimpleEntryParams) => {
         return journalService.saveSimpleEntry(params);
     }, []);
 

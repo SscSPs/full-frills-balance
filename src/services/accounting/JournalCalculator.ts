@@ -42,18 +42,39 @@ export class JournalCalculator {
      * Follows Rule 11 (Business rules in services).
      */
     static getLineBaseAmount(line: { amount: string | number; exchangeRate?: string | number; accountCurrency?: string; }): number {
-        const amount = typeof line.amount === 'string' ? sanitizeAmount(line.amount) : line.amount;
+        if (line.amount == null) {
+            return 0;
+        }
+
+        let amount: number;
+        if (typeof line.amount === 'string') {
+            const sanitized = sanitizeAmount(line.amount);
+            if (sanitized === null || isNaN(sanitized)) {
+                return 0;
+            }
+            amount = sanitized;
+        } else {
+            amount = line.amount;
+        }
+
         const finalAmount = amount || 0;
-        const rateStr = line.exchangeRate?.toString() || '1';
-        const rate = parseFloat(rateStr) || 1;
+
+        let rate = 1;
+        if (line.exchangeRate != null) {
+            const rateStr = line.exchangeRate.toString();
+            const parsedRate = parseFloat(rateStr);
+            if (!isNaN(parsedRate) && parsedRate > 0) {
+                rate = parsedRate;
+            }
+        }
+
         const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
 
         if (!line.accountCurrency || line.accountCurrency === defaultCurrency) {
             return finalAmount;
         }
+
         const baseAmount = finalAmount * rate;
-        // Business rule: round to 2 decimal places if not using integer cents here, 
-        // but ideally we should be using minor units everywhere.
         return Math.round(baseAmount * 100) / 100;
     }
 
