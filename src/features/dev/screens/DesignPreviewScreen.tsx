@@ -23,10 +23,8 @@ import {
     AppCard,
     AppText,
     Badge,
-    Box,
     Divider,
-    ListRow,
-    Stack
+    ListRow
 } from '@/src/components/core'
 import { Shape, Spacing, ThemeMode, useThemeColors } from '@/src/constants'
 import { ThemeOverride } from '@/src/contexts/UIContext'
@@ -120,22 +118,22 @@ export default function DesignPreviewScreen() {
                     <Divider />
 
                     <AppText variant="subheading">Stack (Vertical, gap: md)</AppText>
-                    <Box style={{ backgroundColor: theme.surfaceSecondary, padding: Spacing.md, borderRadius: Shape.radius.md }}>
-                        <Stack space="md">
+                    <View style={{ backgroundColor: theme.surfaceSecondary, padding: Spacing.md, borderRadius: Shape.radius.md }}>
+                        <View style={{ gap: Spacing.md }}>
                             <AppCard elevation="none" padding="sm"><AppText variant="caption">Item 1</AppText></AppCard>
                             <AppCard elevation="none" padding="sm"><AppText variant="caption">Item 2</AppText></AppCard>
                             <AppCard elevation="none" padding="sm"><AppText variant="caption">Item 3</AppText></AppCard>
-                        </Stack>
-                    </Box>
+                        </View>
+                    </View>
 
                     <AppText variant="subheading" style={{ marginTop: Spacing.md }}>Stack (Horizontal, gap: lg)</AppText>
-                    <Box style={{ backgroundColor: theme.surfaceSecondary, padding: Spacing.md, borderRadius: Shape.radius.md }}>
-                        <Stack horizontal space="lg">
+                    <View style={{ backgroundColor: theme.surfaceSecondary, padding: Spacing.md, borderRadius: Shape.radius.md }}>
+                        <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
                             <TokenBox size={40} radius={Shape.radius.sm} />
                             <TokenBox size={40} radius={Shape.radius.sm} />
                             <TokenBox size={40} radius={Shape.radius.sm} />
-                        </Stack>
-                    </Box>
+                        </View>
+                    </View>
                 </AppCard>
 
                 {/* Buttons Section */}

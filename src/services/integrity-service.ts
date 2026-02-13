@@ -8,7 +8,6 @@
  * All database writes are delegated to repositories.
  */
 
-import { AccountType } from '@/src/data/models/Account'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { databaseRepository } from '@/src/data/repositories/DatabaseRepository'
@@ -36,34 +35,9 @@ export interface IntegrityCheckResult {
     results: BalanceVerificationResult[]
 }
 
-interface DefaultAccountData {
-    name: string
-    accountType: AccountType
-    currencyCode: string
-}
+// Default constants removed as they are handled by onboardingService
 
-const DEFAULT_CURRENCY = 'USD'
-
-const DEFAULT_EXPENSE_CATEGORIES: DefaultAccountData[] = [
-    { name: 'Food', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Transport', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Shopping', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Entertainment', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Health', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Housing', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Other Expense', accountType: AccountType.EXPENSE, currencyCode: DEFAULT_CURRENCY },
-]
-
-const DEFAULT_INCOME_CATEGORIES: DefaultAccountData[] = [
-    { name: 'Salary', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Gifts', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Interest', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
-    { name: 'Other Income', accountType: AccountType.INCOME, currencyCode: DEFAULT_CURRENCY },
-]
-
-const DEFAULT_ASSET_ACCOUNTS: DefaultAccountData[] = [
-    { name: 'Wallet', accountType: AccountType.ASSET, currencyCode: DEFAULT_CURRENCY },
-]
+// Default accounts are handled by onboardingService
 
 export class IntegrityService {
     /**

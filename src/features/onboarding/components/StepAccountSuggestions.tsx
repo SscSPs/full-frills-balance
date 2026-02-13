@@ -1,7 +1,5 @@
 import { SelectableGrid, SelectableItem } from '@/src/components/common/SelectableGrid';
-import { AppText } from '@/src/components/core';
 import { IconName } from '@/src/components/core/AppIcon';
-import { useTheme } from '@/src/hooks/use-theme';
 import React, { useMemo } from 'react';
 import { DEFAULT_ACCOUNTS } from '../constants';
 
@@ -24,7 +22,6 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
     onBack,
     isCompleting,
 }) => {
-    const { theme } = useTheme();
 
     const items: SelectableItem[] = useMemo(() => {
         return [

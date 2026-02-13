@@ -81,7 +81,8 @@ export function useObservable<T>(
             isActive = false;
             subscription.unsubscribe();
         };
-    }, [stableFactory, ...deps]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stableFactory, initialValue, keepPreviousData, ...deps]);
 
     return { data, isLoading, error, version };
 }
@@ -149,7 +150,8 @@ export function useObservableWithEnrichment<T, E>(
             isActive = false;
             subscription.unsubscribe();
         };
-    }, [stableFactory, ...deps]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stableFactory, stableEnricher, initialValue, ...deps]);
 
     return { data, isLoading, error, version };
 }

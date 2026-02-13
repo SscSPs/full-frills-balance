@@ -1,4 +1,4 @@
-import { AppButton, AppText, Box, Divider, IconButton } from '@/src/components/core';
+import { AppButton, AppText, Divider, IconButton } from '@/src/components/core';
 import { getDatePickerStyles, Shape, Size, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import dayjs from 'dayjs';
@@ -79,11 +79,11 @@ export function DateTimePickerModal({
 
                     <Divider style={styles.divider} />
 
-                    <Box paddingHorizontal="lg">
+                    <View style={{ paddingHorizontal: Spacing.lg }}>
                         <AppButton variant="primary" onPress={handleApply}>
                             Set Date & Time
                         </AppButton>
-                    </Box>
+                    </View>
                 </Pressable>
             </Pressable>
         </Modal>

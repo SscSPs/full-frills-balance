@@ -6,13 +6,14 @@ import { JournalEntryHeader } from '@/src/features/journal/entry/components/Jour
 import { JournalModeToggle } from '@/src/features/journal/entry/components/JournalModeToggle';
 import { SimpleForm } from '@/src/features/journal/entry/components/SimpleForm';
 import { JournalEntryViewModel } from '@/src/features/journal/entry/hooks/useJournalEntryViewModel';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export function JournalEntryView(vm: JournalEntryViewModel) {
+    const { theme } = useTheme();
     const {
-        theme,
         isLoading,
         headerTitle,
         showEditBanner,
@@ -22,8 +23,8 @@ export function JournalEntryView(vm: JournalEntryViewModel) {
         showAccountPicker,
         onCloseAccountPicker,
         onAccountSelected,
-        simpleFormProps,
-        advancedFormProps,
+        simpleFormConfig,
+        advancedFormConfig,
         accounts,
     } = vm;
 
@@ -63,9 +64,9 @@ export function JournalEntryView(vm: JournalEntryViewModel) {
                     />
 
                     {isGuidedMode ? (
-                        <SimpleForm {...simpleFormProps} />
+                        <SimpleForm {...simpleFormConfig} />
                     ) : (
-                        <AdvancedForm {...advancedFormProps} />
+                        <AdvancedForm {...advancedFormConfig} />
                     )}
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -1,12 +1,10 @@
 import { AuditEntityType } from '@/src/data/models/AuditLog';
 import { useAuditAccounts } from '@/src/features/audit/hooks/useAuditData';
 import { useAuditLogs } from '@/src/features/audit/hooks/useAuditLogs';
-import { useTheme } from '@/src/hooks/use-theme';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 export interface AuditLogViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     logs: ReturnType<typeof useAuditLogs>['logs'];
     accountMap: ReturnType<typeof useAuditAccounts>['accountMap'];
     isLoading: boolean;
@@ -15,8 +13,7 @@ export interface AuditLogViewModel {
     onToggleExpanded: (id: string) => void;
 }
 
-export function useAuditLogViewModel(): AuditLogViewModel {
-    const { theme } = useTheme();
+export function useAuditLogViewModel() {
     const { entityType, entityId } = useLocalSearchParams<{ entityType?: AuditEntityType; entityId?: string }>();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -38,7 +35,6 @@ export function useAuditLogViewModel(): AuditLogViewModel {
     }, []);
 
     return {
-        theme,
         logs,
         accountMap,
         isLoading: isLoading || accountsLoading,

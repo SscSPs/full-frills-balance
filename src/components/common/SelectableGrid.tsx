@@ -3,7 +3,7 @@ import { IconName } from '@/src/components/core/AppIcon';
 import { Layout, Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useCallback, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export interface SelectableItem {
     id?: string;
@@ -498,5 +498,3 @@ const styles = StyleSheet.create({
         borderRadius: Shape.radius.r2,
     },
 });
-
-import { Modal } from 'react-native';

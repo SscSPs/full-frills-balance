@@ -53,7 +53,7 @@ export interface TransactionLike {
 export interface JournalPresentation {
     type: JournalDisplayType;
     label: string;
-    colorHex: string;
+    colorKey: 'primary' | 'success' | 'error' | 'textSecondary' | 'income' | 'expense' | 'asset' | 'liability' | 'equity';
 }
 
 export const journalPresenter = {
@@ -95,17 +95,17 @@ export const journalPresenter = {
     /**
      * Returns display properties for a journal type
      */
-    getPresentation(type: JournalDisplayType, theme: any, semanticLabel?: string): JournalPresentation {
+    getPresentation(type: JournalDisplayType, semanticLabel?: string): JournalPresentation {
         switch (type) {
             case JournalDisplayType.INCOME:
-                return { type, label: semanticLabel || 'Income', colorHex: theme.success };
+                return { type, label: semanticLabel || 'Income', colorKey: 'success' };
             case JournalDisplayType.EXPENSE:
-                return { type, label: semanticLabel || 'Expense', colorHex: theme.error };
+                return { type, label: semanticLabel || 'Expense', colorKey: 'error' };
             case JournalDisplayType.TRANSFER:
-                return { type, label: semanticLabel || 'Transfer', colorHex: theme.primary };
+                return { type, label: semanticLabel || 'Transfer', colorKey: 'primary' };
             case JournalDisplayType.MIXED:
             default:
-                return { type, label: semanticLabel || 'Split', colorHex: theme.textSecondary };
+                return { type, label: semanticLabel || 'Split', colorKey: 'textSecondary' };
         }
     },
 

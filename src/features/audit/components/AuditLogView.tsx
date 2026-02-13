@@ -3,12 +3,13 @@ import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
 import { AuditLogItem } from '@/src/features/audit/components/AuditLogItem';
 import { AuditLogViewModel } from '@/src/features/audit/hooks/useAuditLogViewModel';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 export function AuditLogView(vm: AuditLogViewModel) {
+    const { theme } = useTheme();
     const {
-        theme,
         logs,
         accountMap,
         isLoading,

@@ -3,7 +3,6 @@ import { AppText } from '@/src/components/core';
 import { Shape, Size, Spacing } from '@/src/constants';
 import { DashboardSummary } from '@/src/features/dashboard/components/DashboardSummary';
 import { NetWorthCard } from '@/src/features/dashboard/components/NetWorthCard';
-import { useTheme } from '@/src/hooks/use-theme';
 import { DateRange } from '@/src/utils/dateUtils';
 import React from 'react';
 import { LayoutAnimation, StyleSheet, View } from 'react-native';
@@ -45,7 +44,6 @@ export function DashboardHeader({
     navigateNext,
     sectionTitle,
 }: DashboardHeaderProps) {
-    const { theme } = useTheme();
     const [isSearching, setIsSearching] = React.useState(false);
 
     const handleSearchExpand = React.useCallback((expanded: boolean) => {

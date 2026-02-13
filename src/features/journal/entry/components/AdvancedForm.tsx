@@ -1,5 +1,5 @@
 import { DateTimePickerModal } from '@/src/components/common/DateTimePickerModal';
-import { AppButton, AppCard, AppInput, AppText, Box, Stack } from '@/src/components/core';
+import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
 import { Shape, Size, Spacing } from '@/src/constants';
 import { JournalLineItem } from '@/src/features/journal/entry/components/JournalLineItem';
 import { JournalSummary } from '@/src/features/journal/entry/components/JournalSummary';
@@ -7,7 +7,7 @@ import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalE
 import { JournalCalculator, JournalLineInput } from '@/src/services/accounting/JournalCalculator';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 interface AdvancedFormProps {
     accounts: any[];
@@ -38,13 +38,13 @@ export const AdvancedForm = ({
     const isBalanced = JournalCalculator.isBalanced(getDomainLines());
 
     return (
-        <Stack space="md" padding="lg">
+        <View style={{ gap: Spacing.md, padding: Spacing.lg }}>
             <AppCard elevation="sm" padding="lg">
                 <AppText variant="title">{editor.isEdit ? 'Edit Journal Entry' : 'Create Journal Entry'}</AppText>
             </AppCard>
 
             <AppCard elevation="sm" padding="lg">
-                <Stack space="md">
+                <View style={{ gap: Spacing.md }}>
                     <TouchableOpacity
                         activeOpacity={0.7}
                         onPress={() => setShowDatePicker(true)}
@@ -76,19 +76,18 @@ export const AdvancedForm = ({
                         placeholder="Enter description"
                         multiline
                         numberOfLines={3}
-                        style={{ height: Size.textareaHeight, textAlignVertical: 'top' }}
                     />
-                </Stack>
+                </View>
             </AppCard>
 
             <AppCard elevation="sm" padding="lg">
-                <Stack space="md">
-                    <Box direction="row" justify="space-between" align="center">
+                <View style={{ gap: Spacing.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <AppText variant="heading">Journal Lines</AppText>
                         <TouchableOpacity onPress={editor.addLine} style={{ padding: Spacing.sm }} accessibilityLabel="Add line" accessibilityRole="button">
                             <AppText variant="body" color="primary">+ Add Line</AppText>
                         </TouchableOpacity>
-                    </Box>
+                    </View>
 
                     {editor.lines.map((line, index) => (
                         <JournalLineItem
@@ -99,10 +98,11 @@ export const AdvancedForm = ({
                             onUpdate={(field, value) => editor.updateLine(line.id, { [field]: value })}
                             onRemove={() => editor.removeLine(line.id)}
                             onSelectAccount={() => onSelectAccountRequest(line.id)}
+                            onAutoFetchRate={() => editor.autoFetchLineRate(line.id)}
                             getLineBaseAmount={JournalCalculator.getLineBaseAmount}
                         />
                     ))}
-                </Stack>
+                </View>
             </AppCard>
 
             <JournalSummary
@@ -111,7 +111,7 @@ export const AdvancedForm = ({
                 isBalanced={isBalanced}
             />
 
-            <Box style={{ paddingVertical: Spacing.lg }}>
+            <View style={{ paddingVertical: Spacing.lg }}>
                 <AppButton
                     variant="primary"
                     onPress={editor.submit}
@@ -120,7 +120,7 @@ export const AdvancedForm = ({
                 >
                     {editor.isSubmitting ? (editor.isEdit ? 'Updating...' : 'Creating...') : (editor.isEdit ? 'Update Journal' : 'Create Journal')}
                 </AppButton>
-            </Box>
-        </Stack>
+            </View>
+        </View>
     );
 };

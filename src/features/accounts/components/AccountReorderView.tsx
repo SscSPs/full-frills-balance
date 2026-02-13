@@ -1,4 +1,4 @@
-import { AppCard, AppIcon, AppText, Stack } from '@/src/components/core';
+import { AppCard, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import { AccountReorderViewModel } from '@/src/features/accounts/hooks/useAccountReorderViewModel';
@@ -31,7 +31,7 @@ export function AccountReorderView({
                     Manual ordering affects all lists. Accounts are grouped by category but follow this sequence.
                 </AppText>
 
-                <Stack space="sm">
+                <View style={{ gap: Spacing.sm }}>
                     {accounts.map((account, index) => {
                         const prevAccount = accounts[index - 1];
                         const showSectionHeader = !prevAccount || prevAccount.accountType !== account.accountType;
@@ -93,7 +93,7 @@ export function AccountReorderView({
                         );
                     })}
 
-                </Stack>
+                </View>
             </ScrollView>
         </Screen>
     );

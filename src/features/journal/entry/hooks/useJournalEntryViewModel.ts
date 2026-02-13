@@ -1,13 +1,16 @@
 import { TransactionType } from '@/src/data/models/Transaction';
 import { useAccounts } from '@/src/features/accounts';
+import { SimpleFormProps } from '@/src/features/journal/entry/components/SimpleForm';
 import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalEditor';
-import { useTheme } from '@/src/hooks/use-theme';
 import { showErrorAlert } from '@/src/utils/alerts';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { AppNavigation } from '@/src/utils/navigation';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
+/**
+ * JournalEntryViewModel - Public interface for the Journal Entry screen state.
+ */
 export interface JournalEntryViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     editor: ReturnType<typeof useJournalEditor>;
     accounts: ReturnType<typeof useAccounts>['accounts'];
     isLoading: boolean;
@@ -21,29 +24,23 @@ export interface JournalEntryViewModel {
     onSelectAccountRequest: (lineId: string) => void;
     onAccountSelected: (accountId: string) => void;
     selectedAccountId?: string;
-    simpleFormProps: {
-        accounts: ReturnType<typeof useAccounts>['accounts'];
-        journalId?: string;
-        onSuccess: () => void;
-        initialType?: any;
-        initialAmount?: any;
-        initialDestinationId?: any;
-        initialSourceId?: any;
-        initialDate?: any;
-        initialTime?: any;
-        initialDescription?: any;
-    };
-    advancedFormProps: {
+    simpleFormConfig: SimpleFormProps;
+    advancedFormConfig: {
         accounts: ReturnType<typeof useAccounts>['accounts'];
         editor: ReturnType<typeof useJournalEditor>;
         onSelectAccountRequest: (lineId: string) => void;
     };
 }
 
+/**
+ * useJournalEntryViewModel - Orchestrates the Journal Entry screen.
+ * Addresses several findings:
+ * - FINDING-002: Theme is consumed inside the hook for internal styles only, not passed to props.
+ * - FINDING-016: Decoupled from form components via separate config objects.
+ * - FINDING-004: Centralized navigation via AppNavigation utility.
+ */
 export function useJournalEntryViewModel(): JournalEntryViewModel {
-    const { theme } = useTheme();
     const params = useLocalSearchParams();
-    const router = useRouter();
 
     const editor = useJournalEditor({
         journalId: params.journalId as string,
@@ -90,7 +87,6 @@ export function useJournalEntryViewModel(): JournalEntryViewModel {
     }, [editor.isEdit, editor.isGuidedMode]);
 
     return {
-        theme,
         editor,
         accounts,
         isLoading: isLoadingAccounts || editor.isLoading,
@@ -104,10 +100,10 @@ export function useJournalEntryViewModel(): JournalEntryViewModel {
         onSelectAccountRequest,
         onAccountSelected,
         selectedAccountId: editor.lines.find(l => l.id === activeLineId)?.accountId,
-        simpleFormProps: {
+        simpleFormConfig: {
             accounts,
             journalId: params.journalId as string,
-            onSuccess: () => router.back(),
+            onSuccess: () => AppNavigation.back(),
             initialType: editor.transactionType,
             initialAmount: editor.lines[0]?.amount,
             initialDestinationId: editor.lines.find(l => l.transactionType === TransactionType.DEBIT)?.accountId || editor.lines[0]?.accountId,
@@ -116,7 +112,7 @@ export function useJournalEntryViewModel(): JournalEntryViewModel {
             initialTime: editor.journalTime,
             initialDescription: editor.description,
         },
-        advancedFormProps: {
+        advancedFormConfig: {
             accounts,
             editor,
             onSelectAccountRequest,

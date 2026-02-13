@@ -121,7 +121,8 @@ export function useOnboardingFlow(): OnboardingFlowViewModel {
         name,
         selectedAccounts,
         selectedCategories,
-        selectedCurrency
+        selectedCurrency,
+        ui
     ]);
 
     return {

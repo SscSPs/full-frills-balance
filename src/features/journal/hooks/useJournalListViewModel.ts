@@ -1,12 +1,11 @@
 import { TransactionCardProps } from '@/src/components/common/TransactionCard';
 import { IconName } from '@/src/components/core';
 import { useJournals } from '@/src/features/journal/hooks/useJournals';
-import { useTheme } from '@/src/hooks/use-theme';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
 import { EnrichedJournal, JournalDisplayType } from '@/src/types/domain';
 import { DateRange, PeriodFilter } from '@/src/utils/dateUtils';
 import { journalPresenter } from '@/src/utils/journalPresenter';
-import { useRouter } from 'expo-router';
+import { AppNavigation } from '@/src/utils/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
 export interface JournalListEmptyState {
@@ -53,8 +52,6 @@ export function useJournalListViewModel({
     loadingText = 'Loading journals...',
     loadingMoreText = 'Loading more...'
 }: UseJournalListViewModelParams): JournalListViewModel {
-    const router = useRouter();
-    const { theme } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
 
     const {
@@ -71,8 +68,8 @@ export function useJournalListViewModel({
     const { journals, isLoading, isLoadingMore, loadMore } = useJournals(pageSize, dateRange || undefined, searchQuery);
 
     const handleJournalPress = useCallback((journalId: string) => {
-        router.push(`/transaction-details?journalId=${journalId}`);
-    }, [router]);
+        AppNavigation.toTransactionDetails(journalId);
+    }, []);
 
     const onSearchChange = useCallback((value: string) => {
         setSearchQuery(value);
@@ -86,7 +83,7 @@ export function useJournalListViewModel({
     const items = useMemo(() => {
         return journals.map((journal: EnrichedJournal) => {
             const displayType = journal.displayType as JournalDisplayType;
-            const presentation = journalPresenter.getPresentation(displayType, theme, journal.semanticLabel);
+            const presentation = journalPresenter.getPresentation(displayType, journal.semanticLabel);
 
             let typeIcon: IconName = 'document';
             let amountPrefix = '';
@@ -110,7 +107,7 @@ export function useJournalListViewModel({
                     transactionDate: journal.journalDate,
                     presentation: {
                         label: presentation.label,
-                        typeColor: presentation.colorHex,
+                        typeColor: presentation.colorKey,
                         typeIcon,
                         amountPrefix,
                     },
@@ -118,7 +115,7 @@ export function useJournalListViewModel({
                 }
             };
         });
-    }, [journals, handleJournalPress, theme]);
+    }, [journals, handleJournalPress]);
 
     return {
         items,

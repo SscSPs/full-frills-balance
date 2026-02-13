@@ -1,10 +1,11 @@
 import { AppIcon, AppText, ListRow } from '@/src/components/core';
 import { Opacity, Shape, Size, Spacing } from '@/src/constants';
 import Account from '@/src/data/models/Account';
+import { useAccountSelection } from '@/src/features/journal/hooks/useAccountSelection';
 import { useTheme } from '@/src/hooks/use-theme';
-import { getAccountSections, getAccountVariant, getSectionColor } from '@/src/utils/accountUtils';
+import { getAccountVariant, getSectionColor } from '@/src/utils/accountUtils';
 import { journalPresenter } from '@/src/utils/journalPresenter';
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { Modal, SectionList, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 interface AccountSelectorProps {
@@ -18,28 +19,25 @@ interface AccountSelectorProps {
 export function AccountSelector({
     visible,
     accounts,
-    selectedId,
+    selectedId: initialSelectedId,
     onClose,
     onSelect,
 }: AccountSelectorProps) {
     const { theme } = useTheme();
-    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-
-    const sections = useMemo(() => {
-        return getAccountSections(accounts);
-    }, [accounts]);
-
-    const toggleSection = (title: string) => {
-        setCollapsedSections(prev => {
-            const next = new Set(prev);
-            if (next.has(title)) {
-                next.delete(title);
-            } else {
-                next.add(title);
-            }
-            return next;
-        });
-    };
+    const {
+        selectedId,
+        sections,
+        collapsedSections,
+        toggleSection,
+        handleSelect
+    } = useAccountSelection({
+        accounts,
+        initialSelectedId,
+        onSelect: (id) => {
+            onSelect(id);
+            // Optionally close on select if desired, but current behavior is handled by caller
+        }
+    });
 
     const getAccountColor = (type: string) => {
         const key = journalPresenter.getAccountColorKey(type);
@@ -105,7 +103,7 @@ export function AccountSelector({
                                             title={item.name}
                                             titleColor={getAccountVariant(item.accountType)}
                                             subtitle={`${item.accountType} • ${item.currencyCode}`}
-                                            onPress={() => onSelect(item.id)}
+                                            onPress={() => handleSelect(item.id)}
                                             style={[styles.accountRow, {
                                                 backgroundColor: theme.surface,
                                                 borderColor: isSelected ? accountColor : theme.border,

@@ -1,10 +1,8 @@
 import { useReports } from '@/src/features/reports/hooks/useReports';
-import { useTheme } from '@/src/hooks/use-theme';
 import { DateRange, PeriodFilter, formatDate } from '@/src/utils/dateUtils';
 import { useCallback, useMemo, useState } from 'react';
 
 export interface ReportsViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     showDatePicker: boolean;
     onOpenDatePicker: () => void;
     onCloseDatePicker: () => void;
@@ -21,7 +19,6 @@ export interface ReportsViewModel {
 }
 
 export function useReportsViewModel(): ReportsViewModel {
-    const { theme } = useTheme();
     const [showDatePicker, setShowDatePicker] = useState(false);
 
     const {
@@ -60,7 +57,6 @@ export function useReportsViewModel(): ReportsViewModel {
     }, [dateRange]);
 
     return {
-        theme,
         showDatePicker,
         onOpenDatePicker,
         onCloseDatePicker,

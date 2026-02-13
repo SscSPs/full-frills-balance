@@ -351,6 +351,7 @@ export class ImportRepository {
       const txAccountIds = createdOrUpdatedTransactions.map(t => t.accountId)
       const allAffectedAccountIds = new Set<string>([...txAccountIds, ...deletedTxAccountIds])
       if (allAffectedAccountIds.size > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
         const earliestDate = txDates.length > 0 ? Math.min(...txDates) : undefined
         if (earliestDate !== undefined) {

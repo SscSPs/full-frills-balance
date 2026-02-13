@@ -5,14 +5,15 @@ import { AppCard, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Spacing } from '@/src/constants';
 import { ReportsViewModel } from '@/src/features/reports/hooks/useReportsViewModel';
-import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
+import { useTheme } from '@/src/hooks/use-theme';
 import type { DailyNetWorth, ExpenseCategory } from '@/src/services/report-service';
+import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import React from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export function ReportsView(vm: ReportsViewModel) {
+    const { theme } = useTheme();
     const {
-        theme,
         showDatePicker,
         onOpenDatePicker,
         onCloseDatePicker,

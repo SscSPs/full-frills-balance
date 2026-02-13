@@ -65,7 +65,7 @@ export const LineChart = ({ data, height = Layout.chart.line.defaultHeight, colo
         }
 
         return { path: pathStr, gradientPath: gradientPathStr };
-    }, [data, height, CHART_WIDTH]);
+    }, [data, height, CHART_WIDTH, PADDING_VERTICAL]); // Added PADDING_VERTICAL to deps
 
     if (data.length === 0) {
         return (

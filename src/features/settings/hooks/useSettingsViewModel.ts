@@ -1,7 +1,6 @@
 import { useUI } from '@/src/contexts/UIContext';
 import { useSettingsActions } from '@/src/features/settings/hooks/useSettingsActions';
 import { useImport } from '@/src/hooks/use-import';
-import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -10,7 +9,6 @@ import { useCallback, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 
 export interface SettingsViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     themePreference: 'system' | 'light' | 'dark';
     setThemePreference: (value: 'system' | 'light' | 'dark') => void;
     isPrivacyMode: boolean;
@@ -31,7 +29,6 @@ export interface SettingsViewModel {
 }
 
 export function useSettingsViewModel(): SettingsViewModel {
-    const { theme } = useTheme();
     const router = useRouter();
     const ui = useUI();
     const {
@@ -161,7 +158,6 @@ export function useSettingsViewModel(): SettingsViewModel {
     }, [resetApp]);
 
     return {
-        theme,
         themePreference,
         setThemePreference,
         isPrivacyMode,

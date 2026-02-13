@@ -2,7 +2,6 @@ import { TransactionCardProps } from '@/src/components/common/TransactionCard';
 import { IconName } from '@/src/components/core';
 import { useAccount, useAccountActions, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
 import { useAccountTransactions } from '@/src/features/journal/hooks/useJournals';
-import { useTheme } from '@/src/hooks/use-theme';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
 import { EnrichedTransaction, JournalDisplayType } from '@/src/types/domain';
 import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/src/utils/alerts';
@@ -20,14 +19,13 @@ export interface TransactionCardItemViewModel {
 }
 
 export interface AccountDetailsViewModel {
-    theme: ReturnType<typeof useTheme>['theme'];
     accountLoading: boolean;
     accountMissing: boolean;
     accountName: string;
     accountType: string;
     accountTypeVariant: string;
     accountIcon: string | null;
-    accountTypeColor: string;
+    accountTypeColorKey: string;
     isDeleted: boolean;
     balanceText: string;
     transactionCountText: string;
@@ -56,7 +54,6 @@ export interface AccountDetailsViewModel {
 export function useAccountDetailsViewModel(): AccountDetailsViewModel {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { theme } = useTheme();
     const accountId = params.accountId as string;
 
     const {
@@ -148,15 +145,7 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
 
     const accountType = account?.accountType || '';
     const typeLower = accountType.toLowerCase();
-    const accountTypeColor = typeLower === 'liability'
-        ? theme.liability
-        : typeLower === 'equity'
-            ? theme.equity
-            : typeLower === 'income'
-                ? theme.income
-                : typeLower === 'expense'
-                    ? theme.expense
-                    : theme.asset;
+    const accountTypeColorKey = journalPresenter.getAccountColorKey(accountType);
 
     const balanceText = balanceLoading
         ? '...'
@@ -189,7 +178,7 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
             });
 
             const displayType = transaction.displayType as JournalDisplayType;
-            const base = journalPresenter.getPresentation(displayType, theme, transaction.semanticLabel);
+            const base = journalPresenter.getPresentation(displayType, transaction.semanticLabel);
             const isIncrease = transaction.isIncrease;
 
             return {
@@ -202,7 +191,7 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
                     transactionDate: transaction.transactionDate,
                     presentation: {
                         label: base.label,
-                        typeColor: base.colorHex,
+                        typeColor: base.colorKey,
                         typeIcon: (isIncrease ? 'arrowUp' : 'arrowDown') as IconName,
                         amountPrefix: isIncrease ? '+ ' : '− ',
                     },
@@ -211,17 +200,16 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
                 }
             };
         });
-    }, [onTransactionPress, theme, transactions]);
+    }, [onTransactionPress, transactions]);
 
     return {
-        theme,
         accountLoading,
         accountMissing: !accountLoading && !account,
         accountName: account?.name || '',
         accountType,
         accountTypeVariant: typeLower,
         accountIcon: account?.icon || null,
-        accountTypeColor,
+        accountTypeColorKey,
         isDeleted,
         balanceText,
         transactionCountText,

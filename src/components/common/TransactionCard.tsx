@@ -9,7 +9,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 export interface TransactionPresentation {
     label: string;
     typeIcon: IconName;
-    typeColor: string;
+    typeColor: string; // Now a semantic key
     amountPrefix?: string;
 }
 
@@ -53,8 +53,8 @@ export const TransactionCard = ({
                 <Badge
                     variant="default"
                     size="sm"
-                    backgroundColor={withOpacity(presentation.typeColor, themeMode === 'dark' ? Opacity.muted : Opacity.soft)}
-                    textColor={presentation.typeColor}
+                    backgroundColor={withOpacity(theme[presentation.typeColor as keyof typeof theme] as string, themeMode === 'dark' ? Opacity.muted : Opacity.soft)}
+                    textColor={theme[presentation.typeColor as keyof typeof theme] as string}
                     icon={presentation.typeIcon}
                     style={{ borderRightWidth: 1, borderRightColor: withOpacity(theme.border, Opacity.medium), paddingRight: Spacing.sm }}
                 >
@@ -97,13 +97,13 @@ export const TransactionCard = ({
 
             <View style={styles.footerRow}>
                 <View style={styles.amountContainer}>
-                    <View style={[styles.iconCircle, { backgroundColor: withOpacity(presentation.typeColor, Opacity.soft) }]}>
-                        <AppIcon name={presentation.typeIcon} size={16} color={presentation.typeColor} />
+                    <View style={[styles.iconCircle, { backgroundColor: withOpacity(theme[presentation.typeColor as keyof typeof theme] as string, Opacity.soft) }]}>
+                        <AppIcon name={presentation.typeIcon} size={16} color={theme[presentation.typeColor as keyof typeof theme] as string} />
                     </View>
                     <AppText
                         variant="subheading"
                         weight="bold"
-                        style={{ color: presentation.typeColor }}
+                        style={{ color: theme[presentation.typeColor as keyof typeof theme] as string }}
                     >
                         {presentation.amountPrefix || ''}
                         {formattedAmount}

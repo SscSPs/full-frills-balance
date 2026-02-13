@@ -3,12 +3,13 @@ import { Screen } from '@/src/components/layout';
 import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { CurrencyPreference } from '@/src/features/settings/components/CurrencyPreference';
 import { SettingsViewModel } from '@/src/features/settings/hooks/useSettingsViewModel';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 export function SettingsView(vm: SettingsViewModel) {
+    const { theme } = useTheme();
     const {
-        theme,
         themePreference,
         setThemePreference,
         isPrivacyMode,

@@ -1,14 +1,12 @@
-import { AppInput, AppText, Box, Stack } from '@/src/components/core';
+import { AppInput, AppText } from '@/src/components/core';
 import { AppConfig, Shape, Spacing } from '@/src/constants';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { useTheme } from '@/src/hooks/use-theme';
-import { useExchangeRate } from '@/src/hooks/useExchangeRate';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
-import { logger } from '@/src/utils/logger';
 import { preferences } from '@/src/utils/preferences';
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Reuse the interface for now to minimize friction, eventually move to shared types
 export interface JournalEntryLine {
@@ -31,6 +29,7 @@ interface JournalLineItemProps {
     onUpdate: (field: keyof JournalEntryLine, value: any) => void;
     onRemove: () => void;
     onSelectAccount: () => void;
+    onAutoFetchRate?: () => void;
     getLineBaseAmount: (line: JournalEntryLine) => number;
 }
 
@@ -41,26 +40,30 @@ export function JournalLineItem({
     onUpdate,
     onRemove,
     onSelectAccount,
+    onAutoFetchRate,
     getLineBaseAmount,
 }: JournalLineItemProps) {
     const { theme } = useTheme();
-    const { fetchRate } = useExchangeRate();
 
     return (
-        <Box
-            padding="md"
-            borderRadius={Shape.radius.r2}
-            backgroundColor={theme.surfaceSecondary}
-            style={{ borderWidth: 1, borderColor: theme.border, marginBottom: Spacing.md }}
+        <View
+            style={{
+                padding: Spacing.md,
+                borderRadius: Shape.radius.r2,
+                backgroundColor: theme.surfaceSecondary,
+                borderWidth: 1,
+                borderColor: theme.border,
+                marginBottom: Spacing.md
+            }}
         >
-            <Box direction="row" justify="space-between" align="center" style={{ marginBottom: Spacing.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
                 <AppText variant="subheading">Line {index + 1}</AppText>
                 {canRemove && (
                     <TouchableOpacity onPress={onRemove} style={{ padding: Spacing.sm }} accessibilityLabel="Remove line" accessibilityRole="button">
                         <AppText variant="body" color="error">Remove</AppText>
                     </TouchableOpacity>
                 )}
-            </Box>
+            </View>
 
             <TouchableOpacity
                 style={[styles.accountSelector, {
@@ -77,10 +80,10 @@ export function JournalLineItem({
                 <AppText variant="body" color="secondary">▼</AppText>
             </TouchableOpacity>
 
-            <Stack horizontal space="md" style={{ marginBottom: Spacing.md }}>
-                <Box flex={1}>
+            <View style={{ flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md }}>
+                <View style={{ flex: 1 }}>
                     <AppText variant="body" weight="medium" style={{ marginBottom: Spacing.xs }}>Type</AppText>
-                    <Stack horizontal space="sm">
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                         <TouchableOpacity
                             style={[
                                 styles.typeButton,
@@ -119,18 +122,18 @@ export function JournalLineItem({
                                 Credit
                             </AppText>
                         </TouchableOpacity>
-                    </Stack>
-                </Box>
+                    </View>
+                </View>
 
-                <Box flex={1}>
-                    <Box direction="row" justify="space-between" align="center" style={{ marginBottom: Spacing.xs }}>
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
                         <AppText variant="body" weight="medium">Amount</AppText>
                         {line.accountCurrency && (
                             <AppText variant="caption" color="primary">
                                 {line.accountCurrency}
                             </AppText>
                         )}
-                    </Box>
+                    </View>
                     <AppInput
                         value={line.amount}
                         onChangeText={(value) => onUpdate('amount', value)}
@@ -143,8 +146,8 @@ export function JournalLineItem({
                             ≈ {CurrencyFormatter.format(getLineBaseAmount(line))}
                         </AppText>
                     )}
-                </Box>
-            </Stack>
+                </View>
+            </View>
 
             <AppInput
                 label="Notes"
@@ -154,30 +157,17 @@ export function JournalLineItem({
                 containerStyle={{ marginBottom: Spacing.md }}
             />
 
-            <Box style={{ marginBottom: Spacing.md }}>
-                <Box direction="row" justify="space-between" align="center" style={{ marginBottom: Spacing.xs }}>
+            <View style={{ marginBottom: Spacing.md }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
                     <AppText variant="body" weight="medium">
                         Exchange Rate (Optional)
                     </AppText>
-                    {line.accountCurrency && line.accountCurrency !== (preferences.defaultCurrencyCode || AppConfig.defaultCurrency) && (
-                        <TouchableOpacity
-                            onPress={async () => {
-                                try {
-                                    const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
-                                    const rate = await fetchRate(
-                                        line.accountCurrency!,
-                                        defaultCurrency
-                                    )
-                                    onUpdate('exchangeRate', rate.toString())
-                                } catch (error) {
-                                    logger.error('Failed to fetch rate:', error)
-                                }
-                            }}
-                        >
+                    {line.accountCurrency && line.accountCurrency !== (preferences.defaultCurrencyCode || AppConfig.defaultCurrency) && onAutoFetchRate && (
+                        <TouchableOpacity onPress={onAutoFetchRate}>
                             <AppText variant="caption" color="primary">Auto-fetch</AppText>
                         </TouchableOpacity>
                     )}
-                </Box>
+                </View>
                 <AppInput
                     value={line.exchangeRate || ''}
                     onChangeText={(value) => onUpdate('exchangeRate', value)}
@@ -189,8 +179,8 @@ export function JournalLineItem({
                         ? 'Not needed (same as base currency)'
                         : `Rate to convert ${line.accountCurrency} to ${preferences.defaultCurrencyCode || AppConfig.defaultCurrency}`}
                 </AppText>
-            </Box>
-        </Box>
+            </View>
+        </View>
     );
 }
 

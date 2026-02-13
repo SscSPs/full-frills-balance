@@ -1,8 +1,9 @@
+import { AppCard, AppText } from '@/src/components/core';
 import { Spacing } from '@/src/constants';
-import { AppCard, AppText, Box, Stack } from '@/src/components/core';
 import { useTheme } from '@/src/hooks/use-theme';
 import { preferences } from '@/src/utils/preferences';
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 interface JournalSummaryProps {
     totalDebits: number;
@@ -21,24 +22,24 @@ export function JournalSummary({
 
     return (
         <AppCard style={{ marginHorizontal: Spacing.lg, marginVertical: Spacing.sm }}>
-            <Stack space="md">
+            <View style={{ gap: Spacing.md }}>
                 <AppText variant="subheading">
                     Summary
                 </AppText>
 
-                <Stack space="sm">
-                    <Box direction="row" justify="space-between">
+                <View style={{ gap: Spacing.sm }}>
+                    <View style={styles.summaryRow}>
                         <AppText variant="body">Total Debits:</AppText>
                         <AppText variant="body">{totalDebits.toFixed(2)} {currency}</AppText>
-                    </Box>
+                    </View>
 
-                    <Box direction="row" justify="space-between">
+                    <View style={styles.summaryRow}>
                         <AppText variant="body">Total Credits:</AppText>
                         <AppText variant="body">{totalCredits.toFixed(2)} {currency}</AppText>
-                    </Box>
-                </Stack>
+                    </View>
+                </View>
 
-                <Box direction="row" justify="space-between" style={{ paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: theme.divider }}>
+                <View style={[styles.summaryRow, styles.balanceRow, { borderTopColor: theme.divider }]}>
                     <AppText variant="heading">Balance:</AppText>
                     <AppText
                         variant="heading"
@@ -46,7 +47,7 @@ export function JournalSummary({
                     >
                         {difference.toFixed(2)} {currency}
                     </AppText>
-                </Box>
+                </View>
 
                 <AppText
                     variant="body"
@@ -57,8 +58,19 @@ export function JournalSummary({
                 >
                     {isBalanced ? `✓ Journal is balanced in ${currency}` : `✗ Journal must be balanced in ${currency}`}
                 </AppText>
-            </Stack>
+            </View>
         </AppCard>
     );
 }
 
+const styles = StyleSheet.create({
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    balanceRow: {
+        paddingTop: Spacing.sm,
+        borderTopWidth: 1,
+    }
+});

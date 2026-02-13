@@ -32,12 +32,6 @@ export type { BadgeProps } from './Badge'
 export { Divider } from './Divider'
 export type { DividerProps } from './Divider'
 
-export { Box } from './Box'
-export type { BoxProps } from './Box'
-
-export { Stack } from './Stack'
-export type { StackProps } from './Stack'
-
 export { AppIcon } from './AppIcon'
 export type { IconName } from './AppIcon'
 export { ErrorBoundary } from './ErrorBoundary'

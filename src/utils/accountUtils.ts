@@ -1,10 +1,11 @@
+import Account, { AccountType } from '@/src/data/models/Account'
+import { ComponentVariant } from '@/src/utils/style-helpers'
+
 /**
  * Account Utilities
  * 
  * Pure utility functions for account operations.
  */
-
-import Account, { AccountType } from '@/src/data/models/Account'
 
 /**
  * Groups accounts by their account type.
@@ -56,11 +57,6 @@ export function getAccountSections(accounts: Account[]): { title: string; data: 
 
     return sections
 }
-
-/**
- * Maps section title to theme color.
- */
-import { ComponentVariant } from '@/src/utils/style-helpers'
 
 /**
  * Maps an account type or section title to a semantic ComponentVariant key.

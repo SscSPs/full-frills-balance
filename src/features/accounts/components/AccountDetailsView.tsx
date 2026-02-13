@@ -5,19 +5,20 @@ import { AppButton, AppCard, AppIcon, AppText, Badge, FloatingActionButton, Icon
 import { Screen } from '@/src/components/layout';
 import { Shape, Spacing } from '@/src/constants';
 import { AccountDetailsViewModel } from '@/src/features/accounts/hooks/useAccountDetailsViewModel';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export function AccountDetailsView(vm: AccountDetailsViewModel) {
+    const { theme } = useTheme();
     const {
-        theme,
         accountLoading,
         accountMissing,
         accountName,
         accountType,
         accountTypeVariant,
         accountIcon,
-        accountTypeColor,
+        accountTypeColorKey,
         isDeleted,
         balanceText,
         transactionCountText,
@@ -114,7 +115,7 @@ export function AccountDetailsView(vm: AccountDetailsViewModel) {
                                 <IvyIcon
                                     name={accountIcon as any}
                                     label={accountName}
-                                    color={accountTypeColor}
+                                    color={theme[accountTypeColorKey as keyof typeof theme] as string}
                                     size={48}
                                 />
                                 <View style={styles.titleInfo}>

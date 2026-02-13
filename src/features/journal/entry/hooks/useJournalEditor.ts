@@ -1,10 +1,14 @@
+import { AppConfig } from '@/src/constants';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { journalService } from '@/src/features/journal/services/JournalService';
 import { transactionService } from '@/src/features/journal/services/TransactionService';
+import { useExchangeRate } from '@/src/hooks/useExchangeRate';
 import { JournalEntryLine } from '@/src/types/domain';
 import { showErrorAlert } from '@/src/utils/alerts';
+import { logger } from '@/src/utils/logger';
+import { preferences } from '@/src/utils/preferences';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -21,6 +25,7 @@ export interface UseJournalEditorOptions {
 export function useJournalEditor(options: UseJournalEditorOptions = {}) {
     const router = useRouter();
     const { journalId, initialMode = 'simple', initialType = 'expense' } = options;
+    const { fetchRate } = useExchangeRate();
 
     const [isGuidedMode, setIsGuidedMode] = useState(initialMode === 'simple');
     const [transactionType, setTransactionType] = useState<'expense' | 'income' | 'transfer'>(initialType);
@@ -131,6 +136,25 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
         ));
     }, []);
 
+    const autoFetchLineRate = useCallback(async (id: string) => {
+        const line = lines.find(l => l.id === id);
+        if (!line || !line.accountCurrency) return;
+
+        try {
+            const defaultCurrency = preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
+            if (line.accountCurrency === defaultCurrency) {
+                updateLine(id, { exchangeRate: '' });
+                return;
+            }
+
+            const rate = await fetchRate(line.accountCurrency, defaultCurrency);
+            updateLine(id, { exchangeRate: rate.toString() });
+        } catch (error) {
+            logger.error('Failed to auto-fetch rate for line', { id, error });
+            showErrorAlert('Failed to fetch exchange rate');
+        }
+    }, [lines, fetchRate, updateLine]);
+
     const submit = async () => {
         setIsSubmitting(true);
         try {
@@ -174,6 +198,7 @@ export function useJournalEditor(options: UseJournalEditorOptions = {}) {
         addLine,
         removeLine,
         updateLine,
+        autoFetchLineRate,
         submit
     };
 }

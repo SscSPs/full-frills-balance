@@ -1,4 +1,4 @@
-import { AppButton, AppCard, AppText, IvyIcon, Stack } from '@/src/components/core';
+import { AppButton, AppCard, AppText, IvyIcon } from '@/src/components/core';
 import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -54,7 +54,7 @@ export const RestartRequiredScreen = () => {
 
                 {isImport && importStats && (
                     <AppCard padding="lg" elevation="sm" style={styles.statsCard}>
-                        <Stack gap="md">
+                        <View style={{ gap: Spacing.md }}>
                             <View style={styles.statRow}>
                                 <AppText variant="body" weight="medium">Accounts</AppText>
                                 <AppText variant="body" color="success" weight="bold">{importStats.accounts}</AppText>
@@ -79,7 +79,7 @@ export const RestartRequiredScreen = () => {
                                     <AppText variant="body" color="warning" weight="bold">{importStats.skippedTransactions}</AppText>
                                 </View>
                             )}
-                        </Stack>
+                        </View>
                     </AppCard>
                 )}
 

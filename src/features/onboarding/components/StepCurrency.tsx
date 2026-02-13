@@ -1,6 +1,6 @@
 import { SelectableGrid, SelectableItem } from '@/src/components/common/SelectableGrid';
-import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import { AppText } from '@/src/components/core';
+import { withOpacity } from '@/src/constants';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import { COMMON_CURRENCY_CODES } from '@/src/services/currency-init-service';
@@ -23,7 +23,7 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
 }) => {
     const { currencies } = useCurrencies();
     const { theme } = useTheme();
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery] = useState('');
 
     const items: SelectableItem[] = useMemo(() => {
         const filteredCurrencies = searchQuery.trim()

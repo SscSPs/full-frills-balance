@@ -1,9 +1,9 @@
-import { AppCard, AppIcon, AppText, Box, FloatingActionButton, IvyIcon } from '@/src/components/core';
+import { AppCard, AppIcon, AppText, FloatingActionButton, IvyIcon } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
 import { Shape, Size, Spacing, Typography } from '@/src/constants';
-import { useTheme } from '@/src/hooks/use-theme';
 import { AccountsListViewModel } from '@/src/features/accounts/hooks/useAccountsListViewModel';
 import { AccountCardViewModel, AccountSectionViewModel } from '@/src/features/accounts/utils/transformAccounts';
+import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { SectionList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -35,8 +35,8 @@ export function AccountsListView({
                             accessibilityLabel={`${section.title} section, ${section.count} accounts`}
                             accessibilityRole="button"
                         >
-                            <Box direction="row" align="center" justify="space-between" style={{ flex: 1 }}>
-                                <Box direction="row" align="center" gap="sm">
+                            <View style={[styles.summaryRow, { flex: 1 }]}>
+                                <View style={styles.flexRowGapSm}>
                                     <AppText
                                         variant="subheading"
                                         weight="bold"
@@ -49,8 +49,8 @@ export function AccountsListView({
                                             {section.count}
                                         </AppText>
                                     </View>
-                                </Box>
-                                <Box direction="row" align="center" gap="md">
+                                </View>
+                                <View style={styles.flexRowGapMd}>
                                     <AppText variant="body" weight="bold" style={{ color: section.totalColor }}>
                                         {section.totalDisplay}
                                     </AppText>
@@ -59,8 +59,8 @@ export function AccountsListView({
                                         size={Size.iconSm}
                                         color={theme.textSecondary}
                                     />
-                                </Box>
-                            </Box>
+                                </View>
+                            </View>
                         </TouchableOpacity>
                     )}
                     renderItem={({ item, section }: { item: AccountCardViewModel; section: AccountSectionViewModel }) => {
@@ -76,9 +76,9 @@ export function AccountsListView({
                     }}
                     ListHeaderComponent={
                         <View style={styles.header}>
-                            <Box direction="row" align="center" justify="space-between" style={styles.screenHeaderTop}>
+                            <View style={[styles.summaryRow, styles.screenHeaderTop]}>
                                 <AppText variant="title" weight="bold">Accounts</AppText>
-                                <Box direction="row" align="center" gap="sm">
+                                <View style={styles.flexRowGapSm}>
                                     <TouchableOpacity
                                         onPress={onTogglePrivacy}
                                         style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
@@ -99,8 +99,8 @@ export function AccountsListView({
                                     >
                                         <AppIcon name="reorder" size={Size.iconSm} color={theme.text} />
                                     </TouchableOpacity>
-                                </Box>
-                            </Box>
+                                </View>
+                            </View>
                         </View>
                     }
                     ListEmptyComponent={
@@ -205,6 +205,21 @@ const styles = StyleSheet.create({
     },
     screenHeaderTop: {
         marginBottom: Spacing.xl,
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    flexRowGapSm: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+    flexRowGapMd: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
     },
     cardHeaderTop: {
         flexDirection: 'row',

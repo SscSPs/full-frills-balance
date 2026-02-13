@@ -13,13 +13,6 @@ describe('JournalPresenter', () => {
         ['ex1', AccountType.EXPENSE],
     ]);
 
-    const theme = {
-        success: '#success',
-        error: '#error',
-        primary: '#primary',
-        textSecondary: '#secondary',
-    };
-
     describe('getJournalDisplayType', () => {
         it('identifies INCOME when an Income account is involved', () => {
             const txs = [
@@ -98,13 +91,13 @@ describe('JournalPresenter', () => {
 
     describe('getPresentation', () => {
         it('returns correct presentation for INCOME', () => {
-            const pres = journalPresenter.getPresentation(JournalDisplayType.INCOME, theme);
-            expect(pres.colorHex).toBe(theme.success);
+            const pres = journalPresenter.getPresentation(JournalDisplayType.INCOME);
+            expect(pres.colorKey).toBe('success');
             expect(pres.label).toBe('Income');
         });
 
         it('overrides label with semanticLabel if provided', () => {
-            const pres = journalPresenter.getPresentation(JournalDisplayType.INCOME, theme, 'Salary');
+            const pres = journalPresenter.getPresentation(JournalDisplayType.INCOME, 'Salary');
             expect(pres.label).toBe('Salary');
         });
     });
