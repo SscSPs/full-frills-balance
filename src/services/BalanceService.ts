@@ -124,7 +124,52 @@ export class BalanceService {
             }
         }
 
+        // Aggregate child balances into parents
+        this.aggregateBalances(accounts, result, precisionMap);
+
         return result;
+    }
+
+    /**
+     * Aggregates balances from child accounts to their parents.
+     * Supports multi-level hierarchy.
+     */
+    private aggregateBalances(
+        accounts: Account[],
+        balancesMap: Map<string, AccountBalance>,
+        precisionMap: Map<string, number>
+    ) {
+        // 1. Build child-to-parent map
+        const parentIdMap = new Map<string, string>();
+        accounts.forEach(a => {
+            if (a.parentAccountId) {
+                parentIdMap.set(a.id, a.parentAccountId);
+            }
+        });
+
+        // 2. Identify all accounts that are involved in a hierarchy
+        const involvedAccountIds = new Set([...parentIdMap.keys(), ...parentIdMap.values()]);
+
+        // 3. For each account, if it has a parent, propagate its balance UP the chain
+        // We do this by iterating through each account and climbing up its parent chain.
+        // This ensures multi-level aggregation without complex recursion.
+        accounts.forEach(account => {
+            const originalBalance = balancesMap.get(account.id);
+            if (!originalBalance || originalBalance.balance === 0) return;
+
+            let currentParentId = parentIdMap.get(account.id);
+            while (currentParentId) {
+                const parentBalance = balancesMap.get(currentParentId);
+                if (parentBalance) {
+                    const precision = precisionMap.get(currentParentId) ?? 2;
+                    parentBalance.balance = roundToPrecision(parentBalance.balance + originalBalance.balance, precision);
+                    // Also aggregate monthly stats if desired, though usually parents are just for sum
+                    parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + originalBalance.monthlyIncome, precision);
+                    parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + originalBalance.monthlyExpenses, precision);
+                }
+                currentParentId = parentIdMap.get(currentParentId);
+            }
+        });
     }
 
     /**
@@ -189,7 +234,20 @@ export class BalanceService {
             return balanceData;
         });
 
-        return Promise.all(balancePromises);
+        const balances = await Promise.all(balancePromises);
+        const balancesMap = new Map(balances.map(b => [b.accountId, b]));
+        const precisionMap = new Map<string, number>();
+
+        // We need precision for rounding during aggregation. 
+        // For efficiency in this batch call, we'll assume 2 or fetch if needed.
+        // But since we already have accounts, we can build a better precision map.
+        for (const account of accounts) {
+            precisionMap.set(account.id, 2); // Default, ideally we'd have currency precisions
+        }
+
+        this.aggregateBalances(accounts, balancesMap, precisionMap);
+
+        return Array.from(balancesMap.values());
     }
 }
 

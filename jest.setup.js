@@ -135,6 +135,12 @@ jest.mock('react-native-nitro-modules', () => ({
     NitroModules: {},
 }));
 
+// Mock Aptabase
+jest.mock('@aptabase/react-native', () => ({
+    init: jest.fn(),
+    trackEvent: jest.fn(),
+}));
+
 // Global fetch mock to prevent network hangs
 global.fetch = jest.fn().mockImplementation(() =>
     Promise.resolve({
@@ -149,7 +155,7 @@ afterEach(async () => {
     jest.clearAllMocks();
     try {
         // Only require if already loaded to avoid side effects in minimal tests
-        const { rebuildQueueService } = require('./src/data/repositories/RebuildQueue');
+        const { rebuildQueueService } = require('./src/services/RebuildQueueService');
         if (rebuildQueueService) {
             await rebuildQueueService.flush();
             rebuildQueueService.stop();

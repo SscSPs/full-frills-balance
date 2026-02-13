@@ -144,6 +144,7 @@ export function useAccountActions() {
         currencyCode: string;
         icon?: string;
         initialBalance?: number;
+        parentAccountId?: string;
     }) => {
         return accountService.createAccount(data)
     }, [])
@@ -154,6 +155,7 @@ export function useAccountActions() {
         currencyCode?: string;
         description?: string;
         icon?: string;
+        parentAccountId?: string;
     }) => {
         return accountService.updateAccount(account.id, data)
     }, [])

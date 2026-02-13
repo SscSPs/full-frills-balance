@@ -14,7 +14,8 @@ interface PersistenceResult {
         currencyCode: string,
         icon: string,
         initialBalance?: string,
-        currentBalanceData?: { balance: number }
+        currentBalanceData?: { balance: number },
+        parentAccountId?: string
     ) => Promise<void>;
     handleCancel: () => void;
 }
@@ -43,7 +44,8 @@ export function useAccountPersistence(
         currencyCode: string,
         icon: string,
         initialBalance?: string,
-        currentBalanceData?: { balance: number }
+        currentBalanceData?: { balance: number },
+        parentAccountId?: string
     ) => {
         if (isSubmitting.current) return;
         isSubmitting.current = true;
@@ -57,6 +59,7 @@ export function useAccountPersistence(
                     name: sanitizedName,
                     accountType: accountType,
                     icon: icon,
+                    parentAccountId: parentAccountId
                 });
 
                 // Check for balance adjustment
@@ -82,6 +85,7 @@ export function useAccountPersistence(
                     currencyCode: currencyCode,
                     initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
                     icon: icon,
+                    parentAccountId: parentAccountId
                 });
 
                 showSuccessAlert(

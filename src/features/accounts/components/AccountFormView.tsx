@@ -4,6 +4,7 @@ import { Shape, Spacing, Typography } from '@/src/constants';
 import { AccountTypeSelector } from '@/src/features/accounts/components/AccountTypeSelector';
 import { CurrencySelector } from '@/src/features/accounts/components/CurrencySelector';
 import { AccountFormViewModel } from '@/src/features/accounts/hooks/useAccountFormViewModel';
+import { AccountSelector } from '@/src/features/journal/components/AccountSelector';
 import { IconPickerModal } from '@/src/features/onboarding/components/IconPickerModal';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -34,6 +35,12 @@ export function AccountFormView(vm: AccountFormViewModel) {
         currencyLabel,
         showInitialBalance,
         isSaveDisabled,
+        parentAccountId,
+        parentAccountName,
+        setParentAccountId,
+        potentialParents,
+        isParentPickerVisible,
+        setIsParentPickerVisible,
     } = vm;
 
     return (
@@ -117,6 +124,32 @@ export function AccountFormView(vm: AccountFormViewModel) {
                         />
                     </AppCard>
 
+                    <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+                        <AppText variant="body" style={styles.label}>Parent Account (Optional)</AppText>
+                        <TouchableOpacity
+                            onPress={() => setIsParentPickerVisible(true)}
+                            style={[styles.selectorButton, { borderColor: theme.border, backgroundColor: theme.surface }]}
+                        >
+                            <AppText variant="body" style={{ color: parentAccountId ? theme.text : theme.textSecondary }}>
+                                {parentAccountName}
+                            </AppText>
+                            <View style={styles.selectorActions}>
+                                {parentAccountId && (
+                                    <TouchableOpacity
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setParentAccountId('');
+                                        }}
+                                        style={styles.clearButton}
+                                    >
+                                        <AppText variant="caption" color="secondary">Clear</AppText>
+                                    </TouchableOpacity>
+                                )}
+                                <IvyIcon name="chevronDown" size={20} color={theme.textSecondary} />
+                            </View>
+                        </TouchableOpacity>
+                    </AppCard>
+
                     <AppButton
                         variant="primary"
                         size="lg"
@@ -139,6 +172,16 @@ export function AccountFormView(vm: AccountFormViewModel) {
                     setIsIconPickerVisible(false);
                 }}
                 selectedIcon={selectedIcon as any}
+            />
+            <AccountSelector
+                visible={isParentPickerVisible}
+                accounts={potentialParents}
+                selectedId={parentAccountId}
+                onClose={() => setIsParentPickerVisible(false)}
+                onSelect={(id) => {
+                    setParentAccountId(id);
+                    setIsParentPickerVisible(false);
+                }}
             />
         </Screen>
     );
@@ -182,5 +225,25 @@ const styles = StyleSheet.create({
     },
     iconButton: {
         marginTop: Spacing.md,
+    },
+    selectorButton: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: Spacing.md,
+        borderRadius: Shape.radius.sm,
+        borderWidth: 1,
+        minHeight: 48,
+    },
+    selectorActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+    clearButton: {
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: 2,
+        borderRadius: Shape.radius.xs,
+        backgroundColor: '#00000010',
     },
 });

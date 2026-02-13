@@ -1,9 +1,9 @@
 import { AppConfig, Palette } from '@/src/constants'
+import { Theme } from '@/src/constants/design-tokens'
+import Account from '@/src/data/models/Account'
 import { getAccountAccentColor, getAccountSections, getSectionColor } from '@/src/utils/accountUtils'
 import { getContrastColor } from '@/src/utils/colorUtils'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
-import Account from '@/src/data/models/Account'
-import { Theme } from '@/src/constants/design-tokens'
 
 export interface AccountCardViewModel {
     id: string
@@ -16,6 +16,8 @@ export interface AccountCardViewModel {
     monthlyExpenseText: string
     showMonthlyStats: boolean
     currencyCode: string
+    depth: number
+    hasChildren: boolean
 }
 
 export interface AccountSectionViewModel {
@@ -92,7 +94,11 @@ export function transformAccountsToSections(
             ? '••••'
             : CurrencyFormatter.formatShort(sectionTotal, defaultCurrency || AppConfig.defaultCurrency)
 
-        const data = section.data.map((account: Account) => {
+        const typeAccounts = section.data
+        const rootAccounts = typeAccounts.filter(a => !a.parentAccountId || !typeAccounts.find(p => p.id === a.parentAccountId))
+        const flattenedData: AccountCardViewModel[] = []
+
+        const flatten = (account: Account, depth: number) => {
             const accentColor = getAccountAccentColor(account.accountType, {
                 asset: theme.asset,
                 liability: theme.liability,
@@ -113,7 +119,9 @@ export function transformAccountsToSections(
             const monthlyIncomeText = isLoading ? '...' : CurrencyFormatter.format(monthlyIncome, account.currencyCode)
             const monthlyExpenseText = isLoading ? '...' : CurrencyFormatter.format(monthlyExpenses, account.currencyCode)
 
-            return {
+            const children = typeAccounts.filter(a => a.parentAccountId === account.id)
+
+            flattenedData.push({
                 id: account.id,
                 name: account.name,
                 icon: account.icon || null,
@@ -124,16 +132,22 @@ export function transformAccountsToSections(
                 monthlyExpenseText,
                 showMonthlyStats: showAccountMonthlyStats,
                 currencyCode: account.currencyCode,
-            }
-        })
+                depth,
+                hasChildren: children.length > 0,
+            })
+
+            children.forEach(child => flatten(child, depth + 1))
+        }
+
+        rootAccounts.forEach(root => flatten(root, 0))
 
         return {
             title: section.title,
-            count: section.data.length,
+            count: typeAccounts.length,
             totalDisplay,
             totalColor: sectionColor,
             isCollapsed: collapsedSections.has(section.title),
-            data,
+            data: flattenedData,
         }
     })
 }

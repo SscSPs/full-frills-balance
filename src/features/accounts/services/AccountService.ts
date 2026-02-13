@@ -34,6 +34,15 @@ export class AccountService {
 
         const currencyCode = data.currencyCode || preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
 
+        // 0. Validate parent account if provided
+        if (data.parentAccountId) {
+            const parent = await accountRepository.find(data.parentAccountId);
+            if (!parent) throw new Error('Parent account not found');
+            if (parent.accountType !== data.accountType) {
+                throw new Error('Parent account must be of the same type');
+            }
+        }
+
         // 1. Create account
         const account = await accountRepository.create({
             name: data.name,
@@ -107,6 +116,27 @@ export class AccountService {
             currencyCode: account.currencyCode,
             description: account.description
         };
+
+        // Validate parent account if updated
+        if (updates.parentAccountId) {
+            if (updates.parentAccountId === accountId) {
+                throw new Error('An account cannot be its own parent');
+            }
+            const parent = await accountRepository.find(updates.parentAccountId);
+            if (!parent) throw new Error('Parent account not found');
+
+            // Check for circular dependency
+            const isCircular = await this.isDescendant(updates.parentAccountId, accountId);
+            if (isCircular) {
+                throw new Error('Circular parent relationship detected');
+            }
+
+            // Check account type consistency
+            const newType = updates.accountType || account.accountType;
+            if (parent.accountType !== newType) {
+                throw new Error('Parent account must be of the same type');
+            }
+        }
 
         const updatedAccount = await accountRepository.update(account, {
             name: updates.name,
@@ -273,6 +303,22 @@ export class AccountService {
             description: balanceCorrections.description,
             icon: balanceCorrections.icon as any
         })).id;
+    }
+
+    /**
+     * Helper to check if childId is a descendant of parentId.
+     * Used to prevent circular relationships.
+     */
+    private async isDescendant(potentialDescendantId: string, ancestorId: string): Promise<boolean> {
+        let currentParentId = (await accountRepository.find(potentialDescendantId))?.parentAccountId;
+
+        while (currentParentId) {
+            if (currentParentId === ancestorId) return true;
+            const parent = await accountRepository.find(currentParentId);
+            currentParentId = parent?.parentAccountId;
+        }
+
+        return false;
     }
 }
 

@@ -1,6 +1,6 @@
 import { AppConfig } from '@/src/constants/app-config';
 import { useUI } from '@/src/contexts/UIContext';
-import { AccountType } from '@/src/data/models/Account';
+import Account, { AccountType } from '@/src/data/models/Account';
 import { useAccountPersistence } from '@/src/features/accounts/hooks/useAccountPersistence';
 import { useAccount, useAccountBalance, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useAccountValidation } from '@/src/features/accounts/hooks/useAccountValidation';
@@ -38,6 +38,12 @@ export interface AccountFormViewModel {
     currencyLabel: string;
     showInitialBalance: boolean;
     isSaveDisabled: boolean;
+    parentAccountId: string;
+    parentAccountName: string;
+    setParentAccountId: (value: string) => void;
+    potentialParents: Account[];
+    isParentPickerVisible: boolean;
+    setIsParentPickerVisible: (visible: boolean) => void;
 }
 
 export function useAccountFormViewModel(): AccountFormViewModel {
@@ -71,7 +77,9 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const [selectedCurrency, setSelectedCurrency] = useState<string>(defaultCurrency || AppConfig.defaultCurrency);
     const [selectedIcon, setSelectedIcon] = useState<string>('wallet');
     const [initialBalance, setInitialBalance] = useState('');
+    const [parentAccountId, setParentAccountId] = useState('');
     const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
+    const [isParentPickerVisible, setIsParentPickerVisible] = useState(false);
     const hasExistingAccounts = accounts.length > 0;
 
     const formDirtyRef = useRef({
@@ -97,6 +105,7 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             if (!formDirtyRef.current.type) setAccountType(existingAccount.accountType);
             if (!formDirtyRef.current.currency) setSelectedCurrency(existingAccount.currencyCode);
             if (!formDirtyRef.current.icon && existingAccount.icon) setSelectedIcon(existingAccount.icon);
+            if (existingAccount.parentAccountId) setParentAccountId(existingAccount.parentAccountId);
             if (isEditMode && currentBalanceData && !formDirtyRef.current.balance) {
                 setInitialBalance(currentBalanceData.balance.toString());
             }
@@ -131,7 +140,8 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             selectedCurrency,
             selectedIcon,
             initialBalance,
-            balanceDataPayload
+            balanceDataPayload,
+            parentAccountId || undefined
         );
     };
 
@@ -151,6 +161,22 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const currencyLabel = useMemo(() => {
         return `Currency${isEditMode ? ' (cannot be changed)' : ''}`;
     }, [isEditMode]);
+
+    const potentialParents = useMemo(() => {
+        return accounts
+            .filter(a =>
+                a.id !== accountId && // Not self
+                a.accountType === accountType && // Same type
+                a.currencyCode === selectedCurrency && // Same currency
+                !a.deletedAt // Not deleted
+            );
+    }, [accounts, accountId, accountType, selectedCurrency]);
+
+    const parentAccountName = useMemo(() => {
+        if (!parentAccountId) return 'None';
+        const parent = potentialParents.find(a => a.id === parentAccountId);
+        return parent ? parent.name : 'None';
+    }, [parentAccountId, potentialParents]);
 
     return {
         theme,
@@ -178,5 +204,11 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         currencyLabel,
         showInitialBalance: true,
         isSaveDisabled: !accountName.trim() || persistence.isCreating || !!validation.formError,
+        parentAccountId,
+        parentAccountName,
+        setParentAccountId,
+        potentialParents,
+        isParentPickerVisible,
+        setIsParentPickerVisible,
     };
 }

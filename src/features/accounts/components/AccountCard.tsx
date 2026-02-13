@@ -20,7 +20,14 @@ export function AccountCard({
     return (
         <AppCard
             elevation="sm"
-            style={[styles.cardContainer, { backgroundColor: surfaceColor }]}
+            style={[
+                styles.cardContainer,
+                {
+                    backgroundColor: surfaceColor,
+                    marginLeft: account.depth * Spacing.lg,
+                    opacity: account.depth > 0 ? 0.9 : 1
+                }
+            ]}
             padding="none"
         >
             <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -40,6 +47,9 @@ export function AccountCard({
                         >
                             {account.name}
                         </AppText>
+                        {account.hasChildren && (
+                            <IvyIcon name="folder" color={account.textColor} size={16} />
+                        )}
                     </View>
 
                     <View style={styles.balanceSection}>
