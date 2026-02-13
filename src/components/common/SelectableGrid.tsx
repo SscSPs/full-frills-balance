@@ -1,6 +1,6 @@
 import { AppButton, AppIcon, AppInput, AppText } from '@/src/components/core';
 import { IconName } from '@/src/components/core/AppIcon';
-import { Layout, Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
+import { AppConfig, Layout, Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -66,6 +66,7 @@ export const SelectableGrid: React.FC<SelectableGridProps> = ({
     const [selectedIcon, setSelectedIcon] = useState<IconName>('tag');
     const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
     const effectiveAccentColor = accentColor || theme.primary;
+    const { strings } = AppConfig;
 
     const filteredItems = useMemo(() => {
         if (!searchQuery.trim()) return items;
@@ -108,7 +109,7 @@ export const SelectableGrid: React.FC<SelectableGridProps> = ({
                 style={[
                     styles.item,
                     {
-                        backgroundColor: isSelected ? withOpacity(effectiveAccentColor, 0.05) : theme.surface,
+                        backgroundColor: isSelected ? withOpacity(effectiveAccentColor, Opacity.selection) : theme.surface,
                         borderColor: isSelected ? effectiveAccentColor : theme.border,
                     }
                 ]}
@@ -129,7 +130,7 @@ export const SelectableGrid: React.FC<SelectableGridProps> = ({
                         ) : item.icon ? (
                             <AppIcon
                                 name={item.icon}
-                                size={20}
+                                size={Size.iconMd}
                                 color={isSelected ? effectiveAccentColor : theme.text}
                             />
                         ) : item.symbol ? (
@@ -142,7 +143,7 @@ export const SelectableGrid: React.FC<SelectableGridProps> = ({
                         ) : null}
                     </View>
                     {isSelected && (
-                        <AppIcon name="checkCircle" size={20} color={effectiveAccentColor} />
+                        <AppIcon name="checkCircle" size={Size.iconMd} color={effectiveAccentColor} />
                     )}
                 </View>
 
@@ -324,25 +325,27 @@ const IconPickerModal: React.FC<{
         'edit', 'delete', 'arrowUp', 'arrowDown', 'swapHorizontal'
     ];
 
+    const { strings } = AppConfig;
+
     return (
         <Modal visible={visible} transparent animationType="fade">
-            <Pressable style={styles.modalOverlay} onPress={onClose}>
+            <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={onClose}>
                 <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-                    <AppText variant="subheading" style={styles.modalTitle}>Select Icon</AppText>
+                    <AppText variant="subheading" style={styles.modalTitle}>{strings.onboarding.iconPickerTitle}</AppText>
                     <View style={styles.iconGrid}>
                         {icons.map((icon) => (
                             <TouchableOpacity
                                 key={icon}
                                 style={[
                                     styles.modalIconButton,
-                                    { backgroundColor: selectedIcon === icon ? withOpacity(theme.primary, 0.1) : 'transparent' }
+                                    { backgroundColor: selectedIcon === icon ? withOpacity(theme.primary, Opacity.soft) : 'transparent' }
                                 ]}
                                 onPress={() => {
                                     onSelect(icon);
                                     onClose();
                                 }}
                             >
-                                <AppIcon name={icon} size={24} color={selectedIcon === icon ? theme.primary : theme.text} />
+                                <AppIcon name={icon} size={Size.iconLg} color={selectedIcon === icon ? theme.primary : theme.text} />
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -407,8 +410,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         borderRadius: Shape.radius.r3,
         borderWidth: 1,
-        borderColor: 'transparent',
-        backgroundColor: 'transparent',
     },
     searchContainer: {
         marginBottom: Spacing.md,
@@ -466,11 +467,9 @@ const styles = StyleSheet.create({
     bottomInputSection: {
         paddingTop: Spacing.md,
         paddingHorizontal: Spacing.lg,
-        backgroundColor: 'transparent',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -491,8 +490,8 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
     },
     modalIconButton: {
-        width: 48,
-        height: 48,
+        width: Size.xxl,
+        height: Size.xxl,
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: Shape.radius.r2,

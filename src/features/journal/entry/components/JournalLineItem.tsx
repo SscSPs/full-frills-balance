@@ -57,10 +57,10 @@ export function JournalLineItem({
             }}
         >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-                <AppText variant="subheading">Line {index + 1}</AppText>
+                <AppText variant="subheading">{AppConfig.strings.advancedEntry.lineTitle(index + 1)}</AppText>
                 {canRemove && (
-                    <TouchableOpacity onPress={onRemove} style={{ padding: Spacing.sm }} accessibilityLabel="Remove line" accessibilityRole="button">
-                        <AppText variant="body" color="error">Remove</AppText>
+                    <TouchableOpacity onPress={onRemove} style={{ padding: Spacing.sm }} accessibilityLabel={AppConfig.strings.advancedEntry.removeLine} accessibilityRole="button">
+                        <AppText variant="body" color="error">{AppConfig.strings.advancedEntry.removeLine}</AppText>
                     </TouchableOpacity>
                 )}
             </View>
@@ -71,11 +71,11 @@ export function JournalLineItem({
                     borderColor: theme.border
                 }]}
                 onPress={onSelectAccount}
-                accessibilityLabel={line.accountName || "Select account"}
+                accessibilityLabel={line.accountName || AppConfig.strings.advancedEntry.selectAccount}
                 accessibilityRole="button"
             >
                 <AppText variant="body">
-                    {line.accountName || 'Select Account'}
+                    {line.accountName || AppConfig.strings.advancedEntry.selectAccount}
                 </AppText>
                 <AppText variant="body" color="secondary">▼</AppText>
             </TouchableOpacity>
@@ -100,7 +100,7 @@ export function JournalLineItem({
                                     line.transactionType === TransactionType.DEBIT && { color: theme.pureInverse }
                                 ]}
                             >
-                                Debit
+                                {AppConfig.strings.advancedEntry.debit}
                             </AppText>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -119,7 +119,7 @@ export function JournalLineItem({
                                     line.transactionType === TransactionType.CREDIT && { color: theme.pureInverse }
                                 ]}
                             >
-                                Credit
+                                {AppConfig.strings.advancedEntry.credit}
                             </AppText>
                         </TouchableOpacity>
                     </View>
@@ -127,7 +127,7 @@ export function JournalLineItem({
 
                 <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
-                        <AppText variant="body" weight="medium">Amount</AppText>
+                        <AppText variant="body" weight="medium">{AppConfig.strings.transactionFlow.amount}</AppText>
                         {line.accountCurrency && (
                             <AppText variant="caption" color="primary">
                                 {line.accountCurrency}
@@ -137,7 +137,7 @@ export function JournalLineItem({
                     <AppInput
                         value={line.amount}
                         onChangeText={(value) => onUpdate('amount', value)}
-                        placeholder="0.00"
+                        placeholder={AppConfig.strings.advancedEntry.amountPlaceholder}
                         keyboardType="numeric"
                         testID="amount-input"
                     />
@@ -150,34 +150,34 @@ export function JournalLineItem({
             </View>
 
             <AppInput
-                label="Notes"
+                label={AppConfig.strings.advancedEntry.notes}
                 value={line.notes}
                 onChangeText={(value) => onUpdate('notes', value)}
-                placeholder="Optional notes"
+                placeholder={AppConfig.strings.advancedEntry.notesPlaceholder}
                 containerStyle={{ marginBottom: Spacing.md }}
             />
 
             <View style={{ marginBottom: Spacing.md }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
                     <AppText variant="body" weight="medium">
-                        Exchange Rate (Optional)
+                        {AppConfig.strings.advancedEntry.exchangeRate}
                     </AppText>
                     {line.accountCurrency && line.accountCurrency !== (preferences.defaultCurrencyCode || AppConfig.defaultCurrency) && onAutoFetchRate && (
                         <TouchableOpacity onPress={onAutoFetchRate}>
-                            <AppText variant="caption" color="primary">Auto-fetch</AppText>
+                            <AppText variant="caption" color="primary">{AppConfig.strings.advancedEntry.autoFetch}</AppText>
                         </TouchableOpacity>
                     )}
                 </View>
                 <AppInput
                     value={line.exchangeRate || ''}
                     onChangeText={(value) => onUpdate('exchangeRate', value)}
-                    placeholder="e.g., 1.1050"
+                    placeholder={AppConfig.strings.advancedEntry.ratePlaceholder}
                     keyboardType="decimal-pad"
                 />
                 <AppText variant="caption" color="secondary" style={{ marginTop: Spacing.xs }}>
                     {line.accountCurrency === (preferences.defaultCurrencyCode || AppConfig.defaultCurrency)
-                        ? 'Not needed (same as base currency)'
-                        : `Rate to convert ${line.accountCurrency} to ${preferences.defaultCurrencyCode || AppConfig.defaultCurrency}`}
+                        ? AppConfig.strings.advancedEntry.rateHelpSame
+                        : AppConfig.strings.advancedEntry.rateHelpConvert(line.accountCurrency || '', preferences.defaultCurrencyCode || AppConfig.defaultCurrency)}
                 </AppText>
             </View>
         </View>

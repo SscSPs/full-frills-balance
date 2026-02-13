@@ -8,6 +8,7 @@
  * All database writes are delegated to repositories.
  */
 
+import { AppConfig } from '@/src/constants/app-config'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { databaseRepository } from '@/src/data/repositories/DatabaseRepository'
@@ -186,7 +187,7 @@ export class IntegrityService {
     async cleanupDatabase(): Promise<{ deletedCount: number }> {
         logger.info('[IntegrityService] Starting database cleanup...')
         try {
-            const totalDeleted = await databaseRepository.cleanupDeletedRecords(['journals', 'transactions', 'accounts'])
+            const totalDeleted = await databaseRepository.cleanupDeletedRecords([...AppConfig.strings.audit.tables])
             logger.info(`[IntegrityService] Cleanup complete. Removed ${totalDeleted} records.`)
             return { deletedCount: totalDeleted }
         } catch (error) {

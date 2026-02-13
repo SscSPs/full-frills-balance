@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 
 /**
@@ -8,17 +9,17 @@ import Account from '@/src/data/models/Account';
 export function getAccountIcon(account: Account): string {
     if (account.icon) return account.icon;
 
-    // Fallbacks for system accounts based on name
+    const { openingBalances, balanceCorrections } = AppConfig.systemAccounts;
     const lowerName = account.name.toLowerCase();
 
     // Opening Balances (OBE)
-    if (lowerName.includes('opening balance')) {
-        return 'scale'; // or 'business' or 'earth'
+    if (lowerName.includes(openingBalances.namePrefix.toLowerCase())) {
+        return openingBalances.icon;
     }
 
     // Balance Corrections
-    if (lowerName.includes('balance correction')) {
-        return 'construct'; // or 'medical' or 'flask'
+    if (lowerName.includes(balanceCorrections.namePrefix.toLowerCase())) {
+        return balanceCorrections.icon;
     }
 
     // Default fallback

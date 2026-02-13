@@ -1,5 +1,5 @@
 import { AppCard, AppText } from '@/src/components/core';
-import { Spacing } from '@/src/constants';
+import { AppConfig, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { preferences } from '@/src/utils/preferences';
 import React from 'react';
@@ -24,23 +24,23 @@ export function JournalSummary({
         <AppCard style={{ marginHorizontal: Spacing.lg, marginVertical: Spacing.sm }}>
             <View style={{ gap: Spacing.md }}>
                 <AppText variant="subheading">
-                    Summary
+                    {AppConfig.strings.journalSummary.title}
                 </AppText>
 
                 <View style={{ gap: Spacing.sm }}>
                     <View style={styles.summaryRow}>
-                        <AppText variant="body">Total Debits:</AppText>
+                        <AppText variant="body">{AppConfig.strings.journalSummary.totalDebits}</AppText>
                         <AppText variant="body">{totalDebits.toFixed(2)} {currency}</AppText>
                     </View>
 
                     <View style={styles.summaryRow}>
-                        <AppText variant="body">Total Credits:</AppText>
+                        <AppText variant="body">{AppConfig.strings.journalSummary.totalCredits}</AppText>
                         <AppText variant="body">{totalCredits.toFixed(2)} {currency}</AppText>
                     </View>
                 </View>
 
                 <View style={[styles.summaryRow, styles.balanceRow, { borderTopColor: theme.divider }]}>
-                    <AppText variant="heading">Balance:</AppText>
+                    <AppText variant="heading">{AppConfig.strings.journalSummary.balance}</AppText>
                     <AppText
                         variant="heading"
                         color={isBalanced ? "success" : "error"}
@@ -56,7 +56,7 @@ export function JournalSummary({
                     weight="semibold"
                     style={{ marginTop: Spacing.xs }}
                 >
-                    {isBalanced ? `✓ Journal is balanced in ${currency}` : `✗ Journal must be balanced in ${currency}`}
+                    {isBalanced ? AppConfig.strings.journalSummary.balanced(currency) : AppConfig.strings.journalSummary.unbalanced(currency)}
                 </AppText>
             </View>
         </AppCard>

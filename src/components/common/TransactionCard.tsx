@@ -1,5 +1,5 @@
 import { AppCard, AppIcon, AppText, Badge, IconName } from '@/src/components/core';
-import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter';
 import { formatDate } from '@/src/utils/dateUtils';
@@ -64,7 +64,7 @@ export const TransactionCard = ({
                 {accounts.slice(0, 2).map((acc) => {
                     const isSource = acc.role === 'SOURCE';
                     const isDest = acc.role === 'DESTINATION';
-                    const showPrefix = isSource ? 'From: ' : (isDest ? 'To: ' : '');
+                    const showPrefix = isSource ? AppConfig.strings.journal.from : (isDest ? AppConfig.strings.journal.to : '');
 
                     return (
                         <Badge
@@ -79,7 +79,7 @@ export const TransactionCard = ({
                 })}
                 {accounts.length > 2 && (
                     <Badge variant="default" size="sm">
-                        +{accounts.length - 2} more
+                        {AppConfig.strings.journal.more(accounts.length - 2)}
                     </Badge>
                 )}
             </View>
@@ -98,7 +98,7 @@ export const TransactionCard = ({
             <View style={styles.footerRow}>
                 <View style={styles.amountContainer}>
                     <View style={[styles.iconCircle, { backgroundColor: withOpacity(theme[presentation.typeColor as keyof typeof theme] as string, Opacity.soft) }]}>
-                        <AppIcon name={presentation.typeIcon} size={16} color={theme[presentation.typeColor as keyof typeof theme] as string} />
+                        <AppIcon name={presentation.typeIcon} size={Size.iconXs} color={theme[presentation.typeColor as keyof typeof theme] as string} />
                     </View>
                     <AppText
                         variant="subheading"

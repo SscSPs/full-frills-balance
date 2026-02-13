@@ -83,7 +83,7 @@ export class ReportService {
         // Group transactions by date for efficient lookup during rewind
         const txByDay = new Map<string, any[]>();
         for (const tx of transactions) {
-            const dayKey = dayjs(tx.transactionDate).format('YYYY-MM-DD');
+            const dayKey = dayjs(tx.transactionDate).format(AppConfig.strings.formats.date);
             if (!txByDay.has(dayKey)) txByDay.set(dayKey, []);
             txByDay.get(dayKey)!.push(tx);
         }
@@ -93,7 +93,7 @@ export class ReportService {
 
         // 4. Iterate backward from NOW to START
         while (cursor.isAfter(start) || cursor.isSame(start, 'day')) {
-            const dayKey = cursor.format('YYYY-MM-DD');
+            const dayKey = cursor.format(AppConfig.strings.formats.date);
 
             // Save snapshot if in target range
             if ((cursor.isBefore(end) || cursor.isSame(end, 'day')) &&

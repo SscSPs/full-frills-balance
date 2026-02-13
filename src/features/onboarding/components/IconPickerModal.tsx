@@ -1,6 +1,6 @@
 import { AppButton, AppText } from '@/src/components/core';
 import { AppIcon, IconName } from '@/src/components/core/AppIcon';
-import { Shape, Size, Spacing } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, withOpacity } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -34,7 +34,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
             onRequestClose={onClose}
         >
             <TouchableOpacity
-                style={styles.overlay}
+                style={[styles.overlay, { backgroundColor: theme.overlay }]}
                 activeOpacity={1}
                 onPress={onClose}
             >
@@ -53,7 +53,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
                                     style={[
                                         styles.iconItem,
                                         {
-                                            backgroundColor: isSelected ? theme.primary + '20' : theme.surface,
+                                            backgroundColor: isSelected ? withOpacity(theme.primary, Opacity.soft) : theme.surface,
                                             borderColor: isSelected ? theme.primary : theme.border,
                                         }
                                     ]}
@@ -88,7 +88,6 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: Spacing.xl,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     content: {
         width: '100%',
         maxWidth: 340,
-        borderRadius: 16,
+        borderRadius: Shape.radius.r4,
         padding: Spacing.lg,
         maxHeight: '70%',
     },
@@ -111,7 +110,7 @@ const styles = StyleSheet.create({
     iconItem: {
         flex: 1,
         aspectRatio: 1,
-        margin: 4,
+        margin: Spacing.xs,
         borderRadius: Shape.radius.r3,
         borderWidth: 1.5,
         justifyContent: 'center',

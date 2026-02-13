@@ -1,8 +1,8 @@
 import { AppConfig } from '@/src/constants/app-config';
+import { useUI } from '@/src/contexts/UIContext';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
-import { useUI } from '@/src/contexts/UIContext';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useObservableWithEnrichment } from '@/src/hooks/useObservable';
 import { reportService } from '@/src/services/report-service';
@@ -16,10 +16,10 @@ export function useReports() {
 
     const [periodFilter, setPeriodFilter] = useState<PeriodFilter>({
         type: 'LAST_N',
-        lastN: 30,
+        lastN: AppConfig.defaults.reportDays,
         lastNUnit: 'days'
     });
-    const [dateRange, setDateRange] = useState<DateRange>(getLastNRange(30, 'days'));
+    const [dateRange, setDateRange] = useState<DateRange>(getLastNRange(AppConfig.defaults.reportDays, 'days'));
 
     const triggerObservable = useMemo(() => {
         return combineLatest([

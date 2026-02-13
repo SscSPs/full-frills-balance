@@ -1,5 +1,5 @@
 import { AppText } from '@/src/components/core';
-import { Opacity, Shape, Spacing, Typography } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { AccountType } from '@/src/data/models/Account';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
@@ -14,11 +14,11 @@ export const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({ value,
     const { theme } = useTheme();
 
     const accountTypes = [
-        { key: AccountType.ASSET, label: 'Asset' },
-        { key: AccountType.LIABILITY, label: 'Liability' },
-        { key: AccountType.EQUITY, label: 'Equity' },
-        { key: AccountType.INCOME, label: 'Income' },
-        { key: AccountType.EXPENSE, label: 'Expense' },
+        { key: AccountType.ASSET, label: AppConfig.strings.accounts.types.asset },
+        { key: AccountType.LIABILITY, label: AppConfig.strings.accounts.types.liability },
+        { key: AccountType.EQUITY, label: AppConfig.strings.accounts.types.equity },
+        { key: AccountType.INCOME, label: AppConfig.strings.accounts.types.income },
+        { key: AccountType.EXPENSE, label: AppConfig.strings.accounts.types.expense },
     ];
 
     return (
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
         borderRadius: Shape.radius.full,
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
-        minWidth: 96,
+        minWidth: Size.buttonXl * 1.5,
     },
     buttonSelected: {
         borderWidth: 2,

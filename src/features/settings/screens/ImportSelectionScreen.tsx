@@ -1,6 +1,6 @@
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Shape, Size, Spacing, Typography } from '@/src/constants';
+import { AppConfig, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useImportPlugins } from '@/src/features/settings/hooks/useImportPlugins';
 import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -40,7 +40,7 @@ const ImportPluginCard = ({ plugin, index, isImporting, onSelect }: ImportPlugin
                 loading={isImporting}
                 style={styles.button}
             >
-                {`Select ${plugin.name.split(' ')[0]} File`}
+                {AppConfig.strings.settings.selectFile(plugin.name.split(' ')[0])}
             </AppButton>
         </AppCard>
     );
@@ -55,14 +55,14 @@ export default function ImportSelectionScreen() {
 
     return (
         <Screen
-            title="Import Data"
+            title={AppConfig.strings.settings.importTitle}
             showBack={true}
             scrollable
             withPadding
         >
             <View style={styles.container}>
                 <AppText variant="body" style={styles.intro}>
-                    Choose the format of your backup file to restore your data.
+                    {AppConfig.strings.settings.importIntro}
                 </AppText>
 
                 {plugins.map((plugin, index) => (
@@ -77,7 +77,7 @@ export default function ImportSelectionScreen() {
 
                 <View style={styles.note}>
                     <AppText variant="caption" color="secondary" style={{ textAlign: 'center' }}>
-                        Note: Importing will replace all existing data on this device.
+                        {AppConfig.strings.settings.importNote}
                     </AppText>
                 </View>
             </View>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     },
     desc: {
         marginTop: Spacing.xs,
-        lineHeight: 20,
+        lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
     },
     button: {
         width: '100%',

@@ -1,5 +1,5 @@
 import { AppIcon, AppText } from '@/src/components/core';
-import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -23,8 +23,8 @@ export const CurrencyPreference = () => {
         <>
             <View style={styles.rowBetween}>
                 <View style={{ flex: 1 }}>
-                    <AppText variant="body" weight="semibold">Default Currency</AppText>
-                    <AppText variant="caption" color="secondary">Used for new accounts and total balance</AppText>
+                    <AppText variant="body" weight="semibold">{AppConfig.strings.settings.currency.title}</AppText>
+                    <AppText variant="caption" color="secondary">{AppConfig.strings.settings.currency.description}</AppText>
                 </View>
                 <TouchableOpacity
                     onPress={() => setShowModal(true)}
@@ -49,8 +49,8 @@ export const CurrencyPreference = () => {
                 <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
                     <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
                         <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-                            <AppText variant="heading">Select Default Currency</AppText>
-                            <TouchableOpacity onPress={() => setShowModal(false)} accessibilityLabel="Close" accessibilityRole="button">
+                            <AppText variant="heading">{AppConfig.strings.settings.currency.selectTitle}</AppText>
+                            <TouchableOpacity onPress={() => setShowModal(false)} accessibilityLabel={AppConfig.strings.common.cancel} accessibilityRole="button">
                                 <AppIcon name="close" size={Typography.sizes.xxl} color={theme.text} />
                             </TouchableOpacity>
                         </View>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        height: '70%',
+        height: AppConfig.layout.modalHeightPercent,
         borderTopLeftRadius: Shape.radius.r3,
         borderTopRightRadius: Shape.radius.r3,
         overflow: 'hidden',

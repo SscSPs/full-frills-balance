@@ -1,6 +1,6 @@
 import { DateTimePickerModal } from '@/src/components/common/DateTimePickerModal';
 import { AppButton, AppCard, AppInput, AppText } from '@/src/components/core';
-import { Shape, Size, Spacing } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing } from '@/src/constants';
 import { JournalLineItem } from '@/src/features/journal/entry/components/JournalLineItem';
 import { JournalSummary } from '@/src/features/journal/entry/components/JournalSummary';
 import { useJournalEditor } from '@/src/features/journal/entry/hooks/useJournalEditor';
@@ -40,18 +40,18 @@ export const AdvancedForm = ({
     return (
         <View style={{ gap: Spacing.md, padding: Spacing.lg }}>
             <AppCard elevation="sm" padding="lg">
-                <AppText variant="title">{editor.isEdit ? 'Edit Journal Entry' : 'Create Journal Entry'}</AppText>
+                <AppText variant="title">{editor.isEdit ? AppConfig.strings.advancedEntry.editTitle : AppConfig.strings.advancedEntry.createTitle}</AppText>
             </AppCard>
 
             <AppCard elevation="sm" padding="lg">
                 <View style={{ gap: Spacing.md }}>
                     <TouchableOpacity
-                        activeOpacity={0.7}
+                        activeOpacity={Opacity.soft}
                         onPress={() => setShowDatePicker(true)}
                         style={{ flex: 1 }}
                     >
                         <AppInput
-                            label="Date & Time"
+                            label={AppConfig.strings.advancedEntry.dateTime}
                             value={dayjs(`${editor.journalDate}T${editor.journalTime}`).format('DD MMM YYYY, HH:mm')}
                             editable={false}
                             pointerEvents="none"
@@ -70,10 +70,10 @@ export const AdvancedForm = ({
                     />
 
                     <AppInput
-                        label="Description"
+                        label={AppConfig.strings.advancedEntry.description}
                         value={editor.description}
                         onChangeText={editor.setDescription}
-                        placeholder="Enter description"
+                        placeholder={AppConfig.strings.advancedEntry.descriptionPlaceholder}
                         multiline
                         numberOfLines={3}
                     />
@@ -83,9 +83,9 @@ export const AdvancedForm = ({
             <AppCard elevation="sm" padding="lg">
                 <View style={{ gap: Spacing.md }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <AppText variant="heading">Journal Lines</AppText>
-                        <TouchableOpacity onPress={editor.addLine} style={{ padding: Spacing.sm }} accessibilityLabel="Add line" accessibilityRole="button">
-                            <AppText variant="body" color="primary">+ Add Line</AppText>
+                        <AppText variant="heading">{AppConfig.strings.advancedEntry.journalLines}</AppText>
+                        <TouchableOpacity onPress={editor.addLine} style={{ padding: Spacing.sm }} accessibilityLabel={AppConfig.strings.advancedEntry.addLineAccessibility} accessibilityRole="button">
+                            <AppText variant="body" color="primary">{AppConfig.strings.advancedEntry.addLine}</AppText>
                         </TouchableOpacity>
                     </View>
 
@@ -118,7 +118,9 @@ export const AdvancedForm = ({
                     disabled={!isBalanced || editor.isSubmitting}
                     style={{ marginBottom: Spacing.xl, height: Size.buttonXl, borderRadius: Shape.radius.r4 }}
                 >
-                    {editor.isSubmitting ? (editor.isEdit ? 'Updating...' : 'Creating...') : (editor.isEdit ? 'Update Journal' : 'Create Journal')}
+                    {editor.isSubmitting
+                        ? (editor.isEdit ? AppConfig.strings.advancedEntry.updating : AppConfig.strings.advancedEntry.creating)
+                        : (editor.isEdit ? AppConfig.strings.advancedEntry.updateJournal : AppConfig.strings.advancedEntry.createJournal)}
                 </AppButton>
             </View>
         </View>

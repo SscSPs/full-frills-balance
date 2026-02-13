@@ -1,22 +1,24 @@
+import { AppConfig } from '@/src/constants';
 import { JournalListHeader } from '@/src/features/journal/components/JournalListHeader';
 import { JournalListView } from '@/src/features/journal/components/JournalListView';
 import { useJournalListViewModel } from '@/src/features/journal/hooks/useJournalListViewModel';
 import React from 'react';
 
 export function JournalListScreen() {
+    const { strings } = AppConfig;
     const list = useJournalListViewModel({
         pageSize: 50,
         emptyState: {
-            title: 'No transactions found',
-            subtitle: 'Try adjusting your search or date filter'
+            title: strings.journal.emptyTitle,
+            subtitle: strings.journal.emptySubtitle
         }
     });
 
-    const headerTitle = list.searchQuery ? 'Search Results' : 'Transactions';
+    const headerTitle = list.searchQuery ? strings.journal.searchResults : strings.journal.transactions;
 
     return (
         <JournalListView
-            screenTitle="Transactions"
+            screenTitle={strings.journal.transactions}
             listHeader={(
                 <JournalListHeader
                     title={headerTitle}

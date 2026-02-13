@@ -48,7 +48,7 @@ export const AccountTile = ({
                 {account.name}
             </AppText>
             {isSelected && (
-                <AppIcon name="checkCircle" size={18} color={accountColor} />
+                <AppIcon name="checkCircle" size={Size.iconSm} color={accountColor} />
             )}
         </TouchableOpacity>
     );
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     },
     accountIndicator: {
         width: 4,
-        height: 16,
+        height: Spacing.md,
         borderRadius: Shape.radius.full,
     },
 });

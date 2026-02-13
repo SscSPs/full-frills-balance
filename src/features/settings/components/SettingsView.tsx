@@ -1,6 +1,6 @@
 import { AppButton, AppCard, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Spacing, Typography, withOpacity } from '@/src/constants';
 import { CurrencyPreference } from '@/src/features/settings/components/CurrencyPreference';
 import { SettingsViewModel } from '@/src/features/settings/hooks/useSettingsViewModel';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -37,14 +37,14 @@ export function SettingsView(vm: SettingsViewModel) {
         >
             <View style={styles.inner}>
                 <AppText variant="subheading" style={styles.sectionTitle}>
-                    General
+                    {AppConfig.strings.settings.sections.general}
                 </AppText>
                 <AppCard elevation="sm" padding="md" style={styles.card}>
                     <CurrencyPreference />
                 </AppCard>
 
                 <AppText variant="subheading" style={styles.sectionTitle}>
-                    Appearance
+                    {AppConfig.strings.settings.sections.appearance}
                 </AppText>
                 <AppCard elevation="sm" padding="md" style={styles.card}>
                     <View style={styles.themeOptions}>
@@ -65,15 +65,15 @@ export function SettingsView(vm: SettingsViewModel) {
 
                     <View style={styles.rowBetween}>
                         <View style={{ flex: 1 }}>
-                            <AppText variant="body" weight="semibold">Privacy Mode</AppText>
-                            <AppText variant="caption" color="secondary">Mask balances across the app</AppText>
+                            <AppText variant="body" weight="semibold">{AppConfig.strings.settings.privacy.title}</AppText>
+                            <AppText variant="caption" color="secondary">{AppConfig.strings.settings.privacy.description}</AppText>
                         </View>
                         <AppButton
                             variant={isPrivacyMode ? 'primary' : 'outline'}
                             size="sm"
                             onPress={onTogglePrivacy}
                         >
-                            {isPrivacyMode ? 'On' : 'Off'}
+                            {isPrivacyMode ? AppConfig.strings.settings.privacy.on : AppConfig.strings.settings.privacy.off}
                         </AppButton>
                     </View>
 
@@ -81,32 +81,32 @@ export function SettingsView(vm: SettingsViewModel) {
 
                     <View style={styles.rowBetween}>
                         <View style={{ flex: 1 }}>
-                            <AppText variant="body" weight="semibold">Account Statistics</AppText>
-                            <AppText variant="caption" color="secondary">Show monthly income/expense on cards</AppText>
+                            <AppText variant="body" weight="semibold">{AppConfig.strings.settings.stats.title}</AppText>
+                            <AppText variant="caption" color="secondary">{AppConfig.strings.settings.stats.description}</AppText>
                         </View>
                         <AppButton
                             variant={showAccountMonthlyStats ? 'primary' : 'outline'}
                             size="sm"
                             onPress={onToggleAccountMonthlyStats}
                         >
-                            {showAccountMonthlyStats ? 'On' : 'Off'}
+                            {showAccountMonthlyStats ? AppConfig.strings.settings.privacy.on : AppConfig.strings.settings.privacy.off}
                         </AppButton>
                     </View>
                 </AppCard>
 
                 <AppText variant="subheading" style={styles.sectionTitle}>
-                    Data Management
+                    {AppConfig.strings.settings.sections.dataManagement}
                 </AppText>
                 <AppCard elevation="sm" padding="md" style={styles.card}>
                     <AppText variant="body" style={styles.cardDesc}>
-                        Export your data as a JSON file for backup or external use.
+                        {AppConfig.strings.settings.data.exportDesc}
                     </AppText>
                     <AppButton
                         variant="outline"
                         onPress={onExport}
                         loading={isExporting}
                     >
-                        Export to JSON
+                        {AppConfig.strings.settings.data.exportBtn}
                     </AppButton>
 
                     <AppButton
@@ -115,46 +115,46 @@ export function SettingsView(vm: SettingsViewModel) {
                         loading={isImporting}
                         style={{ marginTop: Spacing.sm }}
                     >
-                        Import from JSON
+                        {AppConfig.strings.settings.data.importBtn}
                     </AppButton>
 
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
                     <AppText variant="body" style={styles.cardDesc}>
-                        View all changes made to your data for auditing and debugging.
+                        {AppConfig.strings.settings.data.auditDesc}
                     </AppText>
                     <AppButton
                         variant="outline"
                         onPress={onAuditLog}
                     >
-                        View Audit Log
+                        {AppConfig.strings.settings.data.auditBtn}
                     </AppButton>
                 </AppCard>
 
                 <AppText variant="subheading" style={styles.sectionTitle}>
-                    Maintenance
+                    {AppConfig.strings.settings.sections.maintenance}
                 </AppText>
                 <AppCard elevation="sm" padding="md" style={styles.card}>
                     <AppText variant="body" style={styles.cardDesc}>
-                        Verify and repair account balance inconsistencies if needed.
+                        {AppConfig.strings.settings.maintenance.integrityDesc}
                     </AppText>
                     <AppButton
                         variant="secondary"
                         onPress={onFixIntegrity}
                         loading={isMaintenanceMode}
                     >
-                        Fix Integrity Issues
+                        {AppConfig.strings.settings.maintenance.integrityBtn}
                     </AppButton>
                 </AppCard>
 
                 <AppText variant="subheading" style={[styles.sectionTitle, { color: theme.error }]}
                 >
-                    Danger Zone
+                    {AppConfig.strings.settings.sections.dangerZone}
                 </AppText>
                 <AppCard elevation="sm" padding="md" style={[styles.card, { borderColor: withOpacity(theme.error, Opacity.soft), borderWidth: 1 }]}
                 >
                     <AppText variant="body" style={styles.cardDesc}>
-                        Permanently delete soft-deleted records to free up space.
+                        {AppConfig.strings.settings.danger.cleanupDesc}
                     </AppText>
                     <AppButton
                         variant="outline"
@@ -162,13 +162,13 @@ export function SettingsView(vm: SettingsViewModel) {
                         style={{ borderColor: theme.error }}
                         loading={isCleaning}
                     >
-                        Cleanup Deleted Data
+                        {AppConfig.strings.settings.danger.cleanupBtn}
                     </AppButton>
 
                     <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
                     <AppText variant="body" style={styles.cardDesc}>
-                        Wipe all data and reset the app to its original state.
+                        {AppConfig.strings.settings.danger.resetDesc}
                     </AppText>
                     <AppButton
                         variant="primary"
@@ -176,13 +176,13 @@ export function SettingsView(vm: SettingsViewModel) {
                         style={{ backgroundColor: theme.error }}
                         loading={isResetting}
                     >
-                        Factory Reset
+                        {AppConfig.strings.settings.danger.resetBtn}
                     </AppButton>
                 </AppCard>
 
                 <View style={styles.footer}>
                     <AppText variant="caption" color="secondary">
-                        Balance v1.0.0
+                        {AppConfig.strings.settings.version(AppConfig.appVersion)}
                     </AppText>
                 </View>
             </View>

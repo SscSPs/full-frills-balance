@@ -1,5 +1,6 @@
 import { SelectableGrid, SelectableItem } from '@/src/components/common/SelectableGrid';
 import { IconName } from '@/src/components/core/AppIcon';
+import { AppConfig } from '@/src/constants/app-config';
 import React, { useMemo } from 'react';
 import { DEFAULT_ACCOUNTS } from '../constants';
 
@@ -42,8 +43,8 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
 
     return (
         <SelectableGrid
-            title="Setup Accounts"
-            subtitle="Where is your money? Select all that apply."
+            title={AppConfig.strings.onboarding.accounts.title}
+            subtitle={AppConfig.strings.onboarding.accounts.subtitle}
             items={items}
             selectedIds={selectedAccounts}
             onToggle={handleToggle}
@@ -51,7 +52,7 @@ export const StepAccountSuggestions: React.FC<StepAccountSuggestionsProps> = ({
             onBack={onBack}
             isCompleting={isCompleting}
             customInput={{
-                placeholder: 'Add custom account...',
+                placeholder: AppConfig.strings.onboarding.accounts.placeholder,
                 onAdd: onAddCustomAccount,
                 defaultIcon: 'wallet',
             }}

@@ -1,5 +1,5 @@
 import { AppIcon, AppText } from '@/src/components/core';
-import { Spacing, Typography } from '@/src/constants';
+import { AppConfig, Size, Spacing, Typography } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -18,8 +18,8 @@ export const JournalEntryHeader = ({ title, onClose }: JournalEntryHeaderProps) 
 
     return (
         <View style={[styles.header, { backgroundColor: theme.background }]}>
-            <TouchableOpacity onPress={handleClose} style={styles.backButton} accessibilityLabel="Close" accessibilityRole="button">
-                <AppIcon name="close" size={28} color={theme.text} />
+            <TouchableOpacity onPress={handleClose} style={styles.backButton} accessibilityLabel={AppConfig.strings.common.cancel} accessibilityRole="button">
+                <AppIcon name="close" size={Size.iconMd} color={theme.text} />
             </TouchableOpacity>
 
             <AppText variant="heading" style={styles.headerTitle}>

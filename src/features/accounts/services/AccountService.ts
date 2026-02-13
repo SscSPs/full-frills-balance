@@ -169,7 +169,8 @@ export class AccountService {
     }
 
     async getOpeningBalancesAccountId(currencyCode: string): Promise<string> {
-        const name = `Opening Balances (${currencyCode})`;
+        const { openingBalances } = AppConfig.systemAccounts;
+        const name = `${openingBalances.namePrefix} (${currencyCode})`;
         const existing = await this.findAccountByName(name);
         if (existing) return existing.id;
 
@@ -177,8 +178,8 @@ export class AccountService {
             name,
             accountType: AccountType.EQUITY,
             currencyCode,
-            description: 'System account for initial balances',
-            icon: 'scale'
+            description: openingBalances.description,
+            icon: openingBalances.icon as any
         })).id;
     }
 
@@ -238,11 +239,11 @@ export class AccountService {
     }
 
     async findOrCreateBalanceCorrectionAccount(currencyCode: string): Promise<string> {
+        const { balanceCorrections } = AppConfig.systemAccounts;
         const targetCurrency = currencyCode || preferences.defaultCurrencyCode || AppConfig.defaultCurrency;
-        const legacyNames = ['Balance Corrections', 'Balance Correction', 'Balance Corrections ()'];
 
         // 1. Check legacy names with matching currency
-        for (const legacyName of legacyNames) {
+        for (const legacyName of balanceCorrections.legacyNames) {
             const legacy = await this.findAccountByName(legacyName);
             // Match if currency is correct, OR if we're looking for default currency and the legacy one has NO currency
             if (legacy && (legacy.currencyCode === targetCurrency || (!legacy.currencyCode && targetCurrency === preferences.defaultCurrencyCode))) {
@@ -251,7 +252,7 @@ export class AccountService {
         }
 
         // 2. Check for standard name
-        const name = `Balance Corrections (${targetCurrency})`;
+        const name = `${balanceCorrections.namePrefix} (${targetCurrency})`;
         const existing = await this.findAccountByName(name);
         if (existing) return existing.id;
 
@@ -259,7 +260,7 @@ export class AccountService {
         // This handles cases where currency might be slightly different in name but correct in field
         const allAccounts = await accountRepository.findAll();
         const fallback = allAccounts.find(a =>
-            a.name.includes('Balance Correction') &&
+            a.name.includes(balanceCorrections.namePrefix) &&
             a.currencyCode === targetCurrency &&
             !a.deletedAt
         );
@@ -269,8 +270,8 @@ export class AccountService {
             name,
             accountType: AccountType.EQUITY,
             currencyCode: targetCurrency,
-            description: 'System account for balance corrections',
-            icon: 'construct'
+            description: balanceCorrections.description,
+            icon: balanceCorrections.icon as any
         })).id;
     }
 }

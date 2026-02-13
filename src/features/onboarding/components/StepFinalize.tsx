@@ -1,5 +1,5 @@
 import { AppButton, AppIcon, AppText } from '@/src/components/core';
-import { Size, Spacing } from '@/src/constants';
+import { AppConfig, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -18,15 +18,15 @@ export const StepFinalize: React.FC<StepFinalizeProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.iconContainer}>
-                <AppIcon name="checkCircle" size={Size.xxl * 2} color={theme.primary} />
+                <AppIcon name="checkCircle" size={AppConfig.layout.finalizeIconSize} color={theme.primary} />
             </View>
 
             <AppText variant="title" style={styles.title}>
-                All Ready!
+                {AppConfig.strings.onboarding.finalize.title}
             </AppText>
 
             <AppText variant="body" color="secondary" style={styles.subtitle}>
-                Your accounts are set up and ready to go. Let&apos;s start tracking your balance.
+                {AppConfig.strings.onboarding.finalize.subtitle}
             </AppText>
 
             <View style={styles.buttonContainer}>
@@ -37,7 +37,7 @@ export const StepFinalize: React.FC<StepFinalizeProps> = ({
                     loading={isCompleting}
                     style={styles.finishButton}
                 >
-                    Let&apos;s Begin
+                    {AppConfig.strings.onboarding.finalize.btnFinish}
                 </AppButton>
             </View>
         </View>
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     subtitle: {
         textAlign: 'center',
         marginBottom: Spacing.xxxl,
-        maxWidth: 300,
+        maxWidth: AppConfig.layout.finalizeSubtitleMaxWidth,
     },
     buttonContainer: {
         width: '100%',

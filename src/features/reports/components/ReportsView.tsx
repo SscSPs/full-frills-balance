@@ -3,7 +3,7 @@ import { LineChart } from '@/src/components/charts/LineChart';
 import { DateRangePicker } from '@/src/components/common/DateRangePicker';
 import { AppCard, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Spacing } from '@/src/constants';
+import { AppConfig, Shape, Size, Spacing } from '@/src/constants';
 import { ReportsViewModel } from '@/src/features/reports/hooks/useReportsViewModel';
 import { useTheme } from '@/src/hooks/use-theme';
 import type { DailyNetWorth, ExpenseCategory } from '@/src/services/report-service';
@@ -35,11 +35,11 @@ export function ReportsView(vm: ReportsViewModel) {
                     style={[styles.filterButton, { borderColor: theme.border, backgroundColor: theme.surface }]}
                     onPress={onOpenDatePicker}
                 >
-                    <AppIcon name="calendar" size={16} color={theme.textSecondary} />
+                    <AppIcon name="calendar" size={Size.iconSm} color={theme.textSecondary} />
                     <AppText variant="caption" style={{ marginLeft: Spacing.xs }}>
                         {dateLabel}
                     </AppText>
-                    <AppIcon name="chevronDown" size={16} color={theme.textSecondary} style={{ marginLeft: Spacing.xs }} />
+                    <AppIcon name="chevronDown" size={Size.iconSm} color={theme.textSecondary} style={{ marginLeft: Spacing.xs }} />
                 </TouchableOpacity>
             </View>
 
@@ -52,7 +52,7 @@ export function ReportsView(vm: ReportsViewModel) {
                 <AppCard style={styles.chartCard} padding="lg">
                     <View style={styles.headerRow}>
                         <View>
-                            <AppText variant="caption" color="secondary">NET WORTH CHANGE</AppText>
+                            <AppText variant="caption" color="secondary">{AppConfig.strings.reports.netWorthChange}</AppText>
                             <AppText variant="heading">
                                 {CurrencyFormatter.formatWithPreference(currentNetWorth)}
                             </AppText>
@@ -68,19 +68,19 @@ export function ReportsView(vm: ReportsViewModel) {
                     </View>
                 </AppCard>
 
-                <AppText variant="subheading" style={styles.sectionTitle}>Spending Breakdown</AppText>
+                <AppText variant="subheading" style={styles.sectionTitle}>{AppConfig.strings.reports.spendingBreakdown}</AppText>
 
                 <AppCard style={styles.chartCard} padding="lg">
                     <View style={styles.balanceRow}>
                         <View style={styles.balanceItem}>
-                            <AppText variant="caption" color="secondary">TOTAL INCOME</AppText>
+                            <AppText variant="caption" color="secondary">{AppConfig.strings.reports.totalIncome}</AppText>
                             <AppText variant="subheading" style={{ color: theme.success }}>
                                 {CurrencyFormatter.formatWithPreference(incomeVsExpense.income)}
                             </AppText>
                         </View>
                         <View style={[styles.divider, { backgroundColor: theme.border }]} />
                         <View style={styles.balanceItem}>
-                            <AppText variant="caption" color="secondary">TOTAL EXPENSE</AppText>
+                            <AppText variant="caption" color="secondary">{AppConfig.strings.reports.totalExpense}</AppText>
                             <AppText variant="subheading" style={{ color: theme.error }}>
                                 {CurrencyFormatter.formatWithPreference(incomeVsExpense.expense)}
                             </AppText>
@@ -117,7 +117,7 @@ export function ReportsView(vm: ReportsViewModel) {
                 ) : (
                     <AppCard padding="lg">
                         <AppText variant="body" color="secondary" style={{ textAlign: 'center' }}>
-                            No expense data for this period.
+                            {AppConfig.strings.reports.noData}
                         </AppText>
                     </AppCard>
                 )}
@@ -137,7 +137,7 @@ export function ReportsView(vm: ReportsViewModel) {
 const styles = StyleSheet.create({
     content: {
         padding: Spacing.lg,
-        paddingBottom: 100,
+        paddingBottom: Size.xxl * 2,
     },
     filterBar: {
         paddingHorizontal: Spacing.lg,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'flex-start',
         borderWidth: 1,
-        borderRadius: 20,
+        borderRadius: Shape.radius.full,
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.xs,
     },
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.xs,
     },
     dot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: Spacing.sm,
+        height: Spacing.sm,
+        borderRadius: Shape.radius.full,
         marginRight: Spacing.sm,
     },
     balanceRow: {

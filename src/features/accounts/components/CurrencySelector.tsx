@@ -1,5 +1,5 @@
 import { AppIcon, AppText } from '@/src/components/core';
-import { Opacity, Shape, Spacing, Typography } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography } from '@/src/constants';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useState } from 'react';
@@ -53,9 +53,9 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                 <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
                     <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
                         <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-                            <AppText variant="heading">Select Currency</AppText>
+                            <AppText variant="heading">{AppConfig.strings.accounts.selectCurrency}</AppText>
                             <TouchableOpacity onPress={() => setShowModal(false)}>
-                                <AppIcon name="close" size={Typography.sizes.xxl} color={theme.text} />
+                                <AppIcon name="close" size={Size.iconMd} color={theme.text} />
                             </TouchableOpacity>
                         </View>
                         <FlatList
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.sm,
         fontSize: Typography.sizes.base,
-        minHeight: 48,
+        minHeight: Size.inputMd,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        height: '70%',
+        height: AppConfig.layout.modalHeightPercent,
         borderTopLeftRadius: Shape.radius.r1,
         borderTopRightRadius: Shape.radius.r1,
         overflow: 'hidden',

@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useJournalListViewModel } from '@/src/features/journal/hooks/useJournalListViewModel';
 import { useWealthSummary } from '@/src/features/wealth';
@@ -58,11 +59,13 @@ export function useDashboardViewModel(): DashboardViewModel {
     const isSummaryLoading = isWealthLoading || isFlowLoading;
     const togglePrivacyMode = useCallback(() => setPrivacyMode(!isPrivacyMode), [isPrivacyMode, setPrivacyMode]);
 
+    const { strings } = AppConfig;
+
     const list = useJournalListViewModel({
-        pageSize: 50,
+        pageSize: AppConfig.pagination.dashboardPageSize,
         emptyState: {
-            title: 'No transactions yet',
-            subtitle: 'Tap the + button to add your first transaction'
+            title: strings.dashboard.emptyTitle,
+            subtitle: strings.dashboard.emptySubtitle
         }
     });
 
@@ -70,8 +73,8 @@ export function useDashboardViewModel(): DashboardViewModel {
         router.push('/journal-entry');
     }, [router]);
 
-    const greeting = useMemo(() => `Hi, ${userName || 'there'}!`, [userName]);
-    const sectionTitle = list.searchQuery ? 'Search Results' : 'Recent Transactions';
+    const greeting = useMemo(() => strings.dashboard.greeting(userName), [userName, strings.dashboard]);
+    const sectionTitle = list.searchQuery ? strings.dashboard.searchResults : strings.dashboard.recentTransactions;
 
     return {
         isInitialized,

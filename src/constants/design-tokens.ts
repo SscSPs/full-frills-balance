@@ -140,6 +140,7 @@ export const Size = {
   xl: 40,   // Extra large icons
   xxl: 48,  // Extra extra large icons
   fab: 64,  // Main FAB size
+  xxs: 12,  // Micro icons / indicators
 
   // Button sizes
   buttonSm: 32,
@@ -562,6 +563,17 @@ export const Layout = {
 export const Animation = {
   scrollDelay: 100,
   dataRefreshDebounce: 300,
+} as const
+
+// === Z-INDEX STACK ===
+// Standardized layering for the application
+export const ZIndex = {
+  base: 0,
+  fab: 100,
+  header: 200,
+  overlay: 500,
+  modal: 1000,
+  toast: 2000,
 } as const
 
 // === TYPE DEFINITIONS ===

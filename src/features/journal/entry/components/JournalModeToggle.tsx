@@ -1,5 +1,5 @@
 import { AppText } from '@/src/components/core';
-import { Shape, Spacing } from '@/src/constants';
+import { AppConfig, Shape, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -27,7 +27,7 @@ export const JournalModeToggle = ({ isGuidedMode, setIsGuidedMode }: JournalMode
                     weight={isGuidedMode ? "bold" : "medium"}
                     style={{ color: isGuidedMode ? theme.primary : theme.textSecondary }}
                 >
-                    Simple
+                    {AppConfig.strings.transactionFlow.simple}
                 </AppText>
             </TouchableOpacity>
 
@@ -44,7 +44,7 @@ export const JournalModeToggle = ({ isGuidedMode, setIsGuidedMode }: JournalMode
                     weight={!isGuidedMode ? "bold" : "medium"}
                     style={{ color: !isGuidedMode ? theme.primary : theme.textSecondary }}
                 >
-                    Advanced
+                    {AppConfig.strings.transactionFlow.advanced}
                 </AppText>
             </TouchableOpacity>
         </View>

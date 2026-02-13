@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import { ImportStats } from '@/src/services/import';
 import { logger } from '@/src/utils/logger';
 import { init, trackEvent } from '@aptabase/react-native';
@@ -86,11 +87,12 @@ export class AnalyticsService {
     }
 
     logError(error: Error, componentStack?: string) {
+        const trimLimit = AppConfig.constants.validation.maxTrimLength;
         this.track('app_error', {
             name: error.name,
             message: error.message,
-            stack: error.stack?.slice(0, 500) || 'no-stack', // Trim long stacks
-            componentStack: componentStack?.slice(0, 500) || 'no-component-stack'
+            stack: error.stack?.slice(0, trimLimit) || 'no-stack', // Trim long stacks
+            componentStack: componentStack?.slice(0, trimLimit) || 'no-component-stack'
         });
     }
 }

@@ -1,5 +1,5 @@
 import { AppIcon } from '@/src/components/core/AppIcon';
-import { Opacity, Shape, Size, Spacing } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, ZIndex } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
         // @ts-ignore
         boxShadow: Shape.elevation.lg.boxShadow,
         elevation: Shape.elevation.lg.elevation,
-        zIndex: 100,
+        zIndex: ZIndex.fab,
     },
 });

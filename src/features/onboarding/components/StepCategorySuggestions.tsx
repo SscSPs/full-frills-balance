@@ -1,6 +1,7 @@
 import { SelectableGrid, SelectableItem } from '@/src/components/common/SelectableGrid';
 import { AppIcon, AppText } from '@/src/components/core';
 import { IconName } from '@/src/components/core/AppIcon';
+import { AppConfig } from '@/src/constants/app-config';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useCallback, useMemo } from 'react';
 import { DEFAULT_CATEGORIES } from '../constants';
@@ -75,8 +76,8 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
 
     return (
         <SelectableGrid
-            title="Setup Categories"
-            subtitle="Select categories you use often."
+            title={AppConfig.strings.onboarding.categories.title}
+            subtitle={AppConfig.strings.onboarding.categories.subtitle}
             items={items}
             selectedIds={selectedCategories}
             onToggle={handleToggle}
@@ -84,11 +85,11 @@ export const StepCategorySuggestions: React.FC<StepCategorySuggestionsProps> = (
             onBack={onBack}
             isCompleting={isCompleting}
             customInput={{
-                placeholder: 'Add category...',
+                placeholder: AppConfig.strings.onboarding.categories.placeholder,
                 onAdd: onAddCustomCategory,
                 defaultIcon: 'tag',
                 showTypeToggle: true,
-                typeLabels: { income: 'Income', expense: 'Expense' },
+                typeLabels: AppConfig.strings.onboarding.categories.typeLabels,
             }}
             renderIcon={renderIcon}
             renderSubtitle={renderSubtitle}

@@ -3,6 +3,7 @@ import { TransactionType } from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository'
+import { accountingService } from '@/src/utils/accountingService'
 import { ACTIVE_JOURNAL_STATUSES } from '@/src/utils/journalStatus'
 import { logger } from '@/src/utils/logger'
 import { roundToPrecision } from '@/src/utils/money'
@@ -24,25 +25,8 @@ export class AccountingRebuildService {
         const account = await accountRepository.find(accountId)
         if (!account) throw new Error(`Account ${accountId} not found during running balance rebuild`)
 
-        // Determine multiplier
-        // Asset/Expense: Debit +, Credit -
-        // Liability/Equity/Income: Credit +, Debit -
-        let debitMult = 0
-        let creditMult = 0
-
-        switch (account.accountType) {
-            case 'ASSET':
-            case 'EXPENSE':
-                debitMult = 1
-                creditMult = -1
-                break
-            case 'LIABILITY':
-            case 'EQUITY':
-            case 'INCOME':
-                debitMult = -1
-                creditMult = 1
-                break
-        }
+        const debitMult = accountingService.getImpactMultiplier(account.accountType as any, TransactionType.DEBIT)
+        const creditMult = accountingService.getImpactMultiplier(account.accountType as any, TransactionType.CREDIT)
 
         const precision = await currencyRepository.getPrecision(account.currencyCode)
 

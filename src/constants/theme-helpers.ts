@@ -105,5 +105,9 @@ export const getLuminance = (hex: string): number => {
 export const getContrastColor = (backgroundColor: string): string => {
   const luminance = getLuminance(backgroundColor);
   // Ivy Wallet uses 0.5 as threshold
-  return luminance > 0.5 ? '#111114' : '#FAFAFA';
+  // Ensure contrast with high-visibility backgrounds
+  const contrastDark = '#111114';
+  const contrastLight = '#FAFAFA';
+
+  return luminance > 0.5 ? contrastDark : contrastLight;
 };

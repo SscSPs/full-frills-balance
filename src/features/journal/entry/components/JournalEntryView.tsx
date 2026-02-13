@@ -1,5 +1,5 @@
 import { AppText, Badge } from '@/src/components/core';
-import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
 import { AccountSelector } from '@/src/features/journal/components/AccountSelector';
 import { AdvancedForm } from '@/src/features/journal/entry/components/AdvancedForm';
 import { JournalEntryHeader } from '@/src/features/journal/entry/components/JournalEntryHeader';
@@ -33,7 +33,7 @@ export function JournalEntryView(vm: JournalEntryViewModel) {
             <View style={[styles.container, { backgroundColor: theme.background }]}
             >
                 <View style={styles.loadingContainer}>
-                    <AppText variant="body">Loading...</AppText>
+                    <AppText variant="body">{AppConfig.strings.common.loading || 'Loading...'}</AppText>
                 </View>
             </View>
         );
@@ -51,7 +51,7 @@ export function JournalEntryView(vm: JournalEntryViewModel) {
                     {showEditBanner && (
                         <View style={[styles.editBanner, { backgroundColor: withOpacity(theme.warning, Opacity.soft) }]}
                         >
-                            <Badge variant="expense" size="sm">EDITING</Badge>
+                            <Badge variant="expense" size="sm">{AppConfig.strings.advancedEntry.editing || 'EDITING'}</Badge>
                             <AppText variant="caption" color="secondary" style={{ marginLeft: Spacing.sm }}>
                                 {editBannerText}
                             </AppText>
@@ -78,7 +78,7 @@ export function JournalEntryView(vm: JournalEntryViewModel) {
                 onClose={onCloseAccountPicker}
                 onSelect={onAccountSelected}
             />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 

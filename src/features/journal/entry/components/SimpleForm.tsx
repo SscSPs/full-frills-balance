@@ -4,7 +4,7 @@ import { AppCard } from '@/src/components/core/AppCard';
 import { AppIcon } from '@/src/components/core/AppIcon';
 import { AppInput } from '@/src/components/core/AppInput';
 import { AppText } from '@/src/components/core/AppText';
-import { Opacity, Shape, Spacing, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
 import Account from '@/src/data/models/Account';
 import { AccountTileList } from '@/src/features/journal/components/AccountTileList';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -94,8 +94,8 @@ export const SimpleFormView = ({
     return (
         <View style={{ padding: Spacing.lg }}>
             <View style={{ alignItems: 'center', marginVertical: Spacing.lg, gap: Spacing.md }}>
-                <AppText variant="caption" weight="bold" color="tertiary" style={{ letterSpacing: 2 }}>
-                    AMOUNT
+                <AppText variant="caption" weight="bold" color="tertiary" style={{ letterSpacing: Typography.letterSpacing.wide * 2 }}>
+                    {AppConfig.strings.transactionFlow.amount}
                 </AppText>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ marginVertical: Spacing.sm, marginTop: Spacing.md }}>
@@ -204,7 +204,7 @@ export const SimpleFormView = ({
             {isCrossCurrency && sourceId && destinationId && (
                 <View style={{ alignItems: 'center', padding: Spacing.md, borderRadius: Shape.radius.sm, backgroundColor: withOpacity(theme.primary, Opacity.soft), marginVertical: Spacing.lg }}>
                     {isLoadingRate ? (
-                        <AppText variant="caption" color="secondary">Fetching rate...</AppText>
+                        <AppText variant="caption" color="secondary">{AppConfig.strings.transactionFlow.fetchingRate}</AppText>
                     ) : rateError ? (
                         <AppText variant="caption" color="error">{rateError}</AppText>
                     ) : exchangeRate ? (
@@ -224,7 +224,7 @@ export const SimpleFormView = ({
 
             <View style={{ marginVertical: Spacing.lg }}>
                 <AppText variant="caption" weight="bold" color="tertiary" style={{ marginLeft: Spacing.xs, marginBottom: Spacing.sm }}>
-                    SCHEDULE
+                    {AppConfig.strings.transactionFlow.schedule}
                 </AppText>
                 <TouchableOpacity
                     activeOpacity={Opacity.soft}
@@ -232,11 +232,11 @@ export const SimpleFormView = ({
                 >
                     <AppCard elevation="none" padding="none" style={{ backgroundColor: theme.surfaceSecondary, borderColor: theme.border, borderWidth: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.md }}>
-                            <AppIcon name="calendar" size={20} color={theme.textSecondary} />
+                            <AppIcon name="calendar" size={Size.iconSm} color={theme.textSecondary} />
                             <AppText variant="body" style={{ flex: 1 }}>
                                 {dayjs(`${journalDate}T${journalTime}`).format('DD MMM YYYY, HH:mm')}
                             </AppText>
-                            <AppIcon name="chevronRight" size={16} color={theme.textSecondary} />
+                            <AppIcon name="chevronRight" size={Size.iconXs} color={theme.textSecondary} />
                         </View>
                     </AppCard>
                 </TouchableOpacity>
@@ -255,7 +255,7 @@ export const SimpleFormView = ({
 
             <View style={{ marginVertical: Spacing.lg }}>
                 <AppText variant="caption" weight="bold" color="tertiary" style={{ marginLeft: Spacing.xs, marginBottom: Spacing.sm }}>
-                    DESCRIPTION (OPTIONAL)
+                    {AppConfig.strings.transactionFlow.descriptionOptional}
                 </AppText>
                 <AppInput
                     value={description}
@@ -279,7 +279,7 @@ export const SimpleFormView = ({
                     disabled={!amount || !sourceId || !destinationId || (sourceId === destinationId) || isSubmitting || isLoadingRate || !!rateError}
                     testID="save-button"
                 >
-                    {isSubmitting ? 'SAVING...' : sourceId === destinationId ? 'CHOOSE DIFFERENT ACCOUNTS' : `SAVE ${type.toUpperCase()}`}
+                    {isSubmitting ? AppConfig.strings.transactionFlow.saving : sourceId === destinationId ? AppConfig.strings.transactionFlow.chooseDifferentAccounts : AppConfig.strings.transactionFlow.save(type)}
                 </AppButton>
             </View>
         </View>
@@ -301,4 +301,7 @@ const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     cardDivider: { height: 1, marginVertical: Spacing.md, opacity: Opacity.muted },
+    footerButton: {
+        marginTop: Spacing.md,
+    },
 });

@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import { roundToPrecision } from '@/src/utils/money';
 
 export const sanitizeInput = (input: string): string => {
@@ -9,23 +10,24 @@ export const sanitizeInput = (input: string): string => {
 
 export const validateAccountName = (name: string): { isValid: boolean; error?: string } => {
   const sanitizedName = sanitizeInput(name)
+  const { minAccountNameLength, maxAccountNameLength } = AppConfig.constants.validation;
 
   if (!sanitizedName) {
-    return { isValid: false, error: 'Account name is required' }
+    return { isValid: false, error: AppConfig.strings.validation.accountNameRequired }
   }
 
-  if (sanitizedName.length < 2) {
-    return { isValid: false, error: 'Account name must be at least 2 characters' }
+  if (sanitizedName.length < minAccountNameLength) {
+    return { isValid: false, error: AppConfig.strings.validation.accountNameTooShort(minAccountNameLength) }
   }
 
-  if (sanitizedName.length > 100) {
-    return { isValid: false, error: 'Account name must be less than 100 characters' }
+  if (sanitizedName.length > maxAccountNameLength) {
+    return { isValid: false, error: AppConfig.strings.validation.accountNameTooLong(maxAccountNameLength) }
   }
 
   if (!/^[a-zA-Z0-9\s\-_&().,'#]+$/.test(sanitizedName)) {
     return {
       isValid: false,
-      error: 'Account name can only contain letters, numbers, spaces, and basic punctuation'
+      error: AppConfig.strings.validation.invalidCharacters
     }
   }
 
@@ -53,15 +55,15 @@ export const validateCurrencyCode = (code: string): { isValid: boolean; error?: 
 export const validateDescription = (description: string): { isValid: boolean; error?: string } => {
   const sanitizedDescription = sanitizeInput(description)
 
-  if (sanitizedDescription && sanitizedDescription.length > 500) {
-    return { isValid: false, error: 'Description must be less than 500 characters' }
+  if (sanitizedDescription && sanitizedDescription.length > AppConfig.input.maxDescriptionLength) {
+    return { isValid: false, error: `Description must be less than ${AppConfig.input.maxDescriptionLength} characters` }
   }
 
   return { isValid: true }
 }
 
 
-export const sanitizeAmount = (amount: string | number, precision = 2): number | null => {
+export const sanitizeAmount = (amount: string | number, precision = AppConfig.constants.precision): number | null => {
   const numAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]/g, '')) : amount
 
   if (isNaN(numAmount) || !isFinite(numAmount)) {

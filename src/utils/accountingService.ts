@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { getBalanceImpactMultiplier, JournalLineInput, validateBalance } from '@/src/utils/accounting-utils';
@@ -28,14 +29,14 @@ export class AccountingService {
     /**
      * Validates if a journal's transactions are balanced within the given currency precision.
      */
-    validateJournal(transactions: JournalLineInput[], precision: number = 2): JournalValidationResult {
+    validateJournal(transactions: JournalLineInput[], precision: number = AppConfig.constants.precision): JournalValidationResult {
         return validateBalance(transactions, precision);
     }
 
     /**
      * Calculates what the running balance should be for a transaction given a starting balance.
      */
-    calculateNewBalance(currentBalance: number, amount: number, accountType: AccountType, transactionType: TransactionType, precision: number = 2): number {
+    calculateNewBalance(currentBalance: number, amount: number, accountType: AccountType, transactionType: TransactionType, precision: number = AppConfig.constants.precision): number {
         const multiplier = this.getImpactMultiplier(accountType, transactionType);
         return roundToPrecision(currentBalance + (amount * multiplier), precision);
     }

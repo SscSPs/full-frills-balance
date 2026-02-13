@@ -1,4 +1,5 @@
 import { Screen } from '@/src/components/layout';
+import { AppConfig } from '@/src/constants/app-config';
 import { StepAccountSuggestions } from '@/src/features/onboarding/components/StepAccountSuggestions';
 import { StepCategorySuggestions } from '@/src/features/onboarding/components/StepCategorySuggestions';
 import { StepCurrency } from '@/src/features/onboarding/components/StepCurrency';
@@ -99,7 +100,7 @@ export function OnboardingView(vm: OnboardingFlowViewModel) {
 
 const styles = StyleSheet.create({
     content: {
-        maxWidth: 400,
+        maxWidth: AppConfig.layout.maxContentWidth,
         width: '100%',
         alignSelf: 'center',
         flex: 1,

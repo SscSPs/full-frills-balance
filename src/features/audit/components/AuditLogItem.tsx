@@ -1,5 +1,5 @@
 import { AppCard, AppIcon, AppText, IconName } from '@/src/components/core'
-import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants'
+import { AppConfig, Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants'
 import { AuditAction } from '@/src/data/models/AuditLog'
 import { useTheme } from '@/src/hooks/use-theme'
 import { CurrencyFormatter } from '@/src/utils/currencyFormatter'
@@ -184,7 +184,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
 
                             return (
                                 <View key={key} style={styles.changeRow}>
-                                    <AppText variant="caption" weight="bold">transactions:</AppText>
+                                    <AppText variant="caption" weight="bold">{AppConfig.strings.audit.transactionsLabel}</AppText>
                                     <View style={styles.arrayContainer}>
                                         {accountIds.map(accountId => {
                                             const tBefore = beforeVal.find(t => t.accountId === accountId);
@@ -217,7 +217,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
                                                         </AppText>
                                                         {typeChanged && (
                                                             <AppText variant="caption" style={{ color: theme.transfer, fontSize: Typography.sizes.xs, marginLeft: Spacing.xs }}>
-                                                                (type changed)
+                                                                {AppConfig.strings.audit.typeChanged}
                                                             </AppText>
                                                         )}
                                                     </View>
@@ -237,7 +237,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
                                         {renderChangeValue(key, beforeVal, beforeCurrency, false, afterVal)}
                                     </View>
                                     <View style={styles.arrowCol}>
-                                        <AppIcon name="arrowRight" size={12} color={theme.textTertiary} />
+                                        <AppIcon name="arrowRight" size={Size.xxs} color={theme.textTertiary} />
                                     </View>
                                     <View style={styles.afterCol}>
                                         {renderChangeValue(key, afterVal, afterCurrency, true, beforeVal)}
@@ -267,7 +267,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
 
     return (
         <AppCard style={styles.card} padding="md" elevation="sm">
-            <TouchableOpacity onPress={onToggle} accessibilityLabel="View details" accessibilityRole="button">
+            <TouchableOpacity onPress={onToggle} accessibilityLabel={AppConfig.strings.audit.viewDetails} accessibilityRole="button">
                 <View style={styles.row}>
                     <View style={[styles.iconContainer, { backgroundColor: withOpacity(actionColor, Opacity.soft) }]}>
                         <AppIcon name={getActionIcon(item.action)} size={Size.sm} color={actionColor} />
@@ -285,7 +285,7 @@ export const AuditLogItem = ({ item, isExpanded, onToggle, accountMap }: AuditLo
                             {formatDate(item.timestamp, { includeTime: true })}
                         </AppText>
                         <AppText variant="caption" color="secondary" numberOfLines={1}>
-                            ID: {item.entityId.substring(0, 12)}...
+                            {AppConfig.strings.audit.idLabel(item.entityId.substring(0, 12))}...
                         </AppText>
                     </View>
                     <AppIcon

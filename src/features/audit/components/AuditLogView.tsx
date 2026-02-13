@@ -1,6 +1,6 @@
 import { AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Spacing } from '@/src/constants';
+import { AppConfig, Size, Spacing } from '@/src/constants';
 import { AuditLogItem } from '@/src/features/audit/components/AuditLogItem';
 import { AuditLogViewModel } from '@/src/features/audit/hooks/useAuditLogViewModel';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -20,7 +20,7 @@ export function AuditLogView(vm: AuditLogViewModel) {
 
     return (
         <Screen
-            title={isFiltered ? 'Edit History' : 'Audit Log'}
+            title={isFiltered ? AppConfig.strings.audit.editHistory : AppConfig.strings.audit.logTitle}
         >
             <View style={styles.viewContent}>
                 {isLoading ? (
@@ -29,9 +29,9 @@ export function AuditLogView(vm: AuditLogViewModel) {
                     </View>
                 ) : logs.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <AppIcon name="document" size={64} color={theme.textSecondary} />
+                        <AppIcon name="document" size={Size.fab} color={theme.textSecondary} />
                         <AppText variant="body" color="secondary" style={styles.emptyText}>
-                            No audit logs found
+                            {AppConfig.strings.audit.emptyLogs}
                         </AppText>
                     </View>
                 ) : (

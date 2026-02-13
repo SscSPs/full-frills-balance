@@ -1,5 +1,5 @@
 import { AppButton, AppCard, AppText, IvyIcon } from '@/src/components/core';
-import { Opacity, Size, Spacing, withOpacity } from '@/src/constants';
+import { AppConfig, Opacity, Size, Spacing, withOpacity } from '@/src/constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { useTheme } from '@/src/hooks/use-theme';
 import { logger } from '@/src/utils/logger';
@@ -37,45 +37,45 @@ export const RestartRequiredScreen = () => {
                 <View style={[styles.iconContainer, { backgroundColor: isImport ? withOpacity(theme.success, Opacity.soft) : withOpacity(theme.error, Opacity.soft) }]}>
                     <IvyIcon
                         name={isImport ? 'checkCircle' : 'delete'}
-                        size={48}
+                        size={Size.avatarMd}
                         color={isImport ? theme.success : theme.error}
                     />
                 </View>
 
                 <AppText variant="title" align="center" style={styles.title}>
-                    {isImport ? 'Import Successful' : 'Factory Reset Complete'}
+                    {isImport ? AppConfig.strings.maintenance.importSuccess : AppConfig.strings.maintenance.resetComplete}
                 </AppText>
 
                 <AppText variant="body" color="secondary" align="center" style={styles.description}>
                     {isImport
-                        ? 'Your data has been successfully imported into the local database.'
-                        : 'All data, accounts, and settings have been permanently erased.'}
+                        ? AppConfig.strings.maintenance.importDesc
+                        : AppConfig.strings.maintenance.resetDesc}
                 </AppText>
 
                 {isImport && importStats && (
                     <AppCard padding="lg" elevation="sm" style={styles.statsCard}>
                         <View style={{ gap: Spacing.md }}>
                             <View style={styles.statRow}>
-                                <AppText variant="body" weight="medium">Accounts</AppText>
+                                <AppText variant="body" weight="medium">{AppConfig.strings.maintenance.stats.accounts}</AppText>
                                 <AppText variant="body" color="success" weight="bold">{importStats.accounts}</AppText>
                             </View>
                             <View style={styles.statRow}>
-                                <AppText variant="body" weight="medium">Journals</AppText>
+                                <AppText variant="body" weight="medium">{AppConfig.strings.maintenance.stats.journals}</AppText>
                                 <AppText variant="body" color="success" weight="bold">{importStats.journals}</AppText>
                             </View>
                             <View style={styles.statRow}>
-                                <AppText variant="body" weight="medium">Transactions</AppText>
+                                <AppText variant="body" weight="medium">{AppConfig.strings.maintenance.stats.transactions}</AppText>
                                 <AppText variant="body" color="success" weight="bold">{importStats.transactions}</AppText>
                             </View>
                             {typeof importStats.auditLogs === 'number' && importStats.auditLogs > 0 && (
                                 <View style={styles.statRow}>
-                                    <AppText variant="body" weight="medium">Audit Logs</AppText>
+                                    <AppText variant="body" weight="medium">{AppConfig.strings.maintenance.stats.auditLogs}</AppText>
                                     <AppText variant="body" color="success" weight="bold">{importStats.auditLogs}</AppText>
                                 </View>
                             )}
                             {importStats.skippedTransactions > 0 && (
                                 <View style={styles.statRow}>
-                                    <AppText variant="body" color="warning">Skipped Items</AppText>
+                                    <AppText variant="body" color="warning">{AppConfig.strings.maintenance.stats.skippedItems}</AppText>
                                     <AppText variant="body" color="warning" weight="bold">{importStats.skippedTransactions}</AppText>
                                 </View>
                             )}
@@ -85,7 +85,7 @@ export const RestartRequiredScreen = () => {
 
                 <View style={styles.footer}>
                     <AppText variant="caption" color="secondary" align="center" style={styles.restartNote}>
-                        A restart is required to finalize changes and re-initialize the application engine.
+                        {AppConfig.strings.maintenance.restartNote}
                     </AppText>
                     <AppButton
                         variant="outline"
@@ -93,7 +93,7 @@ export const RestartRequiredScreen = () => {
                         onPress={handleRestart}
                         style={styles.restartButton}
                     >
-                        Restart App
+                        {AppConfig.strings.maintenance.restartBtn}
                     </AppButton>
                 </View>
             </View>

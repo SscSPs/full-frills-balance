@@ -1,5 +1,5 @@
 import { AppButton, AppInput, AppText } from '@/src/components/core';
-import { Spacing, Typography } from '@/src/constants';
+import { AppConfig, Spacing, Typography } from '@/src/constants';
 import { useImport } from '@/src/hooks/use-import';
 import { useTheme } from '@/src/hooks/use-theme';
 import { router } from 'expo-router';
@@ -26,21 +26,21 @@ export const StepSplash: React.FC<StepSplashProps> = ({
         <View style={styles.container}>
             <View style={styles.header}>
                 <AppText variant="hero" style={styles.title}>
-                    Welcome{'\n'}to Balance
+                    {AppConfig.strings.onboarding.splash.title}
                 </AppText>
                 <AppText variant="body" color="secondary" style={styles.subtitle}>
-                    Let&apos;s personalize your experience.
+                    {AppConfig.strings.onboarding.splash.subtitle}
                 </AppText>
             </View>
 
             <View style={styles.content}>
                 <AppInput
-                    label="What should we call you?"
-                    placeholder="Enter your name"
+                    label={AppConfig.strings.onboarding.splash.inputLabel}
+                    placeholder={AppConfig.strings.onboarding.splash.inputPlaceholder}
                     value={name}
                     onChangeText={setName}
                     autoFocus
-                    accessibilityLabel="Your name"
+                    accessibilityLabel={AppConfig.strings.onboarding.splash.inputLabel}
                     containerStyle={styles.inputContainer}
                 />
 
@@ -50,17 +50,19 @@ export const StepSplash: React.FC<StepSplashProps> = ({
                     onPress={onContinue}
                     disabled={!name.trim() || isCompleting}
                     style={styles.continueButton}
-                    accessibilityLabel="Continue to next step"
+                    accessibilityLabel={AppConfig.strings.onboarding.splash.btnGetStarted}
                     accessibilityState={{ disabled: !name.trim() || isCompleting }}
                 >
-                    Get Started
+                    {AppConfig.strings.onboarding.splash.btnGetStarted}
                 </AppButton>
             </View>
 
             <View style={styles.footer}>
                 <View style={styles.divider}>
                     <View style={[styles.line, { backgroundColor: theme.border }]} />
-                    <AppText variant="caption" color="secondary" style={styles.orText}>OR</AppText>
+                    <AppText variant="caption" color="secondary" style={styles.orText}>
+                        {AppConfig.strings.onboarding.splash.dividerOr}
+                    </AppText>
                     <View style={[styles.line, { backgroundColor: theme.border }]} />
                 </View>
 
@@ -70,9 +72,9 @@ export const StepSplash: React.FC<StepSplashProps> = ({
                     onPress={() => router.push('/import-selection')}
                     loading={isImporting}
                     disabled={isImporting || isCompleting}
-                    accessibilityLabel="Import backup from file"
+                    accessibilityLabel={AppConfig.strings.onboarding.splash.btnRestore}
                 >
-                    Restore Backup
+                    {AppConfig.strings.onboarding.splash.btnRestore}
                 </AppButton>
             </View>
         </View>

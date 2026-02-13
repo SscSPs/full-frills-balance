@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import { AccountType } from '@/src/data/models/Account';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { roundToPrecision } from '@/src/utils/money';
@@ -66,7 +67,7 @@ export const isIncrease = isBalanceIncrease
  * @param lines Journal lines to validate
  * @param precision Precision of the journal currency (default 2)
  */
-export function validateBalance(lines: JournalLineInput[], precision: number = 2): {
+export function validateBalance(lines: JournalLineInput[], precision: number = AppConfig.constants.precision): {
     isValid: boolean
     imbalance: number
     totalDebits: number

@@ -1,5 +1,5 @@
 import { AppIcon } from '@/src/components/core/AppIcon';
-import { Size, Spacing } from '@/src/constants';
+import { Shape, Size, Spacing } from '@/src/constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     },
     dot: {
         height: Spacing.md,
-        borderRadius: Spacing.md / 2,
+        borderRadius: Shape.radius.full,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -91,6 +91,6 @@ const styles = StyleSheet.create({
         width: Size.xs,
         height: 2,
         marginHorizontal: Spacing.xs,
-        borderRadius: 1,
+        borderRadius: Shape.radius.r1,
     },
 });

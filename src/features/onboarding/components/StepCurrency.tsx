@@ -1,6 +1,6 @@
 import { SelectableGrid, SelectableItem } from '@/src/components/common/SelectableGrid';
 import { AppText } from '@/src/components/core';
-import { withOpacity } from '@/src/constants';
+import { AppConfig, withOpacity } from '@/src/constants';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
 import { COMMON_CURRENCY_CODES } from '@/src/services/currency-init-service';
@@ -43,8 +43,8 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
 
     return (
         <SelectableGrid
-            title="Default Currency"
-            subtitle="Select your primary currency. You can add more later."
+            title={AppConfig.strings.onboarding.currency.title}
+            subtitle={AppConfig.strings.onboarding.currency.subtitle}
             items={items}
             selectedIds={[selectedCurrency]}
             onToggle={onSelect}
@@ -52,7 +52,7 @@ export const StepCurrency: React.FC<StepCurrencyProps> = ({
             onBack={onBack}
             isCompleting={isCompleting}
             showSearch={true}
-            searchPlaceholder="Search currency..."
+            searchPlaceholder={AppConfig.strings.onboarding.currency.searchPlaceholder}
             renderSubtitle={(item, isSelected) => (
                 <React.Fragment>
                     <AppText
