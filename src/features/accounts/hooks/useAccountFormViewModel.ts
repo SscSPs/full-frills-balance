@@ -50,8 +50,6 @@ export interface AccountFormViewModel {
     isParent: boolean;
     showCurrency: boolean;
     showBalance: boolean;
-    isAggregate: boolean;
-    setIsAggregate: (value: boolean) => void;
 }
 
 export function useAccountFormViewModel(): AccountFormViewModel {
@@ -92,7 +90,6 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const [selectedIcon, setSelectedIcon] = useState<string>('wallet');
     const [initialBalance, setInitialBalance] = useState('');
     const [parentAccountId, setParentAccountId] = useState('');
-    const [isAggregate, setIsAggregate] = useState(false);
     const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
     const [isParentPickerVisible, setIsParentPickerVisible] = useState(false);
     const hasExistingAccounts = accounts.length > 0;
@@ -121,7 +118,6 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             if (!formDirtyRef.current.currency) setSelectedCurrency(existingAccount.currencyCode);
             if (!formDirtyRef.current.icon && existingAccount.icon) setSelectedIcon(existingAccount.icon);
             if (existingAccount.parentAccountId) setParentAccountId(existingAccount.parentAccountId);
-            if (existingAccount.currencyCode === 'AGG') setIsAggregate(true);
             if (isEditMode && currentBalanceData && !formDirtyRef.current.balance) {
                 setInitialBalance(currentBalanceData.balance.toString());
             }
@@ -167,7 +163,6 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             initialBalance,
             balanceDataPayload,
             parentAccountId || undefined,
-            isAggregate
         );
     };
 
@@ -212,8 +207,8 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         return parent ? parent.name : 'None';
     }, [parentAccountId, potentialParents]);
 
-    const effectiveIsParent = isParent || isAggregate;
-    const showCurrency = !effectiveIsParent;
+    const effectiveIsParent = isParent;
+    const showCurrency = true;
     const showBalance = !effectiveIsParent;
 
     return {
@@ -251,7 +246,5 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         isParent: effectiveIsParent,
         showCurrency,
         showBalance,
-        isAggregate,
-        setIsAggregate,
     };
 }

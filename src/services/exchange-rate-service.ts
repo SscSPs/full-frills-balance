@@ -36,40 +36,47 @@ export class ExchangeRateService {
 
         // Validate currency codes
         if (!fromCurrency || !toCurrency) {
-            throw new Error(`Invalid currency codes: from=${fromCurrency}, to=${toCurrency}`)
+            logger.warn(`Invalid currency codes: from=${fromCurrency}, to=${toCurrency}. Defaulting to 1.0`)
+            return 1.0
         }
 
-        // 1. Check Memory Cache
-        const memCached = this.memoryCache.get(fromCurrency)
-        if (memCached && Date.now() - memCached.timestamp < CACHE_DURATION_MS) {
-            if (memCached.rates[toCurrency]) {
-                return memCached.rates[toCurrency]
+        try {
+            // 1. Check Memory Cache
+            const memCached = this.memoryCache.get(fromCurrency)
+            if (memCached && Date.now() - memCached.timestamp < CACHE_DURATION_MS) {
+                if (memCached.rates[toCurrency]) {
+                    return memCached.rates[toCurrency]
+                }
             }
+
+            // 2. Check DB Cache via repository
+            const cached = await exchangeRateRepository.getCachedRate(fromCurrency, toCurrency)
+            if (cached && this.isRateFresh(cached.effectiveDate)) {
+                // Update memory cache for this base while we're at it
+                this.updateMemoryCache(fromCurrency, toCurrency, cached.rate)
+                return cached.rate
+            }
+
+            // 3. Fetch fresh rates for the entire base
+            const rates = await this.fetchRatesForBase(fromCurrency)
+
+            if (!rates[toCurrency]) {
+                logger.warn(`No rate found for ${fromCurrency} to ${toCurrency}. Defaulting to 1.0`)
+                return 1.0
+            }
+
+            // 4. Persist this specific rate to DB for offline use via repository
+            await exchangeRateRepository.cacheRate({
+                fromCurrency,
+                toCurrency,
+                rate: rates[toCurrency],
+            })
+
+            return rates[toCurrency]
+        } catch (error) {
+            logger.error(`Exchange rate failure (${fromCurrency} -> ${toCurrency}):`, error)
+            return 1.0 // Graceful fallback
         }
-
-        // 2. Check DB Cache via repository
-        const cached = await exchangeRateRepository.getCachedRate(fromCurrency, toCurrency)
-        if (cached && this.isRateFresh(cached.effectiveDate)) {
-            // Update memory cache for this base while we're at it
-            this.updateMemoryCache(fromCurrency, toCurrency, cached.rate)
-            return cached.rate
-        }
-
-        // 3. Fetch fresh rates for the entire base
-        const rates = await this.fetchRatesForBase(fromCurrency)
-
-        if (!rates[toCurrency]) {
-            throw new Error(`No rate found for ${fromCurrency} to ${toCurrency}`)
-        }
-
-        // 4. Persist this specific rate to DB for offline use via repository
-        await exchangeRateRepository.cacheRate({
-            fromCurrency,
-            toCurrency,
-            rate: rates[toCurrency],
-        })
-
-        return rates[toCurrency]
     }
 
     private updateMemoryCache(base: string, target: string, rate: number) {
