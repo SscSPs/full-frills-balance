@@ -1,5 +1,6 @@
 import { TransactionCardProps } from '@/src/components/common/TransactionCard';
 import { IconName } from '@/src/components/core';
+import { useUI } from '@/src/contexts/UIContext';
 import { useAccount, useAccountActions, useAccountBalance } from '@/src/features/accounts/hooks/useAccounts';
 import { useAccountTransactions } from '@/src/features/journal/hooks/useJournals';
 import { useDateRangeFilter } from '@/src/hooks/useDateRangeFilter';
@@ -53,6 +54,7 @@ export interface AccountDetailsViewModel {
 }
 
 export function useAccountDetailsViewModel(): AccountDetailsViewModel {
+    const { defaultCurrency } = useUI();
     const router = useRouter();
     const params = useLocalSearchParams();
     const accountId = params.accountId as string;
@@ -148,10 +150,12 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
     const typeLower = accountType.toLowerCase();
     const accountTypeColorKey = journalPresenter.getAccountColorKey(accountType);
 
+    const balanceCurrency = balanceData?.currencyCode || account?.currencyCode || defaultCurrency;
+
     const balanceText = balanceLoading
         ? '...'
         : account
-            ? CurrencyFormatter.format(balance, account.currencyCode)
+            ? CurrencyFormatter.format(balance, balanceCurrency)
             : '...';
 
     const secondaryBalances = useMemo(() => {

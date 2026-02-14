@@ -50,15 +50,20 @@ export function useWealthSummary(): WealthSummaryResult {
                     const targetCurrency = defaultCurrency || AppConfig.defaultCurrency
                     const precisionMap = new Map(currencies.map((currency) => [currency.code, currency.precision]))
 
-                    const balancesMap = balanceService.calculateBalancesFromTransactions(accounts, transactions, precisionMap)
+                    const balancesMap = await balanceService.calculateBalancesFromTransactions(
+                        accounts,
+                        transactions,
+                        precisionMap,
+                        targetCurrency
+                    )
                     const balances = Array.from(balancesMap.values())
-                    const wealth = await wealthService.calculateSummary(balances, targetCurrency)
+                    const summary = await wealthService.calculateSummary(balances, targetCurrency)
 
                     return {
                         accounts,
                         balances,
                         balancesMap,
-                        ...wealth,
+                        ...summary,
                     }
                 } catch (error) {
                     logger.error('Failed to calculate wealth summary:', error)

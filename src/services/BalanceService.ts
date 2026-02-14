@@ -2,6 +2,7 @@ import Account, { AccountType } from '@/src/data/models/Account';
 import Transaction, { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
+import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { AccountBalance } from '@/src/types/domain';
 import { accountingService } from '@/src/utils/accountingService';
 import { roundToPrecision } from '@/src/utils/money';
@@ -64,12 +65,13 @@ export class BalanceService {
     /**
      * Pure calculation for multiple accounts from a shared transaction list.
      */
-    calculateBalancesFromTransactions(
+    async calculateBalancesFromTransactions(
         accounts: Account[],
         transactions: Transaction[],
         precisionByCurrency: Map<string, number>,
+        targetDefaultCurrency: string = 'USD',
         asOfDate: number = Date.now()
-    ): Map<string, AccountBalance> {
+    ): Promise<Map<string, AccountBalance>> {
         const result = new Map<string, AccountBalance>();
         if (accounts.length === 0) return result;
 
@@ -80,14 +82,14 @@ export class BalanceService {
 
         const accountMap = new Map(accounts.map(account => [account.id, account]));
         const multiplierMap = new Map<string, { debit: number; credit: number }>();
-        const precisionMap = new Map<string, number>();
+        const accountPrecisionMap = new Map<string, number>();
 
         for (const account of accounts) {
             multiplierMap.set(account.id, {
                 debit: accountingService.getImpactMultiplier(account.accountType as AccountType, TransactionType.DEBIT),
                 credit: accountingService.getImpactMultiplier(account.accountType as AccountType, TransactionType.CREDIT),
             });
-            precisionMap.set(account.id, precisionByCurrency.get(account.currencyCode) ?? 2);
+            accountPrecisionMap.set(account.id, precisionByCurrency.get(account.currencyCode) ?? 2);
             result.set(account.id, {
                 accountId: account.id,
                 balance: 0,
@@ -104,7 +106,7 @@ export class BalanceService {
             const account = accountMap.get(tx.accountId);
             if (!account) continue;
 
-            const precision = precisionMap.get(account.id) ?? 2;
+            const precision = accountPrecisionMap.get(account.id) ?? 2;
             const multipliers = multiplierMap.get(account.id);
             const multiplier = tx.transactionType === TransactionType.DEBIT ? multipliers?.debit : multipliers?.credit;
             const impact = tx.amount * (multiplier ?? 0);
@@ -125,7 +127,7 @@ export class BalanceService {
         }
 
         // Aggregate child balances into parents
-        this.aggregateBalances(accounts, result, precisionMap);
+        await this.aggregateBalances(accounts, result, accountPrecisionMap, targetDefaultCurrency);
 
         return result;
     }
@@ -134,10 +136,11 @@ export class BalanceService {
      * Aggregates balances from child accounts to their parents.
      * Supports multi-level hierarchy.
      */
-    private aggregateBalances(
+    private async aggregateBalances(
         accounts: Account[],
         balancesMap: Map<string, AccountBalance>,
-        precisionMap: Map<string, number>
+        accountPrecisionMap: Map<string, number>,
+        targetDefaultCurrency: string = 'USD'
     ) {
         // 1. Build child-to-parent map
         const parentIdMap = new Map<string, string>();
@@ -150,45 +153,136 @@ export class BalanceService {
         // 2. Identify all accounts that are involved in a hierarchy
         // (Previously used involvedAccountIds here, now just propagate per account)
 
-        // 3. For each account, if it has a parent, propagate its balance UP the chain
-        // We do this by iterating through each account and climbing up its parent chain.
-        // This ensures multi-level aggregation without complex recursion.
+        // 3. Track sub-tree currencies for each parent
+        const subTreeCurrencies = new Map<string, Set<string>>();
+        accounts.forEach(a => {
+            const currencies = new Set<string>();
+            const balance = balancesMap.get(a.id);
+            if (balance && balance.transactionCount > 0) {
+                currencies.add(balance.currencyCode);
+            }
+            subTreeCurrencies.set(a.id, currencies);
+        });
+
+        // 4. Propagate currency lists up the chain first
         accounts.forEach(account => {
-            const originalBalance = balancesMap.get(account.id);
-            if (!originalBalance || originalBalance.balance === 0) return;
-
             let currentParentId = parentIdMap.get(account.id);
-            while (currentParentId) {
-                const parentBalance = balancesMap.get(currentParentId);
-                if (parentBalance) {
-                    const precision = precisionMap.get(currentParentId) ?? 2;
+            const myCurrencies = subTreeCurrencies.get(account.id);
+            if (!myCurrencies) return;
 
-                    if (parentBalance.currencyCode === originalBalance.currencyCode) {
-                        // Same currency: Aggregate directly
-                        parentBalance.balance = roundToPrecision(parentBalance.balance + originalBalance.balance, precision);
-                        parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + originalBalance.monthlyIncome, precision);
-                        parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + originalBalance.monthlyExpenses, precision);
-                    } else {
-                        // Different currency: Add to childBalances breakdown
-                        if (!parentBalance.childBalances) {
-                            parentBalance.childBalances = [];
-                        }
-                        const existing = parentBalance.childBalances.find(cb => cb.currencyCode === originalBalance.currencyCode);
-                        if (existing) {
-                            existing.balance = roundToPrecision(existing.balance + originalBalance.balance, precision);
-                            existing.transactionCount += originalBalance.transactionCount;
-                        } else {
-                            parentBalance.childBalances.push({
-                                currencyCode: originalBalance.currencyCode,
-                                balance: originalBalance.balance,
-                                transactionCount: originalBalance.transactionCount
-                            });
-                        }
-                    }
+            while (currentParentId) {
+                const parentCurrencies = subTreeCurrencies.get(currentParentId);
+                if (parentCurrencies) {
+                    myCurrencies.forEach(c => parentCurrencies.add(c));
                 }
                 currentParentId = parentIdMap.get(currentParentId);
             }
         });
+
+        // Aggregate balances using a leaf-to-root approach
+        // To avoid double-counting, we only add a balance to its IMMEDIATE parent.
+        // We iterate through levels starting from the deepest to ensure children are 
+        // fully aggregated before they are added to their parents.
+
+        // Build level map
+        const levelMap = new Map<string, number>();
+        const getLevel = (id: string): number => {
+            if (levelMap.has(id)) return levelMap.get(id)!;
+            const pid = parentIdMap.get(id);
+            const level = pid ? getLevel(pid) + 1 : 0;
+            levelMap.set(id, level);
+            return level;
+        };
+        accounts.forEach(a => getLevel(a.id));
+
+        // Sort accounts by depth (descending)
+        const sortedAccounts = [...accounts].sort((a, b) => getLevel(b.id) - getLevel(a.id));
+
+        for (const account of sortedAccounts) {
+            const myBalance = balancesMap.get(account.id);
+            if (!myBalance || (myBalance.balance === 0 && myBalance.transactionCount === 0)) continue;
+
+            const parentId = parentIdMap.get(account.id);
+            if (!parentId) continue; // Changed return to continue
+
+            const parentBalance = balancesMap.get(parentId);
+            if (parentBalance) {
+                const precision = accountPrecisionMap.get(parentId) ?? 2; // Changed to accountPrecisionMap and parentId
+                const pCurrencies = subTreeCurrencies.get(parentId);
+
+                // Determine common target currency for this parent
+                let targetCurrency = parentBalance.currencyCode;
+                if (pCurrencies && pCurrencies.size === 1) {
+                    // If all children are the same currency, adopt it (homogeneous subgroup)
+                    targetCurrency = Array.from(pCurrencies)[0];
+                } else if (pCurrencies && pCurrencies.size > 1) {
+                    // If children are mixed, use the user's preferred default currency
+                    targetCurrency = targetDefaultCurrency;
+                }
+                // FALLBACK: If parent has an explicit currency different from child, 
+                // but child is unique, should we respect parent?
+                // IvyWallet usually aggregates into the child's currency if it's a single-currency branch.
+                // However, if the parent account object HAS a currencyCode that matches targetDefaultCurrency,
+                // and children are different, we might want to convert.
+
+                // Let's refine: if parent's own currency is different from the unique child currency, 
+                // but matches the global target default, let's use the global target default.
+                if (pCurrencies && pCurrencies.size === 1) {
+                    const uniqueChildCurrency = Array.from(pCurrencies)[0];
+                    if (parentBalance.currencyCode !== uniqueChildCurrency && parentBalance.currencyCode === targetDefaultCurrency) {
+                        targetCurrency = targetDefaultCurrency;
+                    }
+                }
+
+                // Update parent's display currency
+                parentBalance.currencyCode = targetCurrency;
+
+                // IMPORTANT: We only add to IMMEDIATE parent to avoid geometric growth.
+                // The parent will eventually pass this total up to the grandparent.
+                if (targetCurrency === myBalance.currencyCode) {
+                    parentBalance.balance = roundToPrecision(parentBalance.balance + myBalance.balance, precision);
+                } else {
+                    // Convert child balance to parent target currency before adding
+                    const { convertedAmount } = await exchangeRateService.convert(
+                        myBalance.balance,
+                        myBalance.currencyCode,
+                        targetCurrency
+                    );
+                    parentBalance.balance = roundToPrecision(parentBalance.balance + convertedAmount, precision);
+
+                    if (!parentBalance.childBalances) parentBalance.childBalances = [];
+                    const existing = parentBalance.childBalances.find(cb => cb.currencyCode === myBalance.currencyCode);
+                    if (existing) {
+                        existing.balance = roundToPrecision(existing.balance + myBalance.balance, precision);
+                    } else {
+                        parentBalance.childBalances.push({
+                            currencyCode: myBalance.currencyCode,
+                            balance: myBalance.balance,
+                            transactionCount: myBalance.transactionCount
+                        });
+                    }
+                }
+
+                // Also convert monthly stats for consistent parent totals
+                if (targetCurrency === myBalance.currencyCode) {
+                    parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + myBalance.monthlyIncome, precision);
+                    parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + myBalance.monthlyExpenses, precision);
+                } else {
+                    const { convertedAmount: convIncome } = await exchangeRateService.convert(
+                        myBalance.monthlyIncome,
+                        myBalance.currencyCode,
+                        targetCurrency
+                    );
+                    const { convertedAmount: convExpenses } = await exchangeRateService.convert(
+                        myBalance.monthlyExpenses,
+                        myBalance.currencyCode,
+                        targetCurrency
+                    );
+                    parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + convIncome, precision);
+                    parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + convExpenses, precision);
+                }
+            }
+        }
     }
 
     /**
@@ -242,7 +336,7 @@ export class BalanceService {
     /**
      * Gets balances for all active accounts in batch.
      */
-    async getAccountBalances(asOfDate?: number): Promise<AccountBalance[]> {
+    async getAccountBalances(asOfDate?: number, targetDefaultCurrency: string = 'USD'): Promise<AccountBalance[]> {
         const accounts = await accountRepository.findAll();
         if (accounts.length === 0) return [];
 
@@ -264,7 +358,7 @@ export class BalanceService {
             precisionMap.set(account.id, 2); // Default, ideally we'd have currency precisions
         }
 
-        this.aggregateBalances(accounts, balancesMap, precisionMap);
+        this.aggregateBalances(accounts, balancesMap, precisionMap, targetDefaultCurrency);
 
         return Array.from(balancesMap.values());
     }

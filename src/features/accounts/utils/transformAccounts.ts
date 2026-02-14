@@ -34,6 +34,7 @@ interface BalancesByAccountId {
     balance: number
     monthlyIncome: number
     monthlyExpenses: number
+    currencyCode?: string
 }
 
 interface TransformOptions {
@@ -118,9 +119,11 @@ export function transformAccountsToSections(
             const monthlyIncome = balanceData?.monthlyIncome || 0
             const monthlyExpenses = balanceData?.monthlyExpenses || 0
 
-            const balanceText = isLoading ? '...' : CurrencyFormatter.format(balance, account.currencyCode)
-            const monthlyIncomeText = isLoading ? '...' : CurrencyFormatter.format(monthlyIncome, account.currencyCode)
-            const monthlyExpenseText = isLoading ? '...' : CurrencyFormatter.format(monthlyExpenses, account.currencyCode)
+            const currencyCode = balanceData?.currencyCode || account.currencyCode
+
+            const balanceText = isLoading ? '...' : CurrencyFormatter.format(balance, currencyCode)
+            const monthlyIncomeText = isLoading ? '...' : CurrencyFormatter.format(monthlyIncome, currencyCode)
+            const monthlyExpenseText = isLoading ? '...' : CurrencyFormatter.format(monthlyExpenses, currencyCode)
 
             const isExpanded = expandedAccountIds.has(account.id)
             const children = typeAccounts.filter(a => a.parentAccountId === account.id)

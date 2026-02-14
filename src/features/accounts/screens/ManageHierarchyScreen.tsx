@@ -1,6 +1,6 @@
 import { AppButton, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Size, Spacing } from '@/src/constants';
+import { Size, Spacing, withOpacity } from '@/src/constants';
 import { AccountType } from '@/src/data/models/Account';
 import { useAccountActions, useAccountBalances, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -81,10 +81,18 @@ export default function ManageHierarchyScreen() {
         const canBeParent = (balance?.transactionCount || 0) === 0;
         const isExpandable = hasChildren || canBeParent;
         const isSelected = selectedAccountId === account.id;
+        const accountTypeKey = account.accountType.toLowerCase() as keyof typeof theme;
+        const categoryColor = (theme as any)[accountTypeKey] || theme.text;
 
         return (
             <View key={account.id}>
-                <View style={[styles.accountRowContainer, isSelected && { backgroundColor: theme.surfaceSecondary }]}>
+                <View style={[
+                    styles.accountRowContainer,
+                    isSelected && { backgroundColor: theme.surfaceSecondary },
+                    hasChildren && {
+                        backgroundColor: withOpacity(categoryColor, 0.1),
+                    }
+                ]}>
                     {/* Simplified Indentation Guide */}
                     <View style={[styles.indentationGuide, { width: level * 20 }]}>
                         {level > 0 && Array.from({ length: level }).map((_, i) => (
@@ -92,7 +100,7 @@ export default function ManageHierarchyScreen() {
                                 key={i}
                                 style={[
                                     styles.verticalGuide,
-                                    { left: i * 20 + 10, borderLeftColor: theme.divider }
+                                    { left: i * 20 + 10, borderLeftColor: theme.divider, opacity: i === level - 1 ? 1 : 0.3 }
                                 ]}
                             />
                         ))}
@@ -103,6 +111,15 @@ export default function ManageHierarchyScreen() {
                         onPress={() => isExpandable && toggleExpand(account.id)}
                         disabled={!isExpandable}
                     >
+                        {hasChildren && (
+                            <View style={{
+                                width: 3,
+                                height: 32,
+                                backgroundColor: categoryColor,
+                                marginRight: 4,
+                                borderRadius: 2,
+                            }} />
+                        )}
                         {isExpandable ? (
                             <TouchableOpacity
                                 onPress={() => toggleExpand(account.id)}
@@ -122,7 +139,7 @@ export default function ManageHierarchyScreen() {
                                 name={account.icon}
                                 fallbackIcon="wallet"
                                 size={Size.iconSm}
-                                color={!hasChildren && !account.parentAccountId ? theme.textTertiary : theme.textSecondary}
+                                color={categoryColor}
                             />
                         </View>
                         <View style={styles.accountText}>
@@ -130,7 +147,7 @@ export default function ManageHierarchyScreen() {
                                 <AppText
                                     variant="body"
                                     weight={hasChildren ? "bold" : "regular"}
-                                    color={!hasChildren && !account.parentAccountId ? "secondary" : "primary"}
+                                    style={{ color: theme.text }}
                                 >
                                     {account.name}
                                 </AppText>
@@ -263,7 +280,15 @@ export default function ManageHierarchyScreen() {
                             <TouchableOpacity
                                 activeOpacity={0.7}
                                 onPress={() => toggleCategory(category)}
-                                style={[styles.categoryHeader, { backgroundColor: theme.surfaceSecondary }]}
+                                style={[
+                                    styles.categoryHeader,
+                                    {
+                                        backgroundColor: theme.surface,
+                                        borderTopWidth: category === AccountType.ASSET ? 0 : 1,
+                                        borderTopColor: theme.divider,
+                                        marginTop: category === AccountType.ASSET ? 0 : Spacing.lg
+                                    }
+                                ]}
                             >
                                 <AppText variant="caption" weight="bold" color="secondary" style={styles.categoryTitle}>
                                     {category}
@@ -482,10 +507,8 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.md,
     },
     categoryHeader: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.xs,
-        marginBottom: Spacing.xs,
-        borderRadius: 4,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',

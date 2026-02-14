@@ -1,9 +1,9 @@
 /**
  * Reactive Data Hooks for Accounts
  */
+import { Animation } from '@/src/constants'
+import { useUI } from '@/src/contexts/UIContext'
 import Account, { AccountType } from '@/src/data/models/Account'
-import Currency from '@/src/data/models/Currency'
-import Transaction from '@/src/data/models/Transaction'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository'
 import { journalRepository } from '@/src/data/repositories/JournalRepository'
@@ -12,8 +12,12 @@ import { accountService } from '@/src/features/accounts/services/AccountService'
 import { useObservable } from '@/src/hooks/useObservable'
 import { balanceService } from '@/src/services/BalanceService'
 import { AccountBalance } from '@/src/types/domain'
-import { useCallback, useMemo } from 'react'
-import { combineLatest, from, map, of, switchMap } from 'rxjs'
+import { useCallback } from 'react'
+import { combineLatest, debounceTime, from, Observable, of, switchMap } from 'rxjs'
+
+interface BalancesByAccountIdMap {
+    [accountId: string]: AccountBalance
+}
 
 /**
  * Hook to reactively get all accounts
@@ -57,6 +61,7 @@ export function useAccount(accountId: string | null) {
  * Calculates sum in-memory for instant consistency.
  */
 export function useAccountBalance(accountId: string | null) {
+    const { defaultCurrency } = useUI()
     const { data: balanceData, isLoading, version, error } = useObservable(
         () => {
             if (!accountId) return of(null)
@@ -82,11 +87,12 @@ export function useAccountBalance(accountId: string | null) {
 
                             // 2. Observe all transactions for this entire sub-tree
                             return transactionRepository.observeByAccounts(allAccountIds, 1000).pipe(
-                                map(transactions => {
-                                    const balances = balanceService.calculateBalancesFromTransactions(
+                                switchMap(async transactions => { // Changed map to switchMap and made callback async
+                                    const balances = await balanceService.calculateBalancesFromTransactions(
                                         allAccounts,
                                         transactions,
-                                        precisionMap
+                                        precisionMap,
+                                        defaultCurrency
                                     );
                                     return balances.get(account.id) || null;
                                 })
@@ -96,7 +102,7 @@ export function useAccountBalance(accountId: string | null) {
                 })
             )
         },
-        [accountId],
+        [accountId, defaultCurrency],
         null as AccountBalance | null
     )
 
@@ -105,43 +111,45 @@ export function useAccountBalance(accountId: string | null) {
 
 /**
  * Hook to reactively compute balances for a list of accounts.
- * Uses a single transaction subscription to avoid N+1 observers.
+ * Supports async balance aggregation with currency conversion.
  */
 export function useAccountBalances(accounts: Account[]) {
-    const { data: currencies, isLoading: currenciesLoading, error: currenciesError } = useObservable(
-        () => currencyRepository.observeAll(),
-        [],
-        [] as Currency[]
-    )
+    const { defaultCurrency } = useUI()
 
-    const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useObservable(
-        () => combineLatest([
-            transactionRepository.observeActiveWithColumns([
+    const { data: balancesByAccountId, isLoading, version, error } = useObservable<Map<string, AccountBalance>>(
+        () => {
+            if (accounts.length === 0) {
+                return of(new Map<string, AccountBalance>())
+            }
+
+            const currencies$ = currencyRepository.observeAll()
+            const transactions$ = transactionRepository.observeActiveWithColumns([
                 'amount',
                 'transaction_type',
-                'transaction_date',
                 'account_id',
-                'deleted_at',
-            ]),
-            journalRepository.observeStatusMeta()
-        ]).pipe(map(([txs]) => txs)),
-        [],
-        [] as Transaction[]
+                'transaction_date',
+                'currency_code',
+                'exchange_rate'
+            ])
+
+            return combineLatest([currencies$, transactions$]).pipe(
+                debounceTime(Animation.dataRefreshDebounce),
+                switchMap(([currencies, transactions]): Observable<Map<string, AccountBalance>> => from((async () => {
+                    const precisionMap = new Map(currencies.map((currency) => [currency.code, currency.precision]))
+                    return await balanceService.calculateBalancesFromTransactions(
+                        accounts,
+                        transactions,
+                        precisionMap,
+                        defaultCurrency
+                    )
+                })()))
+            )
+        },
+        [accounts, defaultCurrency],
+        new Map<string, AccountBalance>()
     )
 
-    const balancesByAccountId = useMemo(() => {
-        if (!accounts.length) return new Map<string, AccountBalance>()
-        const precisionMap = new Map(currencies.map((currency) => [currency.code, currency.precision]))
-        return balanceService.calculateBalancesFromTransactions(accounts, transactions, precisionMap)
-    }, [accounts, currencies, transactions])
-
-    const error = currenciesError ?? transactionsError
-
-    return {
-        balancesByAccountId,
-        isLoading: currenciesLoading || transactionsLoading,
-        error
-    }
+    return { balancesByAccountId, isLoading, version, error }
 }
 
 /**
