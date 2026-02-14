@@ -17,6 +17,7 @@ export default function ManageHierarchyScreen() {
 
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
     const [expandedAccountIds, setExpandedAccountIds] = useState<Set<string>>(new Set());
+    const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
     const toggleExpand = useCallback((accountId: string) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -24,6 +25,16 @@ export default function ManageHierarchyScreen() {
             const next = new Set(prev);
             if (next.has(accountId)) next.delete(accountId);
             else next.add(accountId);
+            return next;
+        });
+    }, []);
+
+    const toggleCategory = useCallback((category: string) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setCollapsedCategories(prev => {
+            const next = new Set(prev);
+            if (next.has(category)) next.delete(category);
+            else next.add(category);
             return next;
         });
     }, []);
@@ -68,58 +79,70 @@ export default function ManageHierarchyScreen() {
         const hasChildren = children.length > 0;
         const isExpanded = expandedAccountIds.has(account.id);
         const canBeParent = (balance?.transactionCount || 0) === 0;
+        const isExpandable = hasChildren || canBeParent;
         const isSelected = selectedAccountId === account.id;
 
         return (
             <View key={account.id}>
                 <View style={[styles.accountRowContainer, isSelected && { backgroundColor: theme.surfaceSecondary }]}>
-                    {/* Visual Spacing and Connectors */}
-                    <View style={[styles.connectorsContainer, { width: level === 0 ? 8 : (level * 32) }]}>
-                        {level > 0 && parentPaths.map((hasNeighbor, i) => (
+                    {/* Simplified Indentation Guide */}
+                    <View style={[styles.indentationGuide, { width: level * 20 }]}>
+                        {level > 0 && Array.from({ length: level }).map((_, i) => (
                             <View
                                 key={i}
                                 style={[
-                                    styles.connectorColumn,
-                                    { borderLeftColor: hasNeighbor ? theme.divider : 'transparent' }
+                                    styles.verticalGuide,
+                                    { left: i * 20 + 10, borderLeftColor: theme.divider }
                                 ]}
                             />
                         ))}
-                        {level > 0 && (
-                            <View style={styles.leafConnectorPlaceholder}>
-                                <View style={[styles.connectorLineVertical, { backgroundColor: theme.divider, height: isLast ? '50%' : '100%' }]} />
-                                <View style={[styles.connectorLineHorizontal, { backgroundColor: theme.divider }]} />
-                            </View>
-                        )}
                     </View>
 
                     <TouchableOpacity
                         style={styles.accountRowContent}
-                        onPress={() => hasChildren && toggleExpand(account.id)}
-                        disabled={!hasChildren}
+                        onPress={() => isExpandable && toggleExpand(account.id)}
+                        disabled={!isExpandable}
                     >
+                        {isExpandable ? (
+                            <TouchableOpacity
+                                onPress={() => toggleExpand(account.id)}
+                                style={styles.expandButton}
+                            >
+                                <AppIcon
+                                    name={isExpanded ? "chevronDown" : "chevronRight"}
+                                    size={Size.iconXs}
+                                    color={theme.textTertiary}
+                                />
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={styles.expandPlaceholder} />
+                        )}
                         <View style={styles.iconWrapper}>
                             <AppIcon
-                                name={(account.icon || 'wallet') as any}
+                                name={account.icon}
+                                fallbackIcon="wallet"
                                 size={Size.iconSm}
                                 color={!hasChildren && !account.parentAccountId ? theme.textTertiary : theme.textSecondary}
                             />
                         </View>
                         <View style={styles.accountText}>
-                            <AppText
-                                variant="body"
-                                weight={hasChildren ? "bold" : "regular"}
-                                color={!hasChildren && !account.parentAccountId ? "secondary" : "primary"}
-                            >
-                                {account.name}
-                            </AppText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <AppText
+                                    variant="body"
+                                    weight={hasChildren ? "bold" : "regular"}
+                                    color={!hasChildren && !account.parentAccountId ? "secondary" : "primary"}
+                                >
+                                    {account.name}
+                                </AppText>
+                                {!canBeParent && (
+                                    <View style={{ marginTop: 2 }}>
+                                        <AppIcon name="receipt" size={14} color={theme.textTertiary} />
+                                    </View>
+                                )}
+                            </View>
                         </View>
 
                         <View style={styles.rowActions}>
-                            {!canBeParent && (
-                                <View style={styles.statusBadge}>
-                                    <AppText variant="caption" color="warning" style={{ fontSize: 10 }}>DATA</AppText>
-                                </View>
-                            )}
 
                             <TouchableOpacity
                                 style={[styles.actionIconButton, { backgroundColor: theme.primary + '10' }]}
@@ -129,36 +152,14 @@ export default function ManageHierarchyScreen() {
                                 <AppText variant="caption" color="primary" weight="bold">MOVE</AppText>
                             </TouchableOpacity>
 
+
                             {account.parentAccountId && (
                                 <TouchableOpacity
                                     style={[styles.actionIconButton, { backgroundColor: theme.error + '10' }]}
                                     onPress={() => handleAssignParent(account.id, null)}
+                                    accessibilityLabel="Move to top level"
                                 >
-                                    <AppIcon name="close" size={Size.iconXs} color={theme.error} />
-                                    <AppText variant="caption" color="error" weight="bold">TOP</AppText>
-                                </TouchableOpacity>
-                            )}
-
-                            {canBeParent && (
-                                <TouchableOpacity
-                                    style={[styles.actionIconButton, { backgroundColor: theme.success + '10' }]}
-                                    onPress={() => setSelectedAccountId(account.id)}
-                                >
-                                    <AppIcon name="add" size={Size.iconXs} color={theme.success} />
-                                    <AppText variant="caption" color="success" weight="bold">ADD</AppText>
-                                </TouchableOpacity>
-                            )}
-
-                            {hasChildren && (
-                                <TouchableOpacity
-                                    onPress={() => toggleExpand(account.id)}
-                                    style={styles.expandButton}
-                                >
-                                    <AppIcon
-                                        name={isExpanded ? "chevronDown" : "chevronRight"}
-                                        size={Size.iconXs}
-                                        color={theme.textTertiary}
-                                    />
+                                    <AppIcon name="eject" size={Size.iconXs} color={theme.error} />
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -166,8 +167,39 @@ export default function ManageHierarchyScreen() {
                 </View>
 
                 {
-                    isExpanded && hasChildren && (
+                    isExpanded && (hasChildren || canBeParent) && (
                         <View>
+                            {/* Inline Add Row with Indentation */}
+                            {canBeParent && (
+                                <View style={styles.accountRowContainer}>
+                                    <View style={[styles.indentationGuide, { width: (level + 1) * 20 }]}>
+                                        {Array.from({ length: level + 1 }).map((_, i) => (
+                                            <View
+                                                key={i}
+                                                style={[
+                                                    styles.verticalGuide,
+                                                    { left: i * 20 + 10, borderLeftColor: theme.divider }
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                    <TouchableOpacity
+                                        style={styles.accountRowContent}
+                                        onPress={() => setSelectedAccountId(account.id)}
+                                    >
+                                        <View style={styles.expandPlaceholder} />
+                                        <View style={styles.iconWrapper}>
+                                            <AppIcon name="plusCircle" size={Size.iconXs} color={theme.success} />
+                                        </View>
+                                        <View style={styles.accountText}>
+                                            <AppText variant="body" color="success" weight="bold">
+                                                Add child account...
+                                            </AppText>
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
                             {children.map((child, index) =>
                                 renderAccountItem(
                                     child,
@@ -224,20 +256,30 @@ export default function ManageHierarchyScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {Object.entries(visibleRootAccountsByCategory).map(([category, catAccounts]) => (
-                    catAccounts.length > 0 && (
+                {Object.entries(visibleRootAccountsByCategory).map(([category, catAccounts]) => {
+                    const isCollapsed = collapsedCategories.has(category);
+                    return catAccounts.length > 0 && (
                         <View key={category} style={styles.categorySection}>
-                            <View style={[styles.categoryHeader, { backgroundColor: theme.surfaceSecondary }]}>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => toggleCategory(category)}
+                                style={[styles.categoryHeader, { backgroundColor: theme.surfaceSecondary }]}
+                            >
                                 <AppText variant="caption" weight="bold" color="secondary" style={styles.categoryTitle}>
                                     {category}
                                 </AppText>
-                            </View>
-                            {catAccounts.map((account, index) =>
+                                <AppIcon
+                                    name={isCollapsed ? "chevronRight" : "chevronDown"}
+                                    size={Size.iconXs}
+                                    color={theme.textTertiary}
+                                />
+                            </TouchableOpacity>
+                            {!isCollapsed && catAccounts.map((account, index) =>
                                 renderAccountItem(account, 0, index === catAccounts.length - 1, [])
                             )}
                         </View>
-                    )
-                ))}
+                    );
+                })}
             </ScrollView>
 
             <Modal
@@ -277,7 +319,12 @@ export default function ManageHierarchyScreen() {
                                                 style={[styles.destinationItem, { borderBottomColor: theme.divider }]}
                                                 onPress={() => selectedAccountId && handleAddChild(selectedAccountId, potentialChild.id)}
                                             >
-                                                <AppIcon name={(potentialChild.icon || 'wallet') as any} size={Size.iconSm} color={theme.textSecondary} />
+                                                <AppIcon
+                                                    name={potentialChild.icon}
+                                                    fallbackIcon="wallet"
+                                                    size={Size.iconSm}
+                                                    color={theme.textSecondary}
+                                                />
                                                 <View style={{ flex: 1 }}>
                                                     <AppText variant="body">{potentialChild.name}</AppText>
                                                     {(balancesByAccountId.get(potentialChild.id)?.transactionCount || 0) > 0 && (
@@ -308,7 +355,12 @@ export default function ManageHierarchyScreen() {
                                             style={[styles.destinationItem, { borderBottomColor: theme.divider }]}
                                             onPress={() => selectedAccountId && handleAssignParent(selectedAccountId, parent.id)}
                                         >
-                                            <AppIcon name={(parent.icon || 'wallet') as any} size={Size.iconSm} color={theme.textSecondary} />
+                                            <AppIcon
+                                                name={parent.icon}
+                                                fallbackIcon="wallet"
+                                                size={Size.iconSm}
+                                                color={theme.textSecondary}
+                                            />
                                             <AppText variant="body" style={{ flex: 1 }}>{parent.name}</AppText>
                                             {accounts.find(a => a.id === selectedAccountId)?.parentAccountId === parent.id && (
                                                 <AppIcon name="check" size={Size.iconSm} color={theme.success} />
@@ -349,34 +401,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'stretch',
     },
-    connectorsContainer: {
+    indentationGuide: {
         flexDirection: 'row',
         height: '100%',
+        position: 'relative',
     },
-    connectorColumn: {
-        width: 32,
-        height: '100%',
-        borderLeftWidth: 1,
-        marginLeft: 15, // Center line in 32px column
-    },
-    leafConnectorPlaceholder: {
-        width: 32,
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    connectorLineVertical: {
+    verticalGuide: {
         position: 'absolute',
-        left: 15,
         top: 0,
+        bottom: 0,
         width: 1,
-    },
-    connectorLineHorizontal: {
-        position: 'absolute',
-        left: 15,
-        top: '50%',
-        width: 12,
-        height: 1,
+        borderLeftWidth: 1,
+        opacity: 0.5,
     },
     accountRowContent: {
         flex: 1,
@@ -384,12 +420,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: Spacing.md,
         paddingRight: Spacing.md,
-        gap: Spacing.sm,
+        gap: 0,
     },
     iconWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
         width: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     expandIcon: {
         width: 12,
@@ -417,8 +453,13 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     expandButton: {
-        padding: 4,
-        marginLeft: 4,
+        width: 32,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    expandPlaceholder: {
+        width: 32,
     },
     modalOverlay: {
         flex: 1,
@@ -445,10 +486,14 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.xs,
         marginBottom: Spacing.xs,
         borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     categoryTitle: {
         letterSpacing: 1.5,
         textTransform: 'uppercase',
+        flex: 1,
     },
     destinationItem: {
         flexDirection: 'row',
