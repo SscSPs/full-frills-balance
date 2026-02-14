@@ -1,4 +1,4 @@
-import { AppCard, AppText, IvyIcon } from '@/src/components/core';
+import { AppCard, AppIcon, AppText, IvyIcon } from '@/src/components/core';
 import { Shape, Size, Spacing, Typography } from '@/src/constants';
 import { AccountCardViewModel } from '@/src/features/accounts/utils/transformAccounts';
 import React from 'react';
@@ -7,6 +7,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 interface AccountCardProps {
     account: AccountCardViewModel;
     onPress: () => void;
+    onCollapse?: () => void;
     dividerColor: string;
     surfaceColor: string;
 }
@@ -14,6 +15,7 @@ interface AccountCardProps {
 export function AccountCard({
     account,
     onPress,
+    onCollapse,
     dividerColor,
     surfaceColor,
 }: AccountCardProps) {
@@ -48,7 +50,21 @@ export function AccountCard({
                             {account.name}
                         </AppText>
                         {account.hasChildren && (
-                            <IvyIcon name="folder" color={account.textColor} size={16} />
+                            <View style={styles.headerRight}>
+                                {account.isExpanded ? (
+                                    <TouchableOpacity
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            onCollapse?.();
+                                        }}
+                                        style={styles.collapseButton}
+                                    >
+                                        <AppIcon name="chevronUp" color={account.textColor} size={20} />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <IvyIcon name="folder" color={account.textColor} size={16} />
+                                )}
+                            </View>
                         )}
                     </View>
 
@@ -124,6 +140,14 @@ const styles = StyleSheet.create({
     accountName: {
         fontSize: Typography.sizes.lg,
         flex: 1,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    collapseButton: {
+        padding: Spacing.xs,
+        marginRight: -Spacing.xs,
     },
     balanceSection: {
         alignItems: 'center',

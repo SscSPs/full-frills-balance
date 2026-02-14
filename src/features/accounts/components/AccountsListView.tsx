@@ -14,8 +14,10 @@ export function AccountsListView({
     onRefresh,
     onToggleSection,
     onAccountPress,
+    onCollapseAccount,
     onCreateAccount,
     onReorderPress,
+    onManageHierarchy,
     onTogglePrivacy,
     isPrivacyMode,
 }: AccountsListViewModel) {
@@ -70,6 +72,7 @@ export function AccountsListView({
                             <AccountCard
                                 account={item}
                                 onPress={() => onAccountPress(item.id)}
+                                onCollapse={() => onCollapseAccount(item.id)}
                                 dividerColor={theme.divider}
                                 surfaceColor={theme.surface}
                             />
@@ -99,6 +102,14 @@ export function AccountsListView({
                                         accessibilityRole="button"
                                     >
                                         <AppIcon name="reorder" size={Size.iconSm} color={theme.text} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={onManageHierarchy}
+                                        style={[styles.reorderIconButton, { backgroundColor: theme.surfaceSecondary }]}
+                                        accessibilityLabel="Manage hierarchy"
+                                        accessibilityRole="button"
+                                    >
+                                        <AppIcon name="hierarchy" size={Size.iconSm} color={theme.text} />
                                     </TouchableOpacity>
                                 </View>
                             </View>

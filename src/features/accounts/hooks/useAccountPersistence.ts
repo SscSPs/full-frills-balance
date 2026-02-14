@@ -15,7 +15,8 @@ interface PersistenceResult {
         icon: string,
         initialBalance?: string,
         currentBalanceData?: { balance: number },
-        parentAccountId?: string
+        parentAccountId?: string,
+        isAggregate?: boolean
     ) => Promise<void>;
     handleCancel: () => void;
 }
@@ -45,7 +46,8 @@ export function useAccountPersistence(
         icon: string,
         initialBalance?: string,
         currentBalanceData?: { balance: number },
-        parentAccountId?: string
+        parentAccountId?: string,
+        isAggregate?: boolean
     ) => {
         if (isSubmitting.current) return;
         isSubmitting.current = true;
@@ -59,7 +61,8 @@ export function useAccountPersistence(
                     name: sanitizedName,
                     accountType: accountType,
                     icon: icon,
-                    parentAccountId: parentAccountId
+                    parentAccountId: parentAccountId,
+                    currencyCode: isAggregate ? 'AGG' : undefined
                 });
 
                 // Check for balance adjustment
@@ -82,8 +85,8 @@ export function useAccountPersistence(
                 await createAccount({
                     name: sanitizedName,
                     accountType: accountType,
-                    currencyCode: currencyCode,
-                    initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
+                    currencyCode: isAggregate ? 'AGG' : currencyCode,
+                    initialBalance: (initialBalance && !isAggregate) ? parseFloat(initialBalance) : 0,
                     icon: icon,
                     parentAccountId: parentAccountId
                 });

@@ -29,6 +29,7 @@ export interface AccountBalance {
     icon?: string;
     monthlyIncome: number;
     monthlyExpenses: number;
+    childBalances?: { currencyCode: string; balance: number; transactionCount: number }[];
 }
 
 /**

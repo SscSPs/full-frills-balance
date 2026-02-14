@@ -4,6 +4,7 @@ import { AuditAction } from '@/src/data/models/AuditLog';
 import { TransactionType } from '@/src/data/models/Transaction';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { currencyRepository } from '@/src/data/repositories/CurrencyRepository';
+import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { journalService } from '@/src/features/journal/services/JournalService';
 import { analytics } from '@/src/services/analytics-service';
 import { auditService } from '@/src/services/audit-service';
@@ -21,7 +22,7 @@ export interface CreateAccountData {
     icon?: string;
     initialBalance?: number;
     orderNum?: number;
-    parentAccountId?: string;
+    parentAccountId?: string | null;
 }
 
 export class AccountService {
@@ -41,6 +42,11 @@ export class AccountService {
             if (parent.accountType !== data.accountType) {
                 throw new Error('Parent account must be of the same type');
             }
+            // Constraint: Parent account must have no transactions
+            const hasTransactions = await transactionRepository.hasTransactions(data.parentAccountId);
+            if (hasTransactions) {
+                throw new Error(`Account "${parent.name}" has transactions and cannot be used as a parent.`);
+            }
         }
 
         // 1. Create account
@@ -51,7 +57,7 @@ export class AccountService {
             description: data.description,
             icon: data.icon,
             orderNum: orderNum,
-            parentAccountId: data.parentAccountId
+            parentAccountId: data.parentAccountId || undefined
         });
 
         // 2. Audit creation
@@ -136,17 +142,30 @@ export class AccountService {
             if (parent.accountType !== newType) {
                 throw new Error('Parent account must be of the same type');
             }
+
+            // Constraint: Parent account must have no transactions
+            const hasTransactions = await transactionRepository.hasTransactions(updates.parentAccountId);
+            if (hasTransactions) {
+                throw new Error(`Account "${parent.name}" has transactions and cannot be used as a parent.`);
+            }
         }
 
-        const updatedAccount = await accountRepository.update(account, {
-            name: updates.name,
-            accountType: updates.accountType as AccountType,
-            currencyCode: updates.currencyCode,
-            description: updates.description,
-            icon: updates.icon,
-            orderNum: updates.orderNum,
-            parentAccountId: updates.parentAccountId
-        });
+        // Build update object selectively to avoid overwriting existing fields with undefined
+        const updatePayload: any = {};
+        if (updates.name !== undefined) updatePayload.name = updates.name;
+        if (updates.accountType !== undefined) updatePayload.accountType = updates.accountType as AccountType;
+        if (updates.currencyCode !== undefined) updatePayload.currencyCode = updates.currencyCode;
+        if (updates.description !== undefined) updatePayload.description = updates.description;
+        if (updates.icon !== undefined) updatePayload.icon = updates.icon;
+        if (updates.orderNum !== undefined) updatePayload.orderNum = updates.orderNum;
+
+        // Handle parentAccountId specifically as it can be null (to clear parent)
+        if (updates.parentAccountId !== undefined) {
+            updatePayload.parentAccountId = updates.parentAccountId;
+        }
+
+        console.log(`[AccountService] updateAccount for ${accountId}:`, updatePayload);
+        const updatedAccount = await accountRepository.update(account, updatePayload);
 
         await auditService.log({
             entityType: 'account',

@@ -1,7 +1,7 @@
 import { useUI } from '@/src/contexts/UIContext'
+import { transformAccountsToSections } from '@/src/features/accounts/utils/transformAccounts'
 import { useWealthSummary } from '@/src/features/wealth'
 import { useTheme } from '@/src/hooks/use-theme'
-import { transformAccountsToSections } from '@/src/features/accounts/utils/transformAccounts'
 import { useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -20,8 +20,10 @@ export interface AccountsListViewModel {
     onRefresh: () => void
     onToggleSection: (title: string) => void
     onAccountPress: (accountId: string) => void
+    onCollapseAccount: (accountId: string) => void
     onCreateAccount: () => void
     onReorderPress: () => void
+    onManageHierarchy: () => void
     onTogglePrivacy: () => void
     isPrivacyMode: boolean
 }
@@ -44,6 +46,7 @@ export function useAccountsListViewModel(): AccountsListViewModel {
     const togglePrivacyMode = useCallback(() => setPrivacyMode(!isPrivacyMode), [isPrivacyMode, setPrivacyMode])
 
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['Equity']))
+    const [expandedAccountIds, setExpandedAccountIds] = useState<Set<string>>(new Set())
 
     const onToggleSection = useCallback((title: string) => {
         setCollapsedSections(prev => {
@@ -55,8 +58,32 @@ export function useAccountsListViewModel(): AccountsListViewModel {
     }, [])
 
     const onAccountPress = useCallback((accountId: string) => {
-        router.push(`/account-details?accountId=${accountId}`)
-    }, [router])
+        const account = accounts.find(a => a.id === accountId)
+        if (!account) return
+
+        const hasChildren = accounts.some(a => a.parentAccountId === accountId)
+        const isExpanded = expandedAccountIds.has(accountId)
+
+        if (hasChildren && !isExpanded) {
+            // Expanding first if it has children and is collapsed
+            setExpandedAccountIds(prev => {
+                const next = new Set(prev)
+                next.add(accountId)
+                return next
+            })
+        } else {
+            // Navigation to details if no children OR already expanded
+            router.push(`/account-details?accountId=${accountId}`)
+        }
+    }, [router, accounts, expandedAccountIds])
+
+    const onCollapseAccount = useCallback((accountId: string) => {
+        setExpandedAccountIds(prev => {
+            const next = new Set(prev)
+            next.delete(accountId)
+            return next
+        })
+    }, [])
 
     const onCreateAccount = useCallback(() => {
         router.push('/account-creation')
@@ -70,6 +97,10 @@ export function useAccountsListViewModel(): AccountsListViewModel {
         togglePrivacyMode()
     }, [togglePrivacyMode])
 
+    const onManageHierarchy = useCallback(() => {
+        router.push('/manage-hierarchy')
+    }, [router])
+
     const onRefresh = useCallback(() => {
         // Refresh is handled reactively by useWealthSummary observables
     }, []);
@@ -82,6 +113,7 @@ export function useAccountsListViewModel(): AccountsListViewModel {
             isPrivacyMode,
             isLoading,
             collapsedSections,
+            expandedAccountIds,
             theme,
             totalAssets,
             totalLiabilities,
@@ -97,6 +129,7 @@ export function useAccountsListViewModel(): AccountsListViewModel {
         isPrivacyMode,
         isLoading,
         collapsedSections,
+        expandedAccountIds,
         theme,
         totalAssets,
         totalLiabilities,
@@ -111,8 +144,10 @@ export function useAccountsListViewModel(): AccountsListViewModel {
         onRefresh,
         onToggleSection,
         onAccountPress,
+        onCollapseAccount,
         onCreateAccount,
         onReorderPress,
+        onManageHierarchy,
         onTogglePrivacy,
         isPrivacyMode,
     }

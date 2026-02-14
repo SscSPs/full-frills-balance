@@ -8,9 +8,10 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 interface AccountTypeSelectorProps {
     value: AccountType;
     onChange: (type: AccountType) => void;
+    disabled?: boolean;
 }
 
-export const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({ value, onChange }) => {
+export const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({ value, onChange, disabled }) => {
     const { theme } = useTheme();
 
     const accountTypes = [
@@ -33,10 +34,11 @@ export const AccountTypeSelector: React.FC<AccountTypeSelectorProps> = ({ value,
                         {
                             borderColor: theme.border,
                             backgroundColor: value === type.key ? theme.primary : theme.surface,
-                            opacity: Opacity.solid,
+                            opacity: disabled ? Opacity.medium : Opacity.solid,
                         },
                     ]}
                     onPress={() => onChange(type.key as AccountType)}
+                    disabled={disabled}
                 >
                     <AppText
                         variant="body"

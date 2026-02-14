@@ -1,5 +1,4 @@
 import { useTheme } from '@/src/hooks/use-theme';
-import { logger } from '@/src/utils/logger';
 import {
     AlertCircle,
     AlertTriangle,
@@ -103,6 +102,7 @@ export const IconMap = {
     bus: Bus,
     film: Film,
     shoppingBag: ShoppingBag,
+    hierarchy: FolderOpen,
 } as const;
 
 export type IconName = keyof typeof IconMap;
@@ -137,7 +137,7 @@ export const AppIcon = ({
     const IconComponent = IconMap[name];
 
     if (!IconComponent) {
-        logger.warn(`Icon "${name}" not found in IconMap`);
+        // logger.warn(`Icon "${name}" not found in IconMap`);
         return null;
     }
 

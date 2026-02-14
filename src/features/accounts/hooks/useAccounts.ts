@@ -65,23 +65,34 @@ export function useAccountBalance(accountId: string | null) {
                 switchMap(account => {
                     if (!account) return of(null)
 
+                    // 1. Get descendant IDs and their account objects (needed for currencies/precisions)
+                    const descendants$ = from(accountRepository.getDescendantIds(account.id)).pipe(
+                        switchMap(ids => ids.length > 0 ? accountRepository.observeByIds(ids) : of([] as Account[]))
+                    );
+
                     return combineLatest([
-                        accountRepository.observeTransactionsForBalance(account.id),
+                        descendants$,
+                        currencyRepository.observeAll(),
                         journalRepository.observeStatusMeta()
                     ]).pipe(
-                        map(([transactions]) => transactions),
-                        switchMap((transactions: Transaction[]) =>
-                            from(currencyRepository.getPrecision(account.currencyCode)).pipe(
-                                map((precision) => {
-                                    return balanceService.calculateAccountBalanceFromTransactions(
-                                        account,
+                        switchMap(([descendantAccounts, currencies]) => {
+                            const allAccounts = [account, ...descendantAccounts];
+                            const allAccountIds = allAccounts.map(a => a.id);
+                            const precisionMap = new Map(currencies.map(c => [c.code, c.precision]));
+
+                            // 2. Observe all transactions for this entire sub-tree
+                            return transactionRepository.observeByAccounts(allAccountIds, 1000).pipe(
+                                map(transactions => {
+                                    const balances = balanceService.calculateBalancesFromTransactions(
+                                        allAccounts,
                                         transactions,
-                                        precision
-                                    )
+                                        precisionMap
+                                    );
+                                    return balances.get(account.id) || null;
                                 })
-                            )
-                        )
-                    )
+                            );
+                        })
+                    );
                 })
             )
         },
@@ -144,7 +155,7 @@ export function useAccountActions() {
         currencyCode: string;
         icon?: string;
         initialBalance?: number;
-        parentAccountId?: string;
+        parentAccountId?: string | null;
     }) => {
         return accountService.createAccount(data)
     }, [])
@@ -155,7 +166,7 @@ export function useAccountActions() {
         currencyCode?: string;
         description?: string;
         icon?: string;
-        parentAccountId?: string;
+        parentAccountId?: string | null;
     }) => {
         return accountService.updateAccount(account.id, data)
     }, [])

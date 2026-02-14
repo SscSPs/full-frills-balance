@@ -49,6 +49,7 @@ export interface AccountDetailsViewModel {
     onDateSelect: (range: DateRange | null, filter: PeriodFilter) => void;
     transactionsLoading: boolean;
     transactionItems: TransactionCardItemViewModel[];
+    secondaryBalances: { currencyCode: string; amountText: string }[];
 }
 
 export function useAccountDetailsViewModel(): AccountDetailsViewModel {
@@ -153,6 +154,14 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
             ? CurrencyFormatter.format(balance, account.currencyCode)
             : '...';
 
+    const secondaryBalances = useMemo(() => {
+        if (!balanceData?.childBalances) return [];
+        return balanceData.childBalances.map(cb => ({
+            currencyCode: cb.currencyCode,
+            amountText: CurrencyFormatter.format(cb.balance, cb.currencyCode)
+        }));
+    }, [balanceData]);
+
     const transactionCountText = balanceLoading
         ? '...'
         : String(transactionCount);
@@ -233,5 +242,6 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
         onDateSelect,
         transactionsLoading,
         transactionItems,
+        secondaryBalances,
     };
 }

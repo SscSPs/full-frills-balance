@@ -39,6 +39,11 @@ export function AccountFormView(vm: AccountFormViewModel) {
         parentAccountName,
         setParentAccountId,
         potentialParents,
+        isParent,
+        showCurrency,
+        showBalance,
+        isAggregate,
+        setIsAggregate,
         isParentPickerVisible,
         setIsParentPickerVisible,
     } = vm;
@@ -93,6 +98,25 @@ export function AccountFormView(vm: AccountFormViewModel) {
                         </View>
                     </AppCard>
 
+                    <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+                        <View style={styles.toggleRow}>
+                            <View style={{ flex: 1 }}>
+                                <AppText variant="body" style={styles.label}>Is Aggregate Account</AppText>
+                                <AppText variant="caption" color="secondary">Hides balance and currency. Sums values from child accounts.</AppText>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => !isParent && setIsAggregate(!isAggregate)}
+                                disabled={isParent}
+                                style={[
+                                    styles.toggleButton,
+                                    { backgroundColor: isAggregate ? theme.primary : theme.surface, borderColor: theme.border }
+                                ]}
+                            >
+                                <View style={[styles.toggleCircle, { backgroundColor: isAggregate ? theme.pureInverse : theme.textSecondary, alignSelf: isAggregate ? 'flex-end' : 'flex-start' }]} />
+                            </TouchableOpacity>
+                        </View>
+                    </AppCard>
+
                     {showInitialBalance && (
                         <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
                             <AppInput
@@ -112,17 +136,20 @@ export function AccountFormView(vm: AccountFormViewModel) {
                         <AccountTypeSelector
                             value={accountType}
                             onChange={setAccountType}
+                            disabled={isParent}
                         />
                     </AppCard>
 
-                    <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                        <AppText variant="body" style={styles.label}>{currencyLabel}</AppText>
-                        <CurrencySelector
-                            selectedCurrency={selectedCurrency}
-                            onSelect={setSelectedCurrency}
-                            disabled={isEditMode}
-                        />
-                    </AppCard>
+                    {showCurrency && (
+                        <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
+                            <AppText variant="body" style={styles.label}>{currencyLabel}</AppText>
+                            <CurrencySelector
+                                selectedCurrency={selectedCurrency}
+                                onSelect={setSelectedCurrency}
+                                disabled={isEditMode}
+                            />
+                        </AppCard>
+                    )}
 
                     <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
                         <AppText variant="body" style={styles.label}>Parent Account (Optional)</AppText>
@@ -239,6 +266,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
+    },
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: Spacing.md,
+    },
+    toggleButton: {
+        width: 50,
+        height: 28,
+        borderRadius: 14,
+        borderWidth: 1,
+        padding: 2,
+        justifyContent: 'center',
+    },
+    toggleCircle: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
     },
     clearButton: {
         paddingHorizontal: Spacing.sm,

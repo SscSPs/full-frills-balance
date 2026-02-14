@@ -102,6 +102,40 @@ export class TransactionRepository {
     return query.fetch()
   }
 
+  observeByAccounts(accountIds: string[], limit: number = 50, dateRange?: { startDate: number, endDate: number }) {
+    const clauses: any[] = [
+      Q.experimentalJoinTables(['journals']),
+      Q.where('account_id', Q.oneOf(accountIds)),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+        Q.where('deleted_at', Q.eq(null))
+      ])
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('transaction_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('transaction_date', Q.lte(dateRange.endDate)))
+    }
+
+    return this.transactions
+      .query(...clauses)
+      .extend(Q.sortBy('transaction_date', 'desc'))
+      .extend(Q.sortBy('created_at', 'desc'))
+      .extend(Q.take(limit))
+      .observeWithColumns([
+        'amount',
+        'currency_code',
+        'transaction_type',
+        'transaction_date',
+        'notes',
+        'running_balance',
+        'exchange_rate',
+        'account_id',
+        'journal_id'
+      ])
+  }
+
   async findByJournals(journalIds: string[]): Promise<Transaction[]> {
     if (journalIds.length === 0) return []
     return this.transactions
@@ -136,6 +170,33 @@ export class TransactionRepository {
         'account_id',
         'journal_id'
       ])
+  }
+
+  async findTransactionsByAccounts(accountIds: string[], limit: number = 50, dateRange?: { startDate: number, endDate: number }): Promise<Transaction[]> {
+    const clauses: any[] = [
+      Q.experimentalJoinTables(['journals']),
+      Q.where('account_id', Q.oneOf(accountIds)),
+      Q.where('deleted_at', Q.eq(null)),
+      Q.on('journals', [
+        Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+        Q.where('deleted_at', Q.eq(null))
+      ])
+    ]
+
+    if (dateRange) {
+      clauses.push(Q.where('transaction_date', Q.gte(dateRange.startDate)))
+      clauses.push(Q.where('transaction_date', Q.lte(dateRange.endDate)))
+    }
+
+    let query = this.transactions.query(...clauses)
+      .extend(Q.sortBy('transaction_date', 'desc'))
+      .extend(Q.sortBy('created_at', 'desc'))
+
+    if (limit) {
+      query = query.extend(Q.take(limit))
+    }
+
+    return query.fetch()
   }
 
   /**
@@ -381,6 +442,21 @@ export class TransactionRepository {
         ])
       )
       .fetch()
+  }
+
+  async hasTransactions(accountId: string): Promise<boolean> {
+    const count = await this.transactions
+      .query(
+        Q.experimentalJoinTables(['journals']),
+        Q.on('journals', [
+          Q.where('status', Q.oneOf([...ACTIVE_JOURNAL_STATUSES])),
+          Q.where('deleted_at', Q.eq(null))
+        ]),
+        Q.where('account_id', accountId),
+        Q.where('deleted_at', Q.eq(null))
+      )
+      .fetchCount()
+    return count > 0
   }
 }
 

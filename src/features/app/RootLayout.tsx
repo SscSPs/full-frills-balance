@@ -1,8 +1,8 @@
 import { ErrorBoundary } from '@/src/components/core';
 import { UIProvider, useUI } from '@/src/contexts/UIContext';
 import { database } from '@/src/data/database/Database';
-import { RestartRequiredScreen } from '@/src/features/dev';
 import { useAppBootstrap } from '@/src/features/app/hooks/useAppBootstrap';
+import { RestartRequiredScreen } from '@/src/features/dev';
 import { useColorScheme } from '@/src/hooks/use-color-scheme';
 import {
   Raleway_600SemiBold,
@@ -67,6 +67,7 @@ function AppContent() {
       <Stack.Screen name="account-details" options={{ headerShown: false }} />
       <Stack.Screen name="transaction-details" options={{ headerShown: false }} />
       <Stack.Screen name="account-reorder" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="manage-hierarchy" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="import-selection" options={{ headerShown: false }} />
       <Stack.Screen name="audit-log" options={{ headerShown: false }} />
     </Stack>

@@ -1,16 +1,19 @@
 import { AppConfig } from '@/src/constants/app-config';
 import { useUI } from '@/src/contexts/UIContext';
 import Account, { AccountType } from '@/src/data/models/Account';
+import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { useAccountPersistence } from '@/src/features/accounts/hooks/useAccountPersistence';
-import { useAccount, useAccountBalance, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
+import { useAccount, useAccountBalance, useAccountBalances, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useAccountValidation } from '@/src/features/accounts/hooks/useAccountValidation';
 import { useCurrencies } from '@/src/hooks/use-currencies';
 import { useTheme } from '@/src/hooks/use-theme';
+import { useObservable } from '@/src/hooks/useObservable';
 import { showErrorAlert } from '@/src/utils/alerts';
 import { ValidationError } from '@/src/utils/errors';
 import { logger } from '@/src/utils/logger';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { of } from 'rxjs';
 
 export interface AccountFormViewModel {
     theme: ReturnType<typeof useTheme>['theme'];
@@ -44,6 +47,11 @@ export interface AccountFormViewModel {
     potentialParents: Account[];
     isParentPickerVisible: boolean;
     setIsParentPickerVisible: (visible: boolean) => void;
+    isParent: boolean;
+    showCurrency: boolean;
+    showBalance: boolean;
+    isAggregate: boolean;
+    setIsAggregate: (value: boolean) => void;
 }
 
 export function useAccountFormViewModel(): AccountFormViewModel {
@@ -58,6 +66,12 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const { account: existingAccount, version: accountVersion } = useAccount(accountId || null);
     const { balanceData: currentBalanceData } = useAccountBalance(accountId || null);
     const { accounts } = useAccounts();
+
+    const { data: isParent } = useObservable(
+        () => accountId ? accountRepository.observeHasChildren(accountId) : of(false),
+        [accountId],
+        false
+    );
 
     useCurrencies();
 
@@ -78,6 +92,7 @@ export function useAccountFormViewModel(): AccountFormViewModel {
     const [selectedIcon, setSelectedIcon] = useState<string>('wallet');
     const [initialBalance, setInitialBalance] = useState('');
     const [parentAccountId, setParentAccountId] = useState('');
+    const [isAggregate, setIsAggregate] = useState(false);
     const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
     const [isParentPickerVisible, setIsParentPickerVisible] = useState(false);
     const hasExistingAccounts = accounts.length > 0;
@@ -106,6 +121,7 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             if (!formDirtyRef.current.currency) setSelectedCurrency(existingAccount.currencyCode);
             if (!formDirtyRef.current.icon && existingAccount.icon) setSelectedIcon(existingAccount.icon);
             if (existingAccount.parentAccountId) setParentAccountId(existingAccount.parentAccountId);
+            if (existingAccount.currencyCode === 'AGG') setIsAggregate(true);
             if (isEditMode && currentBalanceData && !formDirtyRef.current.balance) {
                 setInitialBalance(currentBalanceData.balance.toString());
             }
@@ -134,6 +150,15 @@ export function useAccountFormViewModel(): AccountFormViewModel {
 
         const balanceDataPayload = currentBalanceData ? { balance: currentBalanceData.balance } : undefined;
 
+        const parent = parentAccountId ? accounts.find(a => a.id === parentAccountId) : null;
+        if (parent) {
+            const balance = balancesByAccountId.get(parent.id);
+            if ((balance?.transactionCount || 0) > 0) {
+                showErrorAlert(new ValidationError(`Account "${parent.name}" has transactions and cannot be used as a parent. Move or delete transactions before using this account as a parent.`));
+                return;
+            }
+        }
+
         await persistence.handleSave(
             accountName,
             accountType,
@@ -141,7 +166,8 @@ export function useAccountFormViewModel(): AccountFormViewModel {
             selectedIcon,
             initialBalance,
             balanceDataPayload,
-            parentAccountId || undefined
+            parentAccountId || undefined,
+            isAggregate
         );
     };
 
@@ -162,21 +188,33 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         return `Currency${isEditMode ? ' (cannot be changed)' : ''}`;
     }, [isEditMode]);
 
+    const { balancesByAccountId } = useAccountBalances(accounts);
+
     const potentialParents = useMemo(() => {
         return accounts
-            .filter(a =>
-                a.id !== accountId && // Not self
-                a.accountType === accountType && // Same type
-                a.currencyCode === selectedCurrency && // Same currency
-                !a.deletedAt // Not deleted
-            );
-    }, [accounts, accountId, accountType, selectedCurrency]);
+            .filter(a => {
+                const balance = balancesByAccountId.get(a.id);
+                const hasNoTx = (balance?.transactionCount || 0) === 0;
+
+                return (
+                    a.id !== accountId && // Not self
+                    a.accountType === accountType && // Same type
+                    a.currencyCode === selectedCurrency && // Same currency
+                    !a.deletedAt && // Not deleted
+                    hasNoTx // Must have no transactions
+                );
+            });
+    }, [accounts, accountId, accountType, selectedCurrency, balancesByAccountId]);
 
     const parentAccountName = useMemo(() => {
         if (!parentAccountId) return 'None';
         const parent = potentialParents.find(a => a.id === parentAccountId);
         return parent ? parent.name : 'None';
     }, [parentAccountId, potentialParents]);
+
+    const effectiveIsParent = isParent || isAggregate;
+    const showCurrency = !effectiveIsParent;
+    const showBalance = !effectiveIsParent;
 
     return {
         theme,
@@ -202,7 +240,7 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         onSave,
         saveLabel,
         currencyLabel,
-        showInitialBalance: true,
+        showInitialBalance: showBalance,
         isSaveDisabled: !accountName.trim() || persistence.isCreating || !!validation.formError,
         parentAccountId,
         parentAccountName,
@@ -210,5 +248,10 @@ export function useAccountFormViewModel(): AccountFormViewModel {
         potentialParents,
         isParentPickerVisible,
         setIsParentPickerVisible,
+        isParent: effectiveIsParent,
+        showCurrency,
+        showBalance,
+        isAggregate,
+        setIsAggregate,
     };
 }

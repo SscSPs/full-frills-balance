@@ -131,7 +131,7 @@ describe('Account Hierarchy Integration', () => {
     });
 
     it('should prevent parenting between different account types', async () => {
-        const asset = await accountService.createAccount({ name: 'Asset', accountType: AccountType.ASSET, currencyCode: 'USD' });
+        await accountService.createAccount({ name: 'Asset', accountType: AccountType.ASSET, currencyCode: 'USD' });
         const liability = await accountService.createAccount({ name: 'Liability', accountType: AccountType.LIABILITY, currencyCode: 'USD' });
 
         await expect(accountService.createAccount({
@@ -140,5 +140,79 @@ describe('Account Hierarchy Integration', () => {
             currencyCode: 'USD',
             parentAccountId: liability.id
         })).rejects.toThrow('Parent account must be of the same type');
+    });
+
+    it('should prevent an account with transactions from becoming a parent', async () => {
+        const parent = await accountService.createAccount({
+            name: 'Parent with Tx',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD',
+            initialBalance: 100 // This creates a transaction
+        });
+
+        const child = await accountService.createAccount({
+            name: 'Child',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD'
+        });
+
+        // Attempting to set 'parent' as child's parent should fail because it has an initial balance transaction
+        await expect(accountService.updateAccount(child.id, { parentAccountId: parent.id }))
+            .rejects.toThrow(/has transactions and cannot be used as a parent/);
+    });
+
+    it('should prevent creating an account with a parent that has transactions', async () => {
+        const other = await accountService.createAccount({ name: 'Other', accountType: AccountType.ASSET, currencyCode: 'USD' });
+        const nonEmptyAccount = await accountService.createAccount({
+            name: 'Non Empty',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD'
+        });
+
+        // Add a transaction
+        await journalService.createJournal({
+            journalDate: Date.now(),
+            description: 'Tx',
+            currencyCode: 'USD',
+            transactions: [
+                { accountId: nonEmptyAccount.id, amount: 10, transactionType: TransactionType.DEBIT },
+                { accountId: other.id, amount: 10, transactionType: TransactionType.CREDIT }
+            ]
+        });
+
+        await expect(accountService.createAccount({
+            name: 'New Child',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD',
+            parentAccountId: nonEmptyAccount.id
+        })).rejects.toThrow(/has transactions and cannot be used as a parent/);
+    });
+
+    it('should not clear account name when updating only parentAccountId', async () => {
+        const parent = await accountService.createAccount({
+            name: 'Parent',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD'
+        });
+
+        const child = await accountService.createAccount({
+            name: 'Original Child Name',
+            accountType: AccountType.ASSET,
+            currencyCode: 'USD',
+            description: 'Original Description'
+        });
+
+        // Update ONLY parentAccountId
+        const updated = await accountService.updateAccount(child.id, { parentAccountId: parent.id });
+
+        // Verify name and description are preserved
+        expect(updated.name).toBe('Original Child Name');
+        expect(updated.description).toBe('Original Description');
+        expect(updated.parentAccountId).toBe(parent.id);
+
+        // Move back to top level (clear parent)
+        const cleared = await accountService.updateAccount(child.id, { parentAccountId: null });
+        expect(cleared.name).toBe('Original Child Name');
+        expect(cleared.parentAccountId).toBeFalsy();
     });
 });

@@ -3,7 +3,7 @@ import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { EnrichedTransaction, TransactionWithAccountInfo } from '@/src/types/domain';
 import { isBalanceIncrease, isValueEntering } from '@/src/utils/accountingHelpers';
-import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
+import { combineLatest, distinctUntilChanged, from, map, of, switchMap } from 'rxjs';
 
 export class TransactionService {
     /**
@@ -125,8 +125,20 @@ export class TransactionService {
     observeEnrichedForAccount(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }) {
         if (!accountId) return of([] as EnrichedTransaction[]);
 
-        const transactions$ = journalRepository.observeAccountTransactions(accountId, limit, dateRange);
         const account$ = accountRepository.observeById(accountId);
+
+        // 1. Get descendant IDs reactively
+        // Note: For full reactivity on structure changes, we might want to observe the hierarchy
+        // but for now, we'll fetch once per observation setup. 
+        // Actually, we can make it reactive by observing all accounts.
+        const descendantIds$ = from(accountRepository.getDescendantIds(accountId)).pipe(
+            map(ids => [accountId, ...ids])
+        );
+
+        // 2. Observe transactions for all these accounts
+        const transactions$ = descendantIds$.pipe(
+            switchMap(ids => transactionRepository.observeByAccounts(ids, limit, dateRange))
+        );
 
         const journalIds$ = transactions$.pipe(
             map((transactions) => Array.from(new Set(transactions.map(t => t.journalId))).sort()),
@@ -137,14 +149,30 @@ export class TransactionService {
             switchMap((journalIds) => journalRepository.observeByIds(journalIds))
         );
 
-        return combineLatest([transactions$, account$, journals$]).pipe(
-            map(([transactions, account, journals]) => {
+        // 3. To handle account names/icons for each transaction correctly (since they might be from children)
+        // we need all accounts involved in these transactions
+        const allAccountIds$ = transactions$.pipe(
+            map(txs => Array.from(new Set(txs.map(t => t.accountId))).sort()),
+            distinctUntilChanged((a, b) => a.length === b.length && a.every((id, idx) => id === b[idx]))
+        );
+
+        const allAccounts$ = allAccountIds$.pipe(
+            switchMap(ids => accountRepository.observeByIds(ids))
+        );
+
+        return combineLatest([transactions$, account$, journals$, allAccounts$]).pipe(
+            map(([transactions, parentAccount, journals, allAccounts]) => {
                 const journalMap = new Map(journals.map(j => [j.id, j]));
+                const accountMap = new Map(allAccounts.map(a => [a.id, a]));
+
                 return transactions.map(tx => {
                     const journal = journalMap.get(tx.journalId);
-                    // Note: for a single account view, we don't always have the full journal transactions here for counter-account
-                    // but we can at least return the basic enrichment
-                    const isIncrease = isBalanceIncrease(account?.accountType as any, tx.transactionType as any);
+                    const txAccount = accountMap.get(tx.accountId);
+
+                    // Balance impact is calculated relative to the PARENT account's type
+                    // since we are viewing the parent's ledger
+                    const isIncrease = isBalanceIncrease(parentAccount?.accountType as any, tx.transactionType as any);
+
                     return {
                         id: tx.id,
                         journalId: tx.journalId,
@@ -155,10 +183,10 @@ export class TransactionService {
                         transactionDate: tx.transactionDate,
                         notes: tx.notes,
                         journalDescription: journal?.description,
-                        accountName: account?.name,
-                        accountType: account?.accountType as any,
-                        icon: account?.icon,
-                        runningBalance: tx.runningBalance,
+                        accountName: txAccount?.name || parentAccount?.name,
+                        accountType: txAccount?.accountType as any || parentAccount?.accountType as any,
+                        icon: txAccount?.icon || parentAccount?.icon,
+                        runningBalance: tx.accountId === accountId ? tx.runningBalance : undefined, // Running balance only makes sense for the specific account
                         displayTitle: journal?.description || 'Transaction',
                         displayType: journal?.displayType as any,
                         isIncrease,
@@ -170,19 +198,25 @@ export class TransactionService {
     }
 
     async getEnrichedTransactionsForAccount(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedTransaction[]> {
-        const transactions = await transactionRepository.findByAccount(accountId, limit, dateRange);
+        const descendantIds = await accountRepository.getDescendantIds(accountId);
+        const allAccountIds = [accountId, ...descendantIds];
+
+        const transactions = await transactionRepository.findTransactionsByAccounts(allAccountIds, limit, dateRange);
         if (transactions.length === 0) return [];
 
         const journalIds = Array.from(new Set(transactions.map((t: any) => t.journalId)));
         const allJournals = await journalRepository.findByIds(journalIds);
         const journalMap = new Map<string, any>(allJournals.map((j: any) => [j.id, j]));
 
-        const accounts = await accountRepository.findAllByIds([accountId]);
-        const account = accounts[0];
+        const allAccounts = await accountRepository.findAllByIds(allAccountIds);
+        const accountMap = new Map(allAccounts.map(a => [a.id, a]));
+
+        const parentAccount = accountMap.get(accountId);
 
         return transactions.map((tx: any) => {
             const journal = journalMap.get(tx.journalId);
-            const isIncrease = isBalanceIncrease(account?.accountType as any, tx.transactionType as any);
+            const txAccount = accountMap.get(tx.accountId);
+            const isIncrease = isBalanceIncrease(parentAccount?.accountType as any, tx.transactionType as any);
 
             return {
                 id: tx.id,
@@ -194,10 +228,10 @@ export class TransactionService {
                 transactionDate: tx.transactionDate,
                 notes: tx.notes,
                 journalDescription: journal?.description,
-                accountName: account?.name,
-                accountType: account?.accountType as any,
-                icon: account?.icon,
-                runningBalance: tx.runningBalance,
+                accountName: txAccount?.name || parentAccount?.name,
+                accountType: txAccount?.accountType as any || parentAccount?.accountType as any,
+                icon: txAccount?.icon || parentAccount?.icon,
+                runningBalance: tx.accountId === accountId ? tx.runningBalance : undefined,
                 displayTitle: journal?.description || 'Transaction',
                 displayType: journal?.displayType as any,
                 isIncrease,

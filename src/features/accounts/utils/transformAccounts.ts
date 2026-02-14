@@ -18,6 +18,7 @@ export interface AccountCardViewModel {
     currencyCode: string
     depth: number
     hasChildren: boolean
+    isExpanded: boolean
 }
 
 export interface AccountSectionViewModel {
@@ -48,6 +49,7 @@ interface TransformOptions {
     totalEquity: number
     totalIncome: number
     totalExpense: number
+    expandedAccountIds: Set<string>
 }
 
 export function transformAccountsToSections(
@@ -69,6 +71,7 @@ export function transformAccountsToSections(
         totalEquity,
         totalIncome,
         totalExpense,
+        expandedAccountIds,
     } = options
 
     const rawSections = getAccountSections(accounts)
@@ -119,6 +122,7 @@ export function transformAccountsToSections(
             const monthlyIncomeText = isLoading ? '...' : CurrencyFormatter.format(monthlyIncome, account.currencyCode)
             const monthlyExpenseText = isLoading ? '...' : CurrencyFormatter.format(monthlyExpenses, account.currencyCode)
 
+            const isExpanded = expandedAccountIds.has(account.id)
             const children = typeAccounts.filter(a => a.parentAccountId === account.id)
 
             flattenedData.push({
@@ -134,9 +138,12 @@ export function transformAccountsToSections(
                 currencyCode: account.currencyCode,
                 depth,
                 hasChildren: children.length > 0,
+                isExpanded,
             })
 
-            children.forEach(child => flatten(child, depth + 1))
+            if (isExpanded) {
+                children.forEach(child => flatten(child, depth + 1))
+            }
         }
 
         rootAccounts.forEach(root => flatten(root, 0))

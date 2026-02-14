@@ -32,7 +32,7 @@ export class AccountRepository {
   observeAll() {
     return this.accounts
       .query(Q.where('deleted_at', Q.eq(null)), Q.sortBy('order_num', Q.asc))
-      .observeWithColumns(['account_type', 'name', 'order_num', 'currency_code', 'icon', 'description', 'deleted_at'])
+      .observeWithColumns(['account_type', 'name', 'order_num', 'currency_code', 'icon', 'description', 'parent_account_id', 'deleted_at'])
   }
 
   observeByType(accountType: string) {
@@ -42,7 +42,7 @@ export class AccountRepository {
         Q.where('deleted_at', Q.eq(null)),
         Q.sortBy('order_num', Q.asc)
       )
-    return query.observeWithColumns(['name', 'order_num', 'currency_code', 'icon', 'description', 'deleted_at'])
+    return query.observeWithColumns(['name', 'order_num', 'currency_code', 'icon', 'description', 'parent_account_id', 'deleted_at'])
   }
 
   observeByIds(accountIds: string[]) {
@@ -55,7 +55,7 @@ export class AccountRepository {
         Q.where('id', Q.oneOf(accountIds)),
         Q.where('deleted_at', Q.eq(null))
       )
-      .observeWithColumns(['name', 'account_type', 'currency_code', 'order_num', 'icon', 'description', 'deleted_at'])
+      .observeWithColumns(['name', 'account_type', 'currency_code', 'order_num', 'icon', 'description', 'parent_account_id', 'deleted_at'])
   }
 
   observeById(accountId: string) {
@@ -191,6 +191,37 @@ export class AccountRepository {
         record.updatedAt = new Date()
       })
     })
+  }
+
+  async getDescendantIds(accountId: string): Promise<string[]> {
+    const children = await this.accounts.query(
+      Q.where('parent_account_id', accountId),
+      Q.where('deleted_at', Q.eq(null))
+    ).fetch()
+
+    let ids = children.map(c => c.id)
+    for (const child of children) {
+      const descendantIds = await this.getDescendantIds(child.id)
+      ids = [...ids, ...descendantIds]
+    }
+    return ids
+  }
+
+  async hasChildren(accountId: string): Promise<boolean> {
+    const count = await this.accounts.query(
+      Q.where('parent_account_id', accountId),
+      Q.where('deleted_at', Q.eq(null))
+    ).fetchCount()
+    return count > 0
+  }
+
+  observeHasChildren(accountId: string) {
+    return this.accounts.query(
+      Q.where('parent_account_id', accountId),
+      Q.where('deleted_at', Q.eq(null))
+    ).observe().pipe(
+      map(children => children.length > 0)
+    )
   }
 
   private async ensureUniqueName(name: string, excludeId?: string): Promise<void> {

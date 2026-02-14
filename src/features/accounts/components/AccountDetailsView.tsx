@@ -37,6 +37,7 @@ export function AccountDetailsView(vm: AccountDetailsViewModel) {
         onDateSelect,
         transactionsLoading,
         transactionItems,
+        secondaryBalances,
     } = vm;
 
     if (accountLoading) {
@@ -143,6 +144,15 @@ export function AccountDetailsView(vm: AccountDetailsViewModel) {
                                     <AppText variant="heading">
                                         {balanceText}
                                     </AppText>
+                                    {secondaryBalances.length > 0 && (
+                                        <View style={styles.secondaryBalances}>
+                                            {secondaryBalances.map((sb, idx) => (
+                                                <AppText key={idx} variant="caption" color="secondary">
+                                                    + {sb.amountText}
+                                                </AppText>
+                                            ))}
+                                        </View>
+                                    )}
                                 </View>
 
                                 <View style={styles.statItem}>
@@ -256,6 +266,10 @@ const styles = StyleSheet.create({
     },
     statItem: {
         flex: 1,
+    },
+    secondaryBalances: {
+        marginTop: Spacing.xs,
+        gap: 2,
     },
     accountMeta: {
         gap: Spacing.xs,

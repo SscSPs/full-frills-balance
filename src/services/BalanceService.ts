@@ -148,7 +148,7 @@ export class BalanceService {
         });
 
         // 2. Identify all accounts that are involved in a hierarchy
-        const involvedAccountIds = new Set([...parentIdMap.keys(), ...parentIdMap.values()]);
+        // (Previously used involvedAccountIds here, now just propagate per account)
 
         // 3. For each account, if it has a parent, propagate its balance UP the chain
         // We do this by iterating through each account and climbing up its parent chain.
@@ -162,10 +162,29 @@ export class BalanceService {
                 const parentBalance = balancesMap.get(currentParentId);
                 if (parentBalance) {
                     const precision = precisionMap.get(currentParentId) ?? 2;
-                    parentBalance.balance = roundToPrecision(parentBalance.balance + originalBalance.balance, precision);
-                    // Also aggregate monthly stats if desired, though usually parents are just for sum
-                    parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + originalBalance.monthlyIncome, precision);
-                    parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + originalBalance.monthlyExpenses, precision);
+
+                    if (parentBalance.currencyCode === originalBalance.currencyCode) {
+                        // Same currency: Aggregate directly
+                        parentBalance.balance = roundToPrecision(parentBalance.balance + originalBalance.balance, precision);
+                        parentBalance.monthlyIncome = roundToPrecision(parentBalance.monthlyIncome + originalBalance.monthlyIncome, precision);
+                        parentBalance.monthlyExpenses = roundToPrecision(parentBalance.monthlyExpenses + originalBalance.monthlyExpenses, precision);
+                    } else {
+                        // Different currency: Add to childBalances breakdown
+                        if (!parentBalance.childBalances) {
+                            parentBalance.childBalances = [];
+                        }
+                        const existing = parentBalance.childBalances.find(cb => cb.currencyCode === originalBalance.currencyCode);
+                        if (existing) {
+                            existing.balance = roundToPrecision(existing.balance + originalBalance.balance, precision);
+                            existing.transactionCount += originalBalance.transactionCount;
+                        } else {
+                            parentBalance.childBalances.push({
+                                currencyCode: originalBalance.currencyCode,
+                                balance: originalBalance.balance,
+                                transactionCount: originalBalance.transactionCount
+                            });
+                        }
+                    }
                 }
                 currentParentId = parentIdMap.get(currentParentId);
             }
