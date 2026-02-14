@@ -97,7 +97,7 @@ export const wealthService = {
 
         if (relevantBalances.length === 0) return [];
 
-        // 2. Convert CURRENT state to target currency
+        // 2. Convert CURRENT state to target currency (Parallel)
         let runningAssets = 0;
         let runningLiabilities = 0;
 
@@ -122,24 +122,45 @@ export const wealthService = {
             now.valueOf()
         );
 
-        // Group transactions by date for efficient lookup during rewind
+        // 4. Pre-convert ALL transactions in parallel for O(1) lookup during rewind
+        const convertedTxs = await Promise.all(transactions.map(async (tx) => {
+            const acc = relevantBalances.find(a => a.accountId === tx.accountId);
+            if (!acc) return null;
+
+            const txCurrency = tx.currencyCode || acc.currencyCode || currency;
+            const { convertedAmount } = await exchangeRateService.convert(
+                tx.amount,
+                txCurrency,
+                currency
+            );
+
+            return {
+                date: tx.transactionDate,
+                convertedAmount,
+                type: acc.accountType,
+                transactionType: tx.transactionType
+            };
+        }));
+
+        // Group pre-converted transactions by date string
         const txByDay = new Map<string, any[]>();
-        for (const tx of transactions) {
-            const dayKey = dayjs(tx.transactionDate).format(AppConfig.strings.formats.date);
+        const dateFormat = AppConfig.strings.formats.date;
+        for (const ctx of convertedTxs) {
+            if (!ctx) continue;
+            const dayKey = dayjs(ctx.date).format(dateFormat);
             if (!txByDay.has(dayKey)) txByDay.set(dayKey, []);
-            txByDay.get(dayKey)!.push(tx);
+            txByDay.get(dayKey)!.push(ctx);
         }
 
         const history: DailyNetWorth[] = [];
         let cursor = now;
 
-        // 4. Iterate backward from NOW to START
+        // 5. Iterate backward from NOW to START
         while (cursor.isAfter(start) || cursor.isSame(start, 'day')) {
-            const dayKey = cursor.format(AppConfig.strings.formats.date);
+            const isDayInRange = (cursor.isBefore(end) || cursor.isSame(end, 'day')) &&
+                (cursor.isAfter(start) || cursor.isSame(start, 'day'));
 
-            // Save snapshot if in target range
-            if ((cursor.isBefore(end) || cursor.isSame(end, 'day')) &&
-                (cursor.isAfter(start) || cursor.isSame(start, 'day'))) {
+            if (isDayInRange) {
                 history.push({
                     date: cursor.startOf('day').valueOf(),
                     netWorth: runningAssets - runningLiabilities,
@@ -148,29 +169,15 @@ export const wealthService = {
                 });
             }
 
-            // Undo transactions for this day in parallel
+            // Undo transactions for this day
+            const dayKey = cursor.format(dateFormat);
             const dayTxs = txByDay.get(dayKey) || [];
-            if (dayTxs.length > 0) {
-                const dayConversions = await Promise.all(dayTxs.map(async (tx) => {
-                    const acc = relevantBalances.find(a => a.accountId === tx.accountId);
-                    if (!acc) return null;
 
-                    const txCurrency = tx.currencyCode || acc.currencyCode || currency;
-                    const { convertedAmount } = await exchangeRateService.convert(
-                        tx.amount,
-                        txCurrency,
-                        currency
-                    );
-                    return { convertedAmount, type: acc.accountType, transactionType: tx.transactionType };
-                }));
-
-                for (const conv of dayConversions) {
-                    if (!conv) continue;
-                    if (conv.type === AccountType.ASSET) {
-                        runningAssets += conv.transactionType === TransactionType.DEBIT ? -conv.convertedAmount : conv.convertedAmount;
-                    } else {
-                        runningLiabilities += conv.transactionType === TransactionType.CREDIT ? -conv.convertedAmount : conv.convertedAmount;
-                    }
+            for (const conv of dayTxs) {
+                if (conv.type === AccountType.ASSET) {
+                    runningAssets += conv.transactionType === TransactionType.DEBIT ? -conv.convertedAmount : conv.convertedAmount;
+                } else {
+                    runningLiabilities += conv.transactionType === TransactionType.CREDIT ? -conv.convertedAmount : conv.convertedAmount;
                 }
             }
 

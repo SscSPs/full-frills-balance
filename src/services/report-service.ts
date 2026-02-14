@@ -35,17 +35,24 @@ export class ReportService {
         const sums = new Map<string, number>();
         let totalExpense = 0;
 
-        for (const tx of transactions) {
+        const conversions = await Promise.all(transactions.map(async (tx) => {
             const txCurrency = tx.currencyCode || currency;
             const { convertedAmount } = await exchangeRateService.convert(
                 tx.amount,
                 txCurrency,
                 currency
             );
+            return {
+                accountId: tx.accountId,
+                amount: convertedAmount,
+                transactionType: tx.transactionType
+            };
+        }));
 
-            const current = sums.get(tx.accountId) || 0;
-            const change = tx.transactionType === TransactionType.DEBIT ? convertedAmount : -convertedAmount;
-            sums.set(tx.accountId, current + change);
+        for (const conv of conversions) {
+            const current = sums.get(conv.accountId) || 0;
+            const change = conv.transactionType === TransactionType.DEBIT ? conv.amount : -conv.amount;
+            sums.set(conv.accountId, current + change);
             totalExpense += change;
         }
 

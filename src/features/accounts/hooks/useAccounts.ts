@@ -2,6 +2,7 @@
  * Reactive Data Hooks for Accounts
  */
 import { Animation } from '@/src/constants'
+import { AppConfig } from '@/src/constants/app-config'
 import { useUI } from '@/src/contexts/UIContext'
 import Account, { AccountType } from '@/src/data/models/Account'
 import { accountRepository } from '@/src/data/repositories/AccountRepository'
@@ -13,11 +14,7 @@ import { useObservable } from '@/src/hooks/useObservable'
 import { balanceService } from '@/src/services/BalanceService'
 import { AccountBalance } from '@/src/types/domain'
 import { useCallback } from 'react'
-import { combineLatest, debounceTime, from, Observable, of, switchMap } from 'rxjs'
-
-interface BalancesByAccountIdMap {
-    [accountId: string]: AccountBalance
-}
+import { combineLatest, debounceTime, of, switchMap } from 'rxjs'
 
 /**
  * Hook to reactively get all accounts
@@ -66,39 +63,19 @@ export function useAccountBalance(accountId: string | null) {
         () => {
             if (!accountId) return of(null)
 
-            return accountRepository.observeById(accountId).pipe(
-                switchMap(account => {
-                    if (!account) return of(null)
+            return combineLatest([
+                accountRepository.observeById(accountId),
+                transactionRepository.observeActiveCount(),
+                currencyRepository.observeAll(),
+                journalRepository.observeStatusMeta()
+            ]).pipe(
+                debounceTime(Animation.dataRefreshDebounce),
+                switchMap(async ([account]) => {
+                    if (!account) return null
 
-                    // 1. Get descendant IDs and their account objects (needed for currencies/precisions)
-                    const descendants$ = from(accountRepository.getDescendantIds(account.id)).pipe(
-                        switchMap(ids => ids.length > 0 ? accountRepository.observeByIds(ids) : of([] as Account[]))
-                    );
-
-                    return combineLatest([
-                        descendants$,
-                        currencyRepository.observeAll(),
-                        journalRepository.observeStatusMeta()
-                    ]).pipe(
-                        switchMap(([descendantAccounts, currencies]) => {
-                            const allAccounts = [account, ...descendantAccounts];
-                            const allAccountIds = allAccounts.map(a => a.id);
-                            const precisionMap = new Map(currencies.map(c => [c.code, c.precision]));
-
-                            // 2. Observe all transactions for this entire sub-tree
-                            return transactionRepository.observeByAccounts(allAccountIds, 1000).pipe(
-                                switchMap(async transactions => { // Changed map to switchMap and made callback async
-                                    const balances = await balanceService.calculateBalancesFromTransactions(
-                                        allAccounts,
-                                        transactions,
-                                        precisionMap,
-                                        defaultCurrency
-                                    );
-                                    return balances.get(account.id) || null;
-                                })
-                            );
-                        })
-                    );
+                    // Optimized: fetch only this account's balance
+                    const balance = await balanceService.getAccountBalance(account.id, Date.now())
+                    return balance
                 })
             )
         },
@@ -122,27 +99,17 @@ export function useAccountBalances(accounts: Account[]) {
                 return of(new Map<string, AccountBalance>())
             }
 
-            const currencies$ = currencyRepository.observeAll()
-            const transactions$ = transactionRepository.observeActiveWithColumns([
-                'amount',
-                'transaction_type',
-                'account_id',
-                'transaction_date',
-                'currency_code',
-                'exchange_rate'
-            ])
-
-            return combineLatest([currencies$, transactions$]).pipe(
+            return combineLatest([
+                transactionRepository.observeActiveCount(),
+                currencyRepository.observeAll(),
+                journalRepository.observeStatusMeta()
+            ]).pipe(
                 debounceTime(Animation.dataRefreshDebounce),
-                switchMap(([currencies, transactions]): Observable<Map<string, AccountBalance>> => from((async () => {
-                    const precisionMap = new Map(currencies.map((currency) => [currency.code, currency.precision]))
-                    return await balanceService.calculateBalancesFromTransactions(
-                        accounts,
-                        transactions,
-                        precisionMap,
-                        defaultCurrency
-                    )
-                })()))
+                switchMap(async () => {
+                    const targetCurrency = defaultCurrency || AppConfig.defaultCurrency
+                    const balances = await balanceService.getAccountBalances(Date.now(), targetCurrency)
+                    return new Map(balances.map(b => [b.accountId, b]))
+                })
             )
         },
         [accounts, defaultCurrency],

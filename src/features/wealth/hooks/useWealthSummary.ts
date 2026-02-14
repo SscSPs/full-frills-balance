@@ -21,6 +21,18 @@ export interface WealthSummaryResult extends WealthSummary {
     version: number;
 }
 
+const EMPTY_WEALTH_SUMMARY: Omit<WealthSummaryResult, 'isLoading' | 'version'> = {
+    accounts: [] as Account[],
+    balances: [] as AccountBalance[],
+    balancesMap: new Map<string, AccountBalance>(),
+    netWorth: 0,
+    totalAssets: 0,
+    totalLiabilities: 0,
+    totalEquity: 0,
+    totalIncome: 0,
+    totalExpense: 0,
+}
+
 /**
  * useWealthSummary - Consolidated hook for net worth and account balances.
  * 
@@ -33,31 +45,26 @@ export function useWealthSummary(): WealthSummaryResult {
     const { data, isLoading, version } = useObservable(
         () => combineLatest([
             accountRepository.observeAll(),
-            transactionRepository.observeActiveWithColumns([
-                'amount',
-                'transaction_type',
-                'transaction_date',
-                'account_id',
-                'currency_code',
-                'exchange_rate'
-            ]),
+            // Lightweight trigger: only re-calculate if the number of active transactions changes
+            // or if accounts change. We don't need to fetch transaction objects here.
+            transactionRepository.observeActiveCount(),
             currencyRepository.observeAll(),
             journalRepository.observeStatusMeta(),
         ]).pipe(
             debounceTime(Animation.dataRefreshDebounce),
-            switchMap(async ([accounts, transactions, currencies, _status]) => {
+            switchMap(async ([accounts, _txCount, currencies, _status]) => {
                 try {
                     const targetCurrency = defaultCurrency || AppConfig.defaultCurrency
-                    const precisionMap = new Map(currencies.map((currency) => [currency.code, currency.precision]))
 
-                    const balancesMap = await balanceService.calculateBalancesFromTransactions(
-                        accounts,
-                        transactions,
-                        precisionMap,
-                        targetCurrency
-                    )
-                    const balances = Array.from(balancesMap.values())
+                    // Optimized Balance Fetching:
+                    // balanceService.getAccountBalances() uses runningBalance caches 
+                    // and parallel aggregateBalances logic.
+                    const balances = await balanceService.getAccountBalances(Date.now(), targetCurrency)
+
+                    // Calculate Wealth Summary from balances
                     const summary = await wealthService.calculateSummary(balances, targetCurrency)
+
+                    const balancesMap = new Map(balances.map(b => [b.accountId, b]))
 
                     return {
                         accounts,
@@ -67,32 +74,12 @@ export function useWealthSummary(): WealthSummaryResult {
                     }
                 } catch (error) {
                     logger.error('Failed to calculate wealth summary:', error)
-                    return {
-                        accounts: [] as Account[],
-                        balances: [] as AccountBalance[],
-                        balancesMap: new Map<string, AccountBalance>(),
-                        netWorth: 0,
-                        totalAssets: 0,
-                        totalLiabilities: 0,
-                        totalEquity: 0,
-                        totalIncome: 0,
-                        totalExpense: 0,
-                    }
+                    return EMPTY_WEALTH_SUMMARY
                 }
             })
         ),
         [defaultCurrency],
-        {
-            accounts: [] as Account[],
-            balances: [] as AccountBalance[],
-            balancesMap: new Map<string, AccountBalance>(),
-            netWorth: 0,
-            totalAssets: 0,
-            totalLiabilities: 0,
-            totalEquity: 0,
-            totalIncome: 0,
-            totalExpense: 0,
-        }
+        EMPTY_WEALTH_SUMMARY
     )
 
     return {

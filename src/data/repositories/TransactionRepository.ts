@@ -37,7 +37,7 @@ export class TransactionRepository {
     if (!accountId) throw new Error('accountId is required for transaction creation');
 
     return database.write(async () => {
-      return this.transactions.create((transaction) => {
+      const created = await this.transactions.create((transaction) => {
         Object.assign(transaction, {
           ...transactionData,
           // Ensure amount is positive and rounded to precision
@@ -48,6 +48,13 @@ export class TransactionRepository {
         transaction.createdAt = new Date()
         transaction.updatedAt = new Date()
       })
+
+      // Trigger balance rebuild
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
+      rebuildQueueService.enqueue(accountId, created.transactionDate)
+
+      return created
     })
   }
 
@@ -281,11 +288,26 @@ export class TransactionRepository {
     transaction: Transaction,
     updates: Partial<Transaction>
   ): Promise<Transaction> {
+    const oldAccountId = transaction.accountId
+    const oldDate = transaction.transactionDate
+    const newAccountId = updates.accountId || oldAccountId
+    const newDate = updates.transactionDate || oldDate
+
     return database.write(async () => {
-      return transaction.update((tx) => {
+      const updated = await transaction.update((tx) => {
         Object.assign(tx, updates)
         tx.updatedAt = new Date()
       })
+
+      // Trigger rebuild for affected accounts
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { rebuildQueueService } = require('@/src/services/RebuildQueueService')
+      rebuildQueueService.enqueue(oldAccountId, oldDate)
+      if (newAccountId !== oldAccountId || newDate !== oldDate) {
+        rebuildQueueService.enqueue(newAccountId, newDate)
+      }
+
+      return updated
     })
   }
 
