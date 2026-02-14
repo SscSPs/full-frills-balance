@@ -9,6 +9,9 @@ export const AppConfig = {
   // Default currency for new accounts
   defaultCurrency: 'USD' as const,
 
+  // Default currency precision (decimal places)
+  defaultCurrencyPrecision: 2,
+
   // Versioning
   appVersion: '1.0.0',
 
@@ -185,6 +188,27 @@ export const AppConfig = {
         expense: 'Expense',
       },
       selectCurrency: 'Select Currency',
+      form: {
+        accountName: 'Account Name',
+        accountNamePlaceholder: 'e.g., Checking Account',
+        accountType: 'Account Type',
+        currentBalance: 'Current Balance',
+        initialBalance: 'Initial Balance',
+        balancePlaceholder: '0.00',
+        parentAccount: 'Parent Account (Optional)',
+        clear: 'Clear',
+      },
+      hierarchy: {
+        title: 'Manage Hierarchy',
+        description: 'Select an account to move it, or create a new parent organizational account.',
+        newParentButton: 'New Parent Account',
+        addChild: 'Add child account...',
+        modalTitle: 'Hierarchy Builder',
+        modalDescription: (accountName: string) => `Configure structure for "${accountName}"`,
+        addChildrenLabel: 'ADD AVAILABLE ACCOUNTS AS CHILDREN:',
+        moveParentLabel: 'MOVE UNDER ANOTHER PARENT:',
+        hasTransactions: 'Has Transactions',
+      },
     },
     advancedEntry: {
       createTitle: 'Create Journal Entry',

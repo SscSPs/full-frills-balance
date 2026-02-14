@@ -1,3 +1,4 @@
+import { AppConfig } from '@/src/constants/app-config';
 import Account, { AccountType } from '@/src/data/models/Account';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
@@ -97,7 +98,7 @@ export class BalanceService {
 
                 // Conversion Logic
                 const processConversion = async () => {
-                    const precision = accountPrecisionMap.get(parentId) ?? 2;
+                    const precision = accountPrecisionMap.get(parentId) ?? AppConfig.defaultCurrencyPrecision;
                     let amountToAdd = myBalance.balance;
                     let incomeToAdd = myBalance.monthlyIncome;
                     let expensesToAdd = myBalance.monthlyExpenses;
@@ -205,9 +206,7 @@ export class BalanceService {
         // We need precision for rounding during aggregation. 
         // For efficiency in this batch call, we'll assume 2 or fetch if needed.
         // But since we already have accounts, we can build a better precision map.
-        for (const account of accounts) {
-            precisionMap.set(account.id, 2); // Default, ideally we'd have currency precisions
-        }
+        for (const account of accounts) precisionMap.set(account.id, AppConfig.defaultCurrencyPrecision); // Default precision from config
 
         await this.aggregateBalances(accounts, balancesMap, precisionMap, targetDefaultCurrency);
 

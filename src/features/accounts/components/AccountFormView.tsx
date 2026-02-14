@@ -1,6 +1,7 @@
 import { AppButton, AppCard, AppInput, AppText, IconName, IvyIcon } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Shape, Spacing, Typography } from '@/src/constants';
+import { Opacity, Shape, Size, Spacing, Typography, withOpacity } from '@/src/constants';
+import { AppConfig } from '@/src/constants/app-config';
 import { AccountTypeSelector } from '@/src/features/accounts/components/AccountTypeSelector';
 import { CurrencySelector } from '@/src/features/accounts/components/CurrencySelector';
 import { AccountFormViewModel } from '@/src/features/accounts/hooks/useAccountFormViewModel';
@@ -41,9 +42,6 @@ export function AccountFormView(vm: AccountFormViewModel) {
         potentialParents,
         isParent,
         showCurrency,
-        showBalance,
-        isAggregate,
-        setIsAggregate,
         isParentPickerVisible,
         setIsParentPickerVisible,
     } = vm;
@@ -66,7 +64,7 @@ export function AccountFormView(vm: AccountFormViewModel) {
                     </AppText>
 
                     {formError && (
-                        <View style={[styles.errorContainer, { backgroundColor: theme.error + '20', borderColor: theme.error }]}
+                        <View style={[styles.errorContainer, { backgroundColor: withOpacity(theme.error, Opacity.soft), borderColor: theme.error }]}
                         >
                             <AppText variant="body" style={{ color: theme.error }}>{formError}</AppText>
                         </View>
@@ -81,49 +79,32 @@ export function AccountFormView(vm: AccountFormViewModel) {
                                 <IvyIcon
                                     name={selectedIcon as IconName}
                                     color={theme.primary}
-                                    size={40}
+                                    size={Size.iconXl}
                                 />
                             </TouchableOpacity>
                             <View style={{ flex: 1 }}>
                                 <AppInput
-                                    label="Account Name"
+                                    label={AppConfig.strings.accounts.form.accountName}
                                     value={accountName}
                                     onChangeText={setAccountName}
-                                    placeholder="e.g., Checking Account"
+                                    placeholder={AppConfig.strings.accounts.form.accountNamePlaceholder}
                                     autoFocus
-                                    maxLength={100}
+                                    maxLength={AppConfig.input.maxAccountNameLength}
                                     returnKeyType="next"
                                 />
                             </View>
                         </View>
                     </AppCard>
 
-                    <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                        <View style={styles.toggleRow}>
-                            <View style={{ flex: 1 }}>
-                                <AppText variant="body" style={styles.label}>Is Aggregate Account</AppText>
-                                <AppText variant="caption" color="secondary">Hides balance and currency. Sums values from child accounts.</AppText>
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => !isParent && setIsAggregate(!isAggregate)}
-                                disabled={isParent}
-                                style={[
-                                    styles.toggleButton,
-                                    { backgroundColor: isAggregate ? theme.primary : theme.surface, borderColor: theme.border }
-                                ]}
-                            >
-                                <View style={[styles.toggleCircle, { backgroundColor: isAggregate ? theme.pureInverse : theme.textSecondary, alignSelf: isAggregate ? 'flex-end' : 'flex-start' }]} />
-                            </TouchableOpacity>
-                        </View>
-                    </AppCard>
+
 
                     {showInitialBalance && (
                         <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
                             <AppInput
-                                label={isEditMode ? "Current Balance" : "Initial Balance"}
+                                label={isEditMode ? AppConfig.strings.accounts.form.currentBalance : AppConfig.strings.accounts.form.initialBalance}
                                 value={initialBalance}
                                 onChangeText={onInitialBalanceChange}
-                                placeholder="0.00"
+                                placeholder={AppConfig.strings.accounts.form.balancePlaceholder}
                                 keyboardType="decimal-pad"
                                 returnKeyType="next"
                                 testID="initial-balance-input"
@@ -132,7 +113,7 @@ export function AccountFormView(vm: AccountFormViewModel) {
                     )}
 
                     <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                        <AppText variant="body" style={styles.label}>Account Type</AppText>
+                        <AppText variant="body" style={styles.label}>{AppConfig.strings.accounts.form.accountType}</AppText>
                         <AccountTypeSelector
                             value={accountType}
                             onChange={setAccountType}
@@ -152,7 +133,7 @@ export function AccountFormView(vm: AccountFormViewModel) {
                     )}
 
                     <AppCard elevation="sm" padding="lg" style={styles.inputContainer}>
-                        <AppText variant="body" style={styles.label}>Parent Account (Optional)</AppText>
+                        <AppText variant="body" style={styles.label}>{AppConfig.strings.accounts.form.parentAccount}</AppText>
                         <TouchableOpacity
                             onPress={() => setIsParentPickerVisible(true)}
                             style={[styles.selectorButton, { borderColor: theme.border, backgroundColor: theme.surface }]}
@@ -169,10 +150,10 @@ export function AccountFormView(vm: AccountFormViewModel) {
                                         }}
                                         style={styles.clearButton}
                                     >
-                                        <AppText variant="caption" color="secondary">Clear</AppText>
+                                        <AppText variant="caption" color="secondary">{AppConfig.strings.accounts.form.clear}</AppText>
                                     </TouchableOpacity>
                                 )}
-                                <IvyIcon name="chevronDown" size={20} color={theme.textSecondary} />
+                                <IvyIcon name="chevronDown" size={Size.iconSm} color={theme.textSecondary} />
                             </View>
                         </TouchableOpacity>
                     </AppCard>
@@ -260,36 +241,17 @@ const styles = StyleSheet.create({
         padding: Spacing.md,
         borderRadius: Shape.radius.sm,
         borderWidth: 1,
-        minHeight: 48,
+        minHeight: Size.touchTarget,
     },
     selectorActions: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
     },
-    toggleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: Spacing.md,
-    },
-    toggleButton: {
-        width: 50,
-        height: 28,
-        borderRadius: 14,
-        borderWidth: 1,
-        padding: 2,
-        justifyContent: 'center',
-    },
-    toggleCircle: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-    },
     clearButton: {
         paddingHorizontal: Spacing.sm,
         paddingVertical: 2,
         borderRadius: Shape.radius.xs,
-        backgroundColor: '#00000010',
+        backgroundColor: withOpacity('#000000', Opacity.hover),
     },
 });

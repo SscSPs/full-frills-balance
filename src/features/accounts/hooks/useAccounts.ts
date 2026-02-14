@@ -65,7 +65,15 @@ export function useAccountBalance(accountId: string | null) {
 
             return combineLatest([
                 accountRepository.observeById(accountId),
-                transactionRepository.observeActiveCount(),
+                transactionRepository.observeActiveWithColumns([
+                    'amount',
+                    'transaction_type',
+                    'transaction_date',
+                    'currency_code',
+                    'account_id',
+                    'exchange_rate',
+                    'updated_at'
+                ]),
                 currencyRepository.observeAll(),
                 journalRepository.observeStatusMeta()
             ]).pipe(
@@ -100,7 +108,15 @@ export function useAccountBalances(accounts: Account[]) {
             }
 
             return combineLatest([
-                transactionRepository.observeActiveCount(),
+                transactionRepository.observeActiveWithColumns([
+                    'amount',
+                    'transaction_type',
+                    'transaction_date',
+                    'currency_code',
+                    'account_id',
+                    'exchange_rate',
+                    'updated_at'
+                ]),
                 currencyRepository.observeAll(),
                 journalRepository.observeStatusMeta()
             ]).pipe(

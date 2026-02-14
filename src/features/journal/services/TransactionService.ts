@@ -3,7 +3,7 @@ import { journalRepository } from '@/src/data/repositories/JournalRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { EnrichedTransaction, TransactionWithAccountInfo } from '@/src/types/domain';
 import { isBalanceIncrease, isValueEntering } from '@/src/utils/accountingHelpers';
-import { combineLatest, distinctUntilChanged, from, map, of, switchMap } from 'rxjs';
+import { combineLatest, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 
 export class TransactionService {
     /**
@@ -127,12 +127,10 @@ export class TransactionService {
 
         const account$ = accountRepository.observeById(accountId);
 
-        // 1. Get descendant IDs reactively
-        // Note: For full reactivity on structure changes, we might want to observe the hierarchy
-        // but for now, we'll fetch once per observation setup. 
-        // Actually, we can make it reactive by observing all accounts.
-        const descendantIds$ = from(accountRepository.getDescendantIds(accountId)).pipe(
-            map(ids => [accountId, ...ids])
+        // React to hierarchy changes by rebuilding the descendant set from observed accounts.
+        const descendantIds$ = accountRepository.observeAll().pipe(
+            map(accounts => this.getAccountTreeIds(accountId, accounts)),
+            distinctUntilChanged((a, b) => a.length === b.length && a.every((id, idx) => id === b[idx]))
         );
 
         // 2. Observe transactions for all these accounts
@@ -195,6 +193,29 @@ export class TransactionService {
                 });
             })
         );
+    }
+
+    private getAccountTreeIds(rootAccountId: string, accounts: { id: string; parentAccountId?: string | null }[]): string[] {
+        const childrenByParent = new Map<string, string[]>();
+        for (const account of accounts) {
+            if (!account.parentAccountId) continue;
+            const siblings = childrenByParent.get(account.parentAccountId) || [];
+            siblings.push(account.id);
+            childrenByParent.set(account.parentAccountId, siblings);
+        }
+
+        const result: string[] = [];
+        const queue: string[] = [rootAccountId];
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            if (!current) continue;
+            result.push(current);
+            const children = childrenByParent.get(current) || [];
+            queue.push(...children);
+        }
+
+        return result;
     }
 
     async getEnrichedTransactionsForAccount(accountId: string, limit: number, dateRange?: { startDate: number, endDate: number }): Promise<EnrichedTransaction[]> {

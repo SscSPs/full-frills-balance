@@ -45,14 +45,20 @@ export function useWealthSummary(): WealthSummaryResult {
     const { data, isLoading, version } = useObservable(
         () => combineLatest([
             accountRepository.observeAll(),
-            // Lightweight trigger: only re-calculate if the number of active transactions changes
-            // or if accounts change. We don't need to fetch transaction objects here.
-            transactionRepository.observeActiveCount(),
+            transactionRepository.observeActiveWithColumns([
+                'amount',
+                'transaction_type',
+                'transaction_date',
+                'currency_code',
+                'account_id',
+                'exchange_rate',
+                'updated_at'
+            ]),
             currencyRepository.observeAll(),
             journalRepository.observeStatusMeta(),
         ]).pipe(
             debounceTime(Animation.dataRefreshDebounce),
-            switchMap(async ([accounts, _txCount, currencies, _status]) => {
+            switchMap(async ([accounts]) => {
                 try {
                     const targetCurrency = defaultCurrency || AppConfig.defaultCurrency
 

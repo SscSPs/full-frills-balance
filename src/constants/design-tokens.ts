@@ -556,6 +556,22 @@ export const Layout = {
       journalCard: 100,
     },
   },
+  hierarchy: {
+    indentWidth: 20,
+    guideOffset: 10,
+    parentIndicator: {
+      width: 3,
+      height: 32,
+      marginRight: 4,
+      borderRadius: 2,
+    },
+  },
+  toggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    circleSize: 22,
+  },
 } as const
 
 // === ANIMATION CONSTANTS ===

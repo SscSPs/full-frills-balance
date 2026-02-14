@@ -1,6 +1,7 @@
 import { AppButton, AppIcon, AppText } from '@/src/components/core';
 import { Screen } from '@/src/components/layout';
-import { Size, Spacing, withOpacity } from '@/src/constants';
+import { Layout, Opacity, Size, Spacing, withOpacity } from '@/src/constants';
+import { AppConfig } from '@/src/constants/app-config';
 import { AccountType } from '@/src/data/models/Account';
 import { useAccountActions, useAccountBalances, useAccounts } from '@/src/features/accounts/hooks/useAccounts';
 import { useTheme } from '@/src/hooks/use-theme';
@@ -94,13 +95,13 @@ export default function ManageHierarchyScreen() {
                     }
                 ]}>
                     {/* Simplified Indentation Guide */}
-                    <View style={[styles.indentationGuide, { width: level * 20 }]}>
+                    <View style={[styles.indentationGuide, { width: level * Layout.hierarchy.indentWidth }]}>
                         {level > 0 && Array.from({ length: level }).map((_, i) => (
                             <View
                                 key={i}
                                 style={[
                                     styles.verticalGuide,
-                                    { left: i * 20 + 10, borderLeftColor: theme.divider, opacity: i === level - 1 ? 1 : 0.3 }
+                                    { left: i * Layout.hierarchy.indentWidth + Layout.hierarchy.guideOffset, borderLeftColor: theme.divider, opacity: i === level - 1 ? Opacity.solid : Opacity.muted }
                                 ]}
                             />
                         ))}
@@ -113,11 +114,11 @@ export default function ManageHierarchyScreen() {
                     >
                         {hasChildren && (
                             <View style={{
-                                width: 3,
-                                height: 32,
+                                width: Layout.hierarchy.parentIndicator.width,
+                                height: Layout.hierarchy.parentIndicator.height,
                                 backgroundColor: categoryColor,
-                                marginRight: 4,
-                                borderRadius: 2,
+                                marginRight: Layout.hierarchy.parentIndicator.marginRight,
+                                borderRadius: Layout.hierarchy.parentIndicator.borderRadius,
                             }} />
                         )}
                         {isExpandable ? (
@@ -162,7 +163,7 @@ export default function ManageHierarchyScreen() {
                         <View style={styles.rowActions}>
 
                             <TouchableOpacity
-                                style={[styles.actionIconButton, { backgroundColor: theme.primary + '10' }]}
+                                style={[styles.actionIconButton, { backgroundColor: withOpacity(theme.primary, Opacity.hover) }]}
                                 onPress={() => setSelectedAccountId(account.id)}
                             >
                                 <AppIcon name="reorder" size={Size.iconXs} color={theme.primary} />
@@ -172,7 +173,7 @@ export default function ManageHierarchyScreen() {
 
                             {account.parentAccountId && (
                                 <TouchableOpacity
-                                    style={[styles.actionIconButton, { backgroundColor: theme.error + '10' }]}
+                                    style={[styles.actionIconButton, { backgroundColor: withOpacity(theme.error, Opacity.hover) }]}
                                     onPress={() => handleAssignParent(account.id, null)}
                                     accessibilityLabel="Move to top level"
                                 >
@@ -189,13 +190,13 @@ export default function ManageHierarchyScreen() {
                             {/* Inline Add Row with Indentation */}
                             {canBeParent && (
                                 <View style={styles.accountRowContainer}>
-                                    <View style={[styles.indentationGuide, { width: (level + 1) * 20 }]}>
+                                    <View style={[styles.indentationGuide, { width: (level + 1) * Layout.hierarchy.indentWidth }]}>
                                         {Array.from({ length: level + 1 }).map((_, i) => (
                                             <View
                                                 key={i}
                                                 style={[
                                                     styles.verticalGuide,
-                                                    { left: i * 20 + 10, borderLeftColor: theme.divider }
+                                                    { left: i * Layout.hierarchy.indentWidth + Layout.hierarchy.guideOffset, borderLeftColor: theme.divider }
                                                 ]}
                                             />
                                         ))}
@@ -210,7 +211,7 @@ export default function ManageHierarchyScreen() {
                                         </View>
                                         <View style={styles.accountText}>
                                             <AppText variant="body" color="success" weight="bold">
-                                                Add child account...
+                                                {AppConfig.strings.accounts.hierarchy.addChild}
                                             </AppText>
                                         </View>
                                     </TouchableOpacity>
@@ -258,17 +259,17 @@ export default function ManageHierarchyScreen() {
     }, [rootAccounts, accountsByParent, balancesByAccountId]);
 
     return (
-        <Screen title="Manage Hierarchy">
+        <Screen title={AppConfig.strings.accounts.hierarchy.title}>
             <View style={styles.header}>
                 <AppText variant="body" color="secondary">
-                    Select an account to move it, or create a new parent organizational account.
+                    {AppConfig.strings.accounts.hierarchy.description}
                 </AppText>
                 <AppButton
                     onPress={() => router.push('/account-creation')}
                     variant="secondary"
                     style={styles.newButton}
                 >
-                    New Parent Account
+                    {AppConfig.strings.accounts.hierarchy.newParentButton}
                 </AppButton>
             </View>
 
@@ -319,9 +320,9 @@ export default function ManageHierarchyScreen() {
                 >
                     <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
                         <View style={styles.modalHeader}>
-                            <AppText variant="subheading" weight="bold">Hierarchy Builder</AppText>
+                            <AppText variant="subheading" weight="bold">{AppConfig.strings.accounts.hierarchy.modalTitle}</AppText>
                             <AppText variant="caption" color="secondary">
-                                Configure structure for "{accounts.find(a => a.id === selectedAccountId)?.name}"
+                                {AppConfig.strings.accounts.hierarchy.modalDescription(accounts.find(a => a.id === selectedAccountId)?.name || '')}
                             </AppText>
                         </View>
 
@@ -330,7 +331,7 @@ export default function ManageHierarchyScreen() {
                             {/* Option 2: Add Child (if account has no transactions) */}
                             {(balancesByAccountId.get(selectedAccountId || '')?.transactionCount || 0) === 0 && (
                                 <View style={styles.destinationSection}>
-                                    <AppText variant="caption" weight="bold" style={styles.sectionLabel}>ADD AVAILABLE ACCOUNTS AS CHILDREN:</AppText>
+                                    <AppText variant="caption" weight="bold" style={styles.sectionLabel}>{AppConfig.strings.accounts.hierarchy.addChildrenLabel}</AppText>
                                     {accounts
                                         .filter(a => {
                                             const isOwnParent = a.id === selectedAccountId;
@@ -353,7 +354,7 @@ export default function ManageHierarchyScreen() {
                                                 <View style={{ flex: 1 }}>
                                                     <AppText variant="body">{potentialChild.name}</AppText>
                                                     {(balancesByAccountId.get(potentialChild.id)?.transactionCount || 0) > 0 && (
-                                                        <AppText variant="caption" color="secondary">Has Transactions</AppText>
+                                                        <AppText variant="caption" color="secondary">{AppConfig.strings.accounts.hierarchy.hasTransactions}</AppText>
                                                     )}
                                                 </View>
                                                 <AppIcon name="add" size={Size.iconXs} color={theme.success} />
@@ -365,7 +366,7 @@ export default function ManageHierarchyScreen() {
 
                             {/* Option 3: Move under another parent */}
                             <View style={styles.destinationSection}>
-                                <AppText variant="caption" weight="bold" style={styles.sectionLabel}>MOVE UNDER ANOTHER PARENT:</AppText>
+                                <AppText variant="caption" weight="bold" style={styles.sectionLabel}>{AppConfig.strings.accounts.hierarchy.moveParentLabel}</AppText>
                                 {accounts
                                     .filter(a => {
                                         const balance = balancesByAccountId.get(a.id);
@@ -401,7 +402,7 @@ export default function ManageHierarchyScreen() {
                             variant="ghost"
                             style={styles.cancelButton}
                         >
-                            Cancel
+                            {AppConfig.strings.common.cancel}
                         </AppButton>
                     </View>
                 </Pressable>
@@ -444,16 +445,33 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.md,
-        paddingRight: Spacing.md,
-        gap: 0,
+    },
+    toggleButton: {
+        width: Layout.toggle.width,
+        height: Layout.toggle.height,
+        borderRadius: Layout.toggle.borderRadius,
+        borderWidth: 1,
+        padding: 2,
+        justifyContent: 'center',
+    },
+    toggleCircle: {
+        width: Layout.toggle.circleSize,
+        height: Layout.toggle.circleSize,
+        borderRadius: Layout.toggle.circleSize / 2,
+    },
+    expandButton: {
+        width: 32,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    expandPlaceholder: {
+        width: 32,
     },
     iconWrapper: {
         width: 32,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    expandIcon: {
-        width: 12,
     },
     accountText: {
         flex: 1,
@@ -476,15 +494,6 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 8,
         gap: 4,
-    },
-    expandButton: {
-        width: 32,
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    expandPlaceholder: {
-        width: 32,
     },
     modalOverlay: {
         flex: 1,
@@ -534,5 +543,5 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         marginTop: Spacing.sm,
-    }
+    },
 });
