@@ -3,11 +3,13 @@ import { ExpandableSearchButton } from '@/src/components/core';
 import { AppConfig, Spacing } from '@/src/constants';
 import { JournalListView } from '@/src/features/journal/components/JournalListView';
 import { useJournalListScreen } from '@/src/features/journal/hooks/useJournalListScreen';
+import { useJournalRouteDateRange } from '@/src/features/journal/list/hooks/useJournalRouteDateRange';
 import { AppNavigation } from '@/src/utils/navigation';
 import React, { useCallback, useMemo } from 'react';
 import { View } from 'react-native';
 
 export default function JournalScreen() {
+    const initialDateRange = useJournalRouteDateRange();
     const { listViewProps, vm } = useJournalListScreen({
         pageSize: AppConfig.pagination.dashboardPageSize,
         emptyState: {
@@ -16,13 +18,14 @@ export default function JournalScreen() {
         },
         loadingText: AppConfig.strings.common.loading,
         loadingMoreText: AppConfig.strings.common.loading,
+        initialDateRange: initialDateRange ?? null,
     });
 
     const handleFabPress = useCallback(() => {
         AppNavigation.toJournalEntry();
     }, []);
 
-    const listHeader = useMemo(() => (
+    const headerActions = useMemo(() => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
             <ExpandableSearchButton
                 value={vm.searchQuery}
@@ -46,7 +49,8 @@ export default function JournalScreen() {
         <JournalListView
             {...listViewProps}
             screenTitle={AppConfig.strings.journal.transactions}
-            listHeader={listHeader}
+            headerActions={headerActions}
+            listHeader={null}
             fab={fab}
         />
     );

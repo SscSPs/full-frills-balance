@@ -78,6 +78,23 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
     const router = useRouter();
     const params = useLocalSearchParams();
     const accountId = params.accountId as string;
+    const startDateParam = params.startDate as string;
+    const endDateParam = params.endDate as string;
+
+    const initialDateRange = useMemo(() => {
+        if (startDateParam && endDateParam) {
+            const parsedStartDate = Number.parseInt(startDateParam, 10);
+            const parsedEndDate = Number.parseInt(endDateParam, 10);
+            if (!Number.isFinite(parsedStartDate) || !Number.isFinite(parsedEndDate)) {
+                return null;
+            }
+            return {
+                startDate: parsedStartDate,
+                endDate: parsedEndDate,
+            };
+        }
+        return null;
+    }, [startDateParam, endDateParam]);
 
     const {
         dateRange,
@@ -88,7 +105,10 @@ export function useAccountDetailsViewModel(): AccountDetailsViewModel {
         setFilter,
         navigatePrevious,
         navigateNext,
-    } = useDateRangeFilter({ defaultToCurrentMonth: true });
+    } = useDateRangeFilter({
+        defaultToCurrentMonth: !initialDateRange,
+        initialDateRange
+    });
 
     const { account, isLoading: accountLoading } = useAccount(accountId);
     const { accounts } = useAccounts();

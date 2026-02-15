@@ -38,6 +38,8 @@ export interface UseDateRangeFilterResult {
 export interface UseDateRangeFilterOptions {
     /** Default to current month (true) or all time (false) */
     defaultToCurrentMonth?: boolean;
+    /** Initial date range to set */
+    initialDateRange?: DateRange | null;
 }
 
 /**
@@ -46,14 +48,22 @@ export interface UseDateRangeFilterOptions {
 export function useDateRangeFilter(
     options: UseDateRangeFilterOptions = {}
 ): UseDateRangeFilterResult {
-    const { defaultToCurrentMonth = true } = options;
+    const { defaultToCurrentMonth = true, initialDateRange } = options;
 
     // Initial state based on options
-    const [dateRange, setDateRange] = useState<DateRange | null>(() =>
-        defaultToCurrentMonth ? getCurrentMonthRange() : null
-    );
+    const [dateRange, setDateRange] = useState<DateRange | null>(() => {
+        if (initialDateRange) return initialDateRange;
+        return defaultToCurrentMonth ? getCurrentMonthRange() : null;
+    });
 
     const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(() => {
+        if (initialDateRange) {
+            return {
+                type: 'CUSTOM',
+                startDate: initialDateRange.startDate,
+                endDate: initialDateRange.endDate,
+            };
+        }
         if (defaultToCurrentMonth) {
             const now = new Date();
             return { type: 'MONTH', month: now.getMonth(), year: now.getFullYear() };

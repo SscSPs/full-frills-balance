@@ -1,4 +1,5 @@
 import { AppConfig } from '@/src/constants/app-config';
+import { REPORT_CHART_COLOR_KEYS } from '@/src/constants/report-constants';
 import { useUI } from '@/src/contexts/UIContext';
 import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { journalRepository } from '@/src/data/repositories/JournalRepository';
@@ -14,6 +15,7 @@ import { combineLatest, map } from 'rxjs';
 export function useReports() {
     const { theme } = useTheme();
     const { defaultCurrency } = useUI();
+    const targetCurrency = defaultCurrency || AppConfig.defaultCurrency;
 
     const [periodFilter, setPeriodFilter] = useState<PeriodFilter>({
         type: 'LAST_N',
@@ -47,35 +49,41 @@ export function useReports() {
         () => triggerObservable,
         async () => {
             const { startDate, endDate } = dateRange;
-            const targetCurrency = defaultCurrency || AppConfig.defaultCurrency;
 
-            const [history, breakdown, incVsExp] = await Promise.all([
+            const [history, reportSnapshot] = await Promise.all([
                 wealthService.getNetWorthHistory(startDate, endDate, targetCurrency),
-                reportService.getExpenseBreakdown(startDate, endDate, targetCurrency),
-                reportService.getIncomeVsExpense(startDate, endDate, targetCurrency)
+                reportService.getReportSnapshot(startDate, endDate, targetCurrency),
             ]);
 
             return {
                 netWorthHistory: history,
-                expenseBreakdown: breakdown,
-                incomeVsExpense: incVsExp
+                expenseBreakdown: reportSnapshot.expenseBreakdown,
+                incomeBreakdown: reportSnapshot.incomeBreakdown,
+                incomeVsExpenseHistory: reportSnapshot.incomeVsExpenseHistory,
+                incomeVsExpense: reportSnapshot.incomeVsExpense,
+                dailyIncomeVsExpense: reportSnapshot.dailyIncomeVsExpense,
             };
         },
         [dateRange, triggerObservable, defaultCurrency],
-        { netWorthHistory: [], expenseBreakdown: [], incomeVsExpense: { income: 0, expense: 0 } }
+        {
+            netWorthHistory: [],
+            expenseBreakdown: [],
+            incomeBreakdown: [],
+            incomeVsExpenseHistory: [],
+            incomeVsExpense: { income: 0, expense: 0 },
+            dailyIncomeVsExpense: []
+        }
     );
 
     const expenses = useMemo(() => {
-        const colors = [
-            theme.primary,
-            theme.error,
-            theme.success,
-            theme.warning,
-            theme.asset,
-            theme.primaryLight
-        ];
+        const colors = REPORT_CHART_COLOR_KEYS.expense.map((colorKey) => theme[colorKey]);
         return data.expenseBreakdown.map((b, i) => ({ ...b, color: colors[i % colors.length] }));
-    }, [data.expenseBreakdown, theme.asset, theme.error, theme.primary, theme.primaryLight, theme.success, theme.warning]);
+    }, [data.expenseBreakdown, theme]);
+
+    const incomeBreakdown = useMemo(() => {
+        const colors = REPORT_CHART_COLOR_KEYS.income.map((colorKey) => theme[colorKey]);
+        return data.incomeBreakdown.map((b, i) => ({ ...b, color: colors[i % colors.length] }));
+    }, [data.incomeBreakdown, theme]);
 
     const updateFilter = useCallback((range: DateRange, filter: PeriodFilter) => {
         setDateRange(range);
@@ -85,7 +93,11 @@ export function useReports() {
     return {
         netWorthHistory: data.netWorthHistory,
         expenses,
+        incomeBreakdown,
+        incomeVsExpenseHistory: data.incomeVsExpenseHistory,
         incomeVsExpense: data.incomeVsExpense,
+        dailyIncomeVsExpense: data.dailyIncomeVsExpense,
+        targetCurrency,
         loading,
         error,
         dateRange,

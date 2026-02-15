@@ -17,6 +17,7 @@ Catch regressions and architecture drift before commit.
 - No state duplication across DB, hooks, and component state.
 - No boundary violations (`app` thin routing, feature encapsulation, repository ownership).
 - No obvious performance regressions in render/subscription paths.
+- No magic numbers, hard coded strings or constants. They should all be in the src/constants dir.
 
 ## Principles
 - DRY: avoid duplicated logic and query paths.
@@ -35,4 +36,3 @@ For each issue include:
 - Exact pattern
 - Why it is a problem here
 - Concrete fix
-

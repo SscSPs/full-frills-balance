@@ -93,6 +93,7 @@ export const AppConfig = {
       save: 'Save',
       cancel: 'Cancel',
       delete: 'Delete',
+      allTime: 'All Time',
     },
     dashboard: {
       emptyTitle: 'No transactions yet',
@@ -114,8 +115,12 @@ export const AppConfig = {
       netWorthChange: 'NET WORTH CHANGE',
       totalIncome: 'TOTAL INCOME',
       totalExpense: 'TOTAL EXPENSE',
+      incomeVsExpenseTrend: 'Income & Expense Trend',
+      incomeBreakdown: 'Income Breakdown',
       spendingBreakdown: 'Spending Breakdown',
       noData: 'No expense data for this period.',
+      showLess: 'Show Less',
+      showAll: (count: number) => `Show All (${count})`,
     },
     settings: {
       title: 'Settings',

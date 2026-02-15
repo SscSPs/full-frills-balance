@@ -1,10 +1,11 @@
 
 import { AppText } from '@/src/components/core';
 import { Layout } from '@/src/constants';
+import { REPORT_CHART_LAYOUT, REPORT_CHART_STRINGS } from '@/src/constants/report-constants';
 import { useTheme } from '@/src/hooks/use-theme';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 interface DonutData {
     value: number;
@@ -43,22 +44,37 @@ export const DonutChart = ({ data, size = Layout.chart.donut.defaultSize, stroke
     const center = size / 2;
 
     const paths = useMemo(() => {
-        const total = data.reduce((sum, d) => sum + d.value, 0);
+        const positiveData = data.filter((item) => item.value > 0);
+        const total = positiveData.reduce((sum, d) => sum + d.value, 0);
+        if (total <= 0) {
+            return [];
+        }
+
+        const isSingleSegment = positiveData.length === 1;
         let startAngle = 0;
 
-        return data.map(item => {
+        return positiveData.map(item => {
             const angle = (item.value / total) * 360;
+            const isFullCircle = isSingleSegment
+                && Math.abs(angle - 360) <= REPORT_CHART_LAYOUT.donutFullCircleAngleEpsilon;
+
             const pathData = createArc(center, center, radius, startAngle, startAngle + angle);
 
+            const segment = {
+                path: pathData,
+                color: item.color,
+                isFullCircle: isFullCircle
+            };
+
             startAngle += angle;
-            return { path: pathData, color: item.color };
+            return segment;
         });
     }, [data, radius, center]);
 
-    if (data.length === 0) {
+    if (paths.length === 0) {
         return (
             <View style={[styles.container, { height: size, width: size, borderColor: theme.border, borderWidth: 1, justifyContent: 'center', alignItems: 'center', borderRadius: size / 2 }]}>
-                <AppText color="secondary">No data</AppText>
+                <AppText color="secondary">{REPORT_CHART_STRINGS.chartNoData}</AppText>
             </View>
         );
     }
@@ -67,14 +83,26 @@ export const DonutChart = ({ data, size = Layout.chart.donut.defaultSize, stroke
         <View style={{ width: size, height: size }}>
             <Svg height={size} width={size}>
                 {paths.map((p, i) => (
-                    <Path
-                        key={i}
-                        d={p.path}
-                        stroke={p.color}
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                        strokeLinecap="round"
-                    />
+                    p.isFullCircle ? (
+                        <Circle
+                            key={i}
+                            cx={center}
+                            cy={center}
+                            r={radius}
+                            stroke={p.color}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                        />
+                    ) : (
+                        <Path
+                            key={i}
+                            d={p.path}
+                            stroke={p.color}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeLinecap="round"
+                        />
+                    )
                 ))}
             </Svg>
         </View>

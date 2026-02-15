@@ -44,13 +44,15 @@ interface UseJournalListViewModelParams {
     emptyState: JournalListEmptyState;
     loadingText?: string;
     loadingMoreText?: string;
+    initialDateRange?: DateRange | null;
 }
 
 export function useJournalListViewModel({
     pageSize = 50,
     emptyState,
     loadingText = 'Loading journals...',
-    loadingMoreText = 'Loading more...'
+    loadingMoreText = 'Loading more...',
+    initialDateRange
 }: UseJournalListViewModelParams): JournalListViewModel {
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -63,7 +65,7 @@ export function useJournalListViewModel({
         setFilter,
         navigatePrevious,
         navigateNext,
-    } = useDateRangeFilter({ defaultToCurrentMonth: true });
+    } = useDateRangeFilter({ defaultToCurrentMonth: true, initialDateRange });
 
     const { journals, isLoading, isLoadingMore, loadMore } = useJournals(pageSize, dateRange || undefined, searchQuery);
 
