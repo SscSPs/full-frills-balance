@@ -4,331 +4,90 @@ trigger: always_on
 
 # Codebase Architecture & Standards
 
-**Law of the Land**
+This document defines hard architectural constraints for `/Users/sahilsoni/me/projects/full-frills-balance`.
+Violations are defects and should be fixed, not justified.
 
-This document defines **hard constraints** for the codebase.
-These are not suggestions, patterns, or preferences.
-Violations are architectural defects and must be corrected immediately.
+## 1. Architecture Model
 
----
+### 1.1 Feature-first organization
+- Organize by domain in `src/features/*`, not by tech layer.
+- A feature owns its screens, feature components, hooks, and feature services.
+- Cross-feature reuse goes to shared layers, not sibling feature internals.
 
-## 0. Mental Model (Read This First)
+### 1.2 Thin routing in `app/`
+- `app/` is Expo Router wiring only.
+- Route files should import from feature public APIs and pass route params.
+- No business logic, data access, domain calculations, or orchestration in `app/` files.
 
-Think in **layers and boxes**:
+### 1.3 Database as source of truth
+- Persisted data in WatermelonDB is the source of truth.
+- UI state can represent transient view concerns only.
+- Writes are repository-owned and explicit (`await`ed).
 
-* **Layers** enforce dependency direction. You never break them.
-* **Features** are sealed boxes. You interact only through their public API.
+## 2. Dependency Direction
 
-If you are unsure where code belongs, **stop**. Misplaced code is worse than missing code.
+Dependency direction is one-way:
 
----
-
-## 1. Core Philosophy
-
-### 1.1 Feature-First Architecture
-
-The codebase is organized by **domain**, not by technology.
-
-Each feature owns:
-
-* Screens
-* Feature-only UI components
-* Feature-only hooks
-* Feature-specific domain logic
-
-If code cannot be clearly assigned to **exactly one feature**, it does not belong in a feature.
-
----
-
-### 1.2 Thin Routing (Non-Negotiable)
-
-The `app/` directory is a **routing layer only**.
-
-Allowed:
-
-* Importing a screen from a feature
-* Passing navigation params
-
-Forbidden:
-
-* Business logic
-* Data access
-* Calculations
-* Local state (except navigation configuration)
-
-**Rule of thumb**: if a file in `app/` exceeds ~20 lines, it is wrong.
-
----
-
-### 1.3 Data-Driven UI
-
-The database is the **single source of truth**.
-
-* UI reacts to persisted data
-* UI never invents or persists domain state
-* All writes happen in repositories, and only there
-
-Derived values must be **pure projections** of persisted data, not new domain rules.
-
----
-
-## 2. Dependency Direction (Non-Negotiable)
-
-Dependencies flow strictly downward:
-
-```
-app/
-  → src/features/
-    → src/services/
-      → src/data/
-        → src/utils/
-```
-
-### Forbidden directions
-
-* `src/data` importing from anything above it
-* `src/services` importing from features or UI
-* `src/components` importing from features
-* Any layer importing from `app/`
-
-**UI depends on data. Data never depends on UI.**
-
-These rules are enforced by linting. Violations are build failures.
-
----
-
-## 3. Directory Structure (Strict)
-
-Do not create new top-level directories.
-
-```
-/
-├── app/                      # ROUTING ONLY
-│   ├── (tabs)/
-│   ├── _layout.tsx
-│   └── *.tsx                 # Import Screen from src/features/*
-│
-├── src/                      # APPLICATION CORE
-│   ├── features/             # DOMAIN BOUNDARIES
-│   │   ├── accounts/
-│   │   │   ├── screens/
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   ├── services/     # FEATURE-SPECIFIC BUSINESS RULES
-│   │   │   └── index.ts      # PUBLIC API
-│   │   └── ...
-│   │
-│   ├── components/           # SHARED UI ONLY
-│   │   ├── core/
-│   │   ├── layout/
-│   │   └── common/
-│   │
-│   ├── data/                 # DATA LAYER
-│   │   ├── database/
-│   │   ├── models/
-│   │   └── repositories/
-│   │
-│   ├── services/             # CROSS-FEATURE BUSINESS RULES
-│   │   └── *.ts              # Pure TypeScript, no React, no DB writes
-│   │
-│   ├── hooks/                # GLOBAL UI HOOKS ONLY
-│   ├── contexts/             # GLOBAL UI STATE
-│   └── utils/                # PURE HELPERS
-```
-
----
-
-## 4. Feature Boundary Rules
-
-Each feature is a **sealed box**.
-
-### Allowed imports inside a feature
-
-* `src/components/**`
-* `src/services/**`
-* `src/data/**` (via hooks or repositories only)
-* `src/utils/**`
+`app/` -> `src/features/` -> `src/services/` -> `src/data/` -> `src/utils/`
 
 ### Forbidden imports
+- Any `src/**` code importing from `app/**`.
+- `src/data/**` importing from `src/features/**` or UI component layers.
+- `src/services/**` importing from feature UI.
+- Cross-feature deep imports into another feature's private files.
 
-* Internal files from another feature
-* Components, hooks, or screens from sibling features
+## 3. Directory Ownership
 
-If multiple features need the same code:
+- `app/`: route wrappers only.
+- `src/features/<feature>/`: feature-specific UI + orchestration.
+- `src/components/`: shared UI primitives/compositions.
+- `src/services/`: cross-feature business/domain logic.
+- `src/data/`: WatermelonDB models, schema, adapters, repositories.
+- `src/utils/`: pure helpers with no framework coupling.
+- `src/contexts/` and `src/hooks/`: app-wide UI concerns only.
 
-* Shared UI → `src/components/common`
-* Shared business rules → `src/services`
+Do not create new top-level architecture buckets unless explicitly approved.
 
----
+## 4. Feature Boundaries
 
-## 5. Feature Public API (Mandatory)
+- Every feature exposes a public API from `src/features/<feature>/index.ts`.
+- External consumers must import from that index only.
+- Deep imports into sibling feature internals are forbidden.
+- If code is reused across features:
+  - Shared UI -> `src/components/common`
+  - Shared domain logic -> `src/services`
+  - Shared persistence logic -> `src/data/repositories`
 
-Every feature must expose a public interface:
-
-```
-src/features/<feature>/index.ts
-```
-
-Rules:
-
-* Only exports from `index.ts` may be imported outside the feature
-* All other files are private implementation details
-* Deep imports into features are forbidden and linted
-
-Encapsulation is enforced mechanically, not socially.
-
----
-
-## 6. Where Does This Go? (Decision Tree)
-
-Follow this order exactly.
-
-### 6.1 Is it a Screen?
-
-* YES → `src/features/<feature>/screens/<Name>Screen.tsx`
-* Ensure a thin route exists in `app/`
-
-### 6.2 Is it UI?
-
-* Primitive → `components/core`
-* Layout → `components/layout`
-* Shared across features → `components/common`
-* Feature-only → `features/<feature>/components`
-
-Shared components must be **logic-free**.
-
-### 6.3 Is it Logic or State?
-
-* UI-only state → local state or `contexts/`
-* Feature business rules → `features/<feature>/services`
-* Cross-feature business rules → `src/services`
-* Persistence → `data/models` + `repositories`
-* Pure helpers → `utils`
-
----
-
-## 7. Data Access Rules
+## 5. WatermelonDB Access Rules
 
 ### Reads
-
-* Performed via **reactive hooks**
-* Hooks may expose **pure projections** of persisted data
-* No domain rules inside hooks
+- Read through hooks/view-model layers that observe repositories/queries.
+- Keep derived values as pure projections.
 
 ### Writes
+- Perform writes in repositories (or tightly scoped service methods that delegate to repositories).
+- No direct DB writes from presentational components.
+- No ad-hoc persistence IDs (`Math.random`, `Date.now`) for database records.
 
-* Performed **only** in repositories
-* Never from UI, hooks, or services
-* All writes must be explicitly awaited
+## 6. Hook and Component Responsibilities
 
----
+- Components should be mostly presentational and event-driven.
+- Hooks compose view state and call services/repositories through defined boundaries.
+- Put multi-step domain rules in services, not JSX trees.
+- If a hook becomes a domain engine, extract the logic.
 
-## 8. Hook Constraints
+## 7. Import & Path Rules (Enforced)
 
-Hooks are **composition tools**, not decision-makers.
+- Use absolute imports with alias `@/*`.
+- In `app/**/*`, do not deep import internals from `src` (enforced via `no-restricted-imports`).
+- In `src/**/*`, importing from `app/**` is prohibited (enforced via `no-restricted-imports`).
 
-Hooks may:
+## 8. Architecture Drift Signals
 
-* Read data
-* Compose UI-facing state
-* Call services
+Refactor when any of these appear:
+- Route files becoming workflow controllers.
+- Repeated domain logic across feature hooks/components.
+- Feature internals imported directly by another feature.
+- UI components reading/writing persistence directly.
+- Derived balances duplicated in multiple locations.
 
-Hooks may NOT:
-
-* Write to repositories
-* Implement business rules
-* Enforce permissions or correctness
-
-If a hook exceeds ~50 lines or feels clever, it belongs in services.
-
-### 8.1 Performance Rules
-
-* All action callbacks must be memoized with `useCallback`
-* Prefer a single consolidated observer per screen
-* Consolidated hooks must remain focused and small
-
----
-
-## 9. Components Standards
-
-* Functional components only
-* `React.memo` when props are simple
-* Never use raw `Text`; always use `AppText`
-* Use design tokens only
-* Props interface must be exported as `<ComponentName>Props`
-
-Shared components must not import services or data.
-
----
-
-## 10. Naming & Imports
-
-### Naming
-
-* Components: `PascalCase.tsx`
-* Hooks / utils: `camelCase.ts`
-* Folders: `kebab-case`
-
-### Imports
-
-* Absolute imports only (`@/src/...`)
-* No relative parent imports
-* Violations fail linting
-
----
-
-## 11. Strict Prohibitions
-
-🔴 Logic in `app/`
-🔴 DB access outside repositories
-🔴 Coupling sibling features
-🔴 Domain components in `components/`
-🔴 Services called directly from UI
-🔴 Ad-hoc IDs for persistence
-
-Violations require refactoring, not justification.
-
----
-
-## 12. Common Failure Signals
-
-Immediate refactor required if you see:
-
-* Large `app/` files
-* God hooks (over 50 lines)
-* Shared components with logic
-* Services importing React
-* "Temporary" code in shared layers
-
----
-
-## 13. Verification Checklist
-
-Before marking work complete, **every PR must satisfy all of the following**:
-
-* [ ] `app/` contains routing only (no logic, no state)
-* [ ] Imports respect dependency direction
-* [ ] Code lives in the correct feature or shared layer
-* [ ] No direct DB access outside repositories
-* [ ] Hooks do not implement business rules
-* [ ] Shared components are logic-free
-* [ ] `AppText` is used instead of raw `Text`
-* [ ] Feature boundaries are respected (no deep imports)
-
-Failure on any item blocks the PR.
-
----
-
-## 14. Type Management
-
-* UI-facing domain read models belong in `src/types/domain.ts`
-* Do not redefine domain shapes locally
-
----
-
-## 15. Final Rule
-
-This document exists to prevent entropy.
-
-If something feels hard to place, the structure is wrong.
-Fix the structure first. Code comes second.
