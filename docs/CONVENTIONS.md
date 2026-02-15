@@ -15,7 +15,7 @@ component-name/
 
 For simpler components (design system), single file is fine:
 ```
-components/core/
+src/components/core/
 ├── AppButton.tsx
 ├── AppCard.tsx
 ├── ErrorBoundary.tsx
@@ -38,7 +38,7 @@ components/core/
 
 ## Component Rules
 
-### Design System Components (`components/core/`)
+### Design System Components (`src/components/core/`)
 - Max 5 props per component
 - No hardcoded colors — use theme tokens
 - Must work with both `light` and `dark` themeMode
@@ -102,7 +102,7 @@ Debug logs are disabled in production.
 | Repositories | Jest unit tests with mock database |
 | Services | Jest unit tests |
 | UI | Visual validation via `/_design-preview` |
-| Integration | End-to-end flows in `__tests__/integration/` |
+| Integration | End-to-end and integration flows in `e2e/` and `src/__tests__/integration/` |
 
 ---
 

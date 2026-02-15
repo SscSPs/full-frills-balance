@@ -45,10 +45,11 @@ This document describes the technical architecture of Full Frills Balance, a dou
 
 | Directory | Purpose |
 |-----------|---------|
-| `app/` | Expo Router screens and navigation |
-| `components/` | Reusable UI components (core = design system) |
-| `contexts/` | React contexts (UIContext only) |
-| `hooks/` | Data hooks wrapping WatermelonDB observables |
+| `app/` | Expo Router route wrappers and navigation wiring |
+| `src/features/` | Feature boundaries (accounts, journal, reports, settings, etc.) |
+| `src/components/` | Reusable UI components (core/layout/common) |
+| `src/contexts/` | React contexts for app-wide UI concerns |
+| `src/hooks/` | Global hooks and observable helpers |
 | `src/data/` | Database schema, models, and repositories |
 | `src/services/` | Business logic services (integrity, export) |
 | `src/utils/` | Pure utilities (logger, formatting, preferences) |

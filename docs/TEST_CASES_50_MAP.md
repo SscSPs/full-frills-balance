@@ -65,7 +65,7 @@ Mapping of the 50 new test cases requested for the E2E suite expansion.
 - [ ] Rapid data entry (10 transactions in <30s)
 - [ ] Mass deletion of accounts
 - [ ] App reload during active journal creation (Draft recovery check)
-- [ ] IndexedDB mass export (v1 mandatory)
+- [ ] Local data mass export (v1 mandatory)
 - [ ] Import legacy data (Compatibility check)
 - [ ] Currency conversion precision stress (Rounding rules)
 - [ ] Long description character limit (1000+ chars)

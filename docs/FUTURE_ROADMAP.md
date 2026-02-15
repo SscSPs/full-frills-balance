@@ -1,7 +1,7 @@
 # Future Roadmap
 
 ## Phase 1: V1 Polish (Immediate)
-- [ ] **Implement Basic Reports**: Replace "Coming Soon" with simple category breakdown.
+- [ ] **Reports Iteration**: Add richer report slices and trend drill-downs.
 - [ ] **Guard Rails**: Enforce strict checks on Account Deletion (block if transactions exist).
 - [ ] **Data Filters**: Add Date Range picker to Journal List.
 

@@ -24,7 +24,7 @@
 | Edit Mode | Existing Tx | ✅ Implemented | Shows "EDITING" banner. |
 | Validation | Error | ✅ Implemented | Unbalanced, Missing Description. |
 | **Reports** | | | |
-| Summary | Standard | ❌ Missing | Tab shows "Coming Soon". |
+| Summary | Standard | ✅ Implemented | Net worth trend, income vs expense, donut breakdown. |
 | **Settings** | | | |
 | Theme Toggle | Standard | ✅ Implemented | System/Light/Dark. |
 | Data Export | Standard | ✅ Implemented | JSON dump. |

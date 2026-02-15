@@ -1,36 +1,31 @@
 # Test Coverage Mapping
 
 ## How to Run Tests
-1.  Ensure local dev server is running: `npm run web`
-2.  Run Playwright: `npx playwright test`
-    *   *Note*: Requires `npx playwright install` if first run.
+1. Run unit/integration tests: `npm test`
+2. Run E2E tests: `npm run test:e2e`
+3. Optional UI mode for E2E debugging: `npm run test:e2e:ui`
 
-## Journey Coverage
+## E2E Journey Coverage (Current Files)
 
 | User Journey | Playwright Test File | Status |
 | :--- | :--- | :--- |
-| User Journey | Playwright Test File | Status |
-| :--- | :--- | :--- |
-| **J1: Onboarding** | `e2e/onboarding.test.ts` | ✅ Verified |
-| **J2: Core Usage** | `e2e/core-journey.test.ts` | ✅ Verified |
-| **J3: Editing & History** | `e2e/editing.test.ts` | ✅ Verified |
-| **J4: Transfers** | `e2e/transfers.test.ts` | ✅ Verified |
-| **J5: Multi-Currency** | `e2e/multi-currency.test.ts` | ✅ Verified |
-| **J6: Privacy/Settings** | `e2e/settings-visuals.test.ts` | ✅ Verified |
-| **J7: Persistence** | `e2e/persistence.test.ts` | ✅ Verified |
-| **J8: Complex Journaling** | `e2e/complex-journal.test.ts` | ✅ 20+ Cases |
-| **J9: Account Lifecycle** | `e2e/account-types.test.ts` | ✅ 10+ Cases |
-| **J10: Visual Robustness** | `e2e/visual-regressions.test.ts` | ✅ 10+ Cases |
-| **J11: Stress & Integrity** | `e2e/stress-boundary.test.ts` | ✅ 10+ Cases |
-| **J12: Edge Case Library** | `e2e/misc-edge-cases.test.ts` | ✅ 5+ Cases |
-| **J13: Massive Variation** | `e2e/massive-coverage.test.ts` | ✅ 23+ Cases |
+| Onboarding flow | `e2e/onboarding.test.ts` | ✅ Active |
+| Accounts flow | `e2e/accounts.test.ts` | ✅ Active |
+| Transactions / journal flow | `e2e/transactions.test.ts` | ✅ Active |
+| Settings flow | `e2e/settings.test.ts` | ✅ Active |
+| Reports flow | `e2e/reports.test.ts` | ✅ Active |
+| Multi-currency flow | `e2e/multi-currency.test.ts` | ✅ Active |
 
-## Feature Coverage
+## Feature Coverage Snapshot
 
-| Feature | Test Scenarios |
+| Feature | Coverage Notes |
 | :--- | :--- |
-| **Accounts** | Create, Read List, Edit Name, Delete Warning. |
-| **Journal** | Create Expense, Income, Transfer. Verify Balance Update. Edit Tx. |
-| **Settings** | Toggle Theme, Privacy Mode. Reset App. |
-| **Persistence** | Reload app and verify data remains. |
-| **Multi-Currency** | Create non-default currency account and transaction. |
+| Accounts | Account creation/list/edit/delete-path validations in E2E + service/repository unit tests. |
+| Journal | Entry/edit/list behaviors in E2E and hook/service-level tests. |
+| Reports | Report rendering and interaction coverage via `e2e/reports.test.ts`. |
+| Settings | Theme/privacy/reset/import-selection paths in `e2e/settings.test.ts`. |
+| Persistence & data integrity | Repository and service tests under `src/data/repositories/__tests__` and `src/services/**/__tests__`. |
+
+## Notes
+- Legacy references to old E2E filenames were removed to keep this map aligned with the current `e2e/` directory.
+- Keep this file updated when adding or renaming Playwright specs.

@@ -17,10 +17,7 @@
     *   **Issue**: Initial dashboard load might show layout shift if Net Worth calculates slowly.
 
 ## 🧩 Missing Features
-1.  **Reports**:
-    *   **Severity**: P1 (for v1 completeness)
-    *   **Issue**: The "Reports" tab is a placeholder. Users expect visualization of their spending.
-2.  **Search Filtering**:
+1.  **Search Filtering**:
     *   **Severity**: P2
     *   **Issue**: Search exists but might strictly match strings. Date range filtering is missing.
 
@@ -35,7 +32,7 @@
 # Future Roadmap
 
 ## Phase 1: V1 Polish (Immediate)
-- [ ] Implement basic Reports (Pie chart of expenses).
+- [ ] Expand reports drill-down and exportable summaries.
 - [ ] Verify Account Deletion safeguards (Prevent orphan transactions).
 - [ ] Add Date Range filter to Transaction List.
 
