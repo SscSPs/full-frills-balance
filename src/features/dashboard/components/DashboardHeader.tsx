@@ -80,6 +80,7 @@ export function DashboardHeader({
                             onPress={showDatePicker}
                             onPrevious={navigatePrevious}
                             onNext={navigateNext}
+                            showNavigationArrows={false}
                         />
                     )}
                 </View>

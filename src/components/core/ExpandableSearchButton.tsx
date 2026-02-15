@@ -107,15 +107,9 @@ export const ExpandableSearchButton = ({
                 selectionColor={theme.primary}
                 autoFocus
             />
-            {value.length > 0 ? (
-                <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-                    <AppIcon name="closeCircle" size={Typography.sizes.lg} color={theme.textTertiary} />
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity onPress={handleCollapse} style={styles.clearButton}>
-                    <AppIcon name="close" size={Size.sm} color={theme.textSecondary} />
-                </TouchableOpacity>
-            )}
+            <TouchableOpacity onPress={value.length > 0 ? handleClear : handleCollapse} style={styles.clearButton}>
+                <AppIcon name="close" size={Size.sm} color={theme.textSecondary} />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -129,22 +123,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     expandedContainer: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         height: Size.xxl,
         minHeight: Size.xxl,
         borderRadius: Shape.radius.md,
         paddingHorizontal: Spacing.md,
+        gap: Spacing.sm,
     },
-    icon: {
-        marginRight: Spacing.md,
-    },
+    icon: {},
     input: {
         flex: 1,
         fontSize: Typography.sizes.base,
         height: '100%',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        textAlignVertical: 'center',
+        includeFontPadding: false,
     },
     clearButton: {
-        padding: Spacing.xs,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
