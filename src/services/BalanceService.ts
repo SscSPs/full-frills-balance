@@ -4,6 +4,7 @@ import { accountRepository } from '@/src/data/repositories/AccountRepository';
 import { transactionRepository } from '@/src/data/repositories/TransactionRepository';
 import { exchangeRateService } from '@/src/services/exchange-rate-service';
 import { AccountBalance } from '@/src/types/domain';
+import { logger } from '@/src/utils/logger';
 import { roundToPrecision } from '@/src/utils/money';
 
 export class BalanceService {
@@ -25,14 +26,37 @@ export class BalanceService {
             }
         });
 
-        // 2. Build cached depth calculator (used for both sorting and level mapping)
+        // 2. Build cached depth calculator (iterative with cycle detection)
         const depthCache = new Map<string, number>();
         const getDepth = (id: string): number => {
             if (depthCache.has(id)) return depthCache.get(id)!;
-            const pid = parentIdMap.get(id);
-            const d = pid ? getDepth(pid) + 1 : 0;
-            depthCache.set(id, d);
-            return d;
+
+            const path: string[] = [];
+            let current = id;
+
+            // Traverse up to root, detecting cycles
+            while (current) {
+                if (path.includes(current)) {
+                    logger.error(`Cycle detected in account hierarchy: ${path.join(' -> ')} -> ${current}`);
+                    return 0; // Safe fallback
+                }
+                if (depthCache.has(current)) {
+                    // Backfill cache for entire path
+                    let depth = depthCache.get(current)!;
+                    for (let i = path.length - 1; i >= 0; i--) {
+                        depthCache.set(path[i], ++depth);
+                    }
+                    return depthCache.get(id)!;
+                }
+                path.push(current);
+                current = parentIdMap.get(current) || '';
+            }
+
+            // Reached root, backfill
+            for (let i = path.length - 1; i >= 0; i--) {
+                depthCache.set(path[i], path.length - i - 1);
+            }
+            return depthCache.get(id)!;
         };
 
         // 3. Track sub-tree currencies for each parent to determine target currency
@@ -201,12 +225,17 @@ export class BalanceService {
 
         const balances = await Promise.all(balancePromises);
         const balancesMap = new Map(balances.map(b => [b.accountId, b]));
-        const precisionMap = new Map<string, number>();
 
-        // We need precision for rounding during aggregation. 
-        // For efficiency in this batch call, we'll assume 2 or fetch if needed.
-        // But since we already have accounts, we can build a better precision map.
-        for (const account of accounts) precisionMap.set(account.id, AppConfig.defaultCurrencyPrecision); // Default precision from config
+        // Fetch currency precision for accurate rounding
+        const { currencyRepository } = await import('@/src/data/repositories/CurrencyRepository');
+        const currencies = await currencyRepository.findAll();
+        const currencyPrecisionMap = new Map(currencies.map(c => [c.code, c.precision]));
+
+        const precisionMap = new Map<string, number>();
+        for (const account of accounts) {
+            const precision = currencyPrecisionMap.get(account.currencyCode) ?? AppConfig.defaultCurrencyPrecision;
+            precisionMap.set(account.id, precision);
+        }
 
         await this.aggregateBalances(accounts, balancesMap, precisionMap, targetDefaultCurrency);
 

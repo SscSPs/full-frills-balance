@@ -1,4 +1,6 @@
 import { useUI } from '@/src/contexts/UIContext'
+import Account from '@/src/data/models/Account'
+import { useAccountBalances, useAccounts } from '@/src/features/accounts/hooks/useAccounts'
 import { transformAccountsToSections } from '@/src/features/accounts/utils/transformAccounts'
 import { useWealthSummary } from '@/src/features/wealth'
 import { useTheme } from '@/src/hooks/use-theme'
@@ -33,9 +35,11 @@ export function useAccountsListViewModel(): AccountsListViewModel {
     const { theme } = useTheme()
     const { defaultCurrency, showAccountMonthlyStats, isPrivacyMode, setPrivacyMode } = useUI()
 
+    // Separate hooks for accounts and balances (previously part of useWealthSummary)
+    const { accounts } = useAccounts()
+    const { balancesByAccountId } = useAccountBalances(accounts)
+
     const {
-        accounts,
-        balancesMap: balancesByAccountId,
         totalAssets,
         totalLiabilities,
         totalEquity,
@@ -58,10 +62,10 @@ export function useAccountsListViewModel(): AccountsListViewModel {
     }, [])
 
     const onAccountPress = useCallback((accountId: string) => {
-        const account = accounts.find(a => a.id === accountId)
+        const account = accounts.find((a: Account) => a.id === accountId)
         if (!account) return
 
-        const hasChildren = accounts.some(a => a.parentAccountId === accountId)
+        const hasChildren = accounts.some((a: Account) => a.parentAccountId === accountId)
         const isExpanded = expandedAccountIds.has(accountId)
 
         if (hasChildren && !isExpanded) {

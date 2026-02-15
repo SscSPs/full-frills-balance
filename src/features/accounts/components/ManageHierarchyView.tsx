@@ -42,7 +42,7 @@ export function ManageHierarchyView(vm: ManageHierarchyViewModel) {
         const isExpandable = hasChildren || canBeParent;
         const isSelected = selectedAccountId === account.id;
         const accountTypeKey = account.accountType.toLowerCase() as keyof typeof theme;
-        const categoryColor = (theme as Record<string, string>)[accountTypeKey] || theme.text;
+        const categoryColor = (theme as unknown as Record<string, string>)[accountTypeKey] || theme.text;
 
         return (
             <View key={account.id}>

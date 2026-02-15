@@ -64,9 +64,9 @@ export function useObservable<T>(
         const subscription = stableFactory().subscribe({
             next: (result) => {
                 if (!isActive) return;
-                // For arrays, always create a new reference to ensure React notices the change
-                // even if the contents are identical (identity persistence in WatermelonDB)
-                setData(Array.isArray(result) ? [...result] : result as any);
+                // WatermelonDB observables already return new array instances on emission.
+                // The version counter ensures React re-renders even with stable references.
+                setData(result);
                 setVersion(v => v + 1);
                 setIsLoading(false);
             },

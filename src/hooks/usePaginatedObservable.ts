@@ -68,7 +68,8 @@ export function usePaginatedObservable<T, E = T>(
                 : 'none';
             return `${rangePart}-${searchQuery || ''}`;
         },
-        [dateRange, searchQuery]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [dateRange?.startDate, dateRange?.endDate, dateRange?.accountId, searchQuery]
     );
 
     // Version key for re-fetching without clearing

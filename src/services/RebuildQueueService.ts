@@ -83,6 +83,9 @@ class RebuildQueueService {
 
     /**
      * Stop the service, clear any pending timeouts, and empty the queue.
+     * 
+     * IMPORTANT: If this service ever holds observable subscriptions,
+     * they MUST be unsubscribed here to prevent memory leaks.
      */
     stop(): void {
         if (this.timeoutId) {
@@ -114,11 +117,7 @@ class RebuildQueueService {
         this.timeoutId = setTimeout(() => {
             this.processQueue()
         }, this.config.debounceMs)
-
-        // Prevent Node.js from hanging if this timer is active
-        if (this.timeoutId && typeof this.timeoutId === 'object' && 'unref' in this.timeoutId) {
-            (this.timeoutId as any).unref()
-        }
+        // Note: React Native handles timeout lifecycle automatically
     }
 
     private async processQueue(): Promise<void> {
